@@ -11,26 +11,14 @@ Every UnifyApps solution you work on gets a folder of its own on your computer.
 - **Do not mix solutions in one folder.** Don't work on two solutions in the same folder, and don't move files between solution folders. To work on another solution, open its own folder.
 - **Coming back later?** Open the same folder again. Everything from last time is still there.
 
-For example:
-
-```
-~/UnifyApps/
-├── purchase-orders/     the Purchase Orders solution
-├── leave-manager/       the Leave Manager solution
-└── customer-portal/     the Customer Portal solution
-```
+For example, keep a **UnifyApps** folder with one folder inside it for each solution: **Purchase Orders**, **Leave Manager**, **Customer Portal**.
 
 ## 1. Open your agent in the solution's folder
 
-Create the folder, go into it, and start your coding agent there:
+1. Make a new, empty folder for the solution, for example **Purchase Orders**, wherever you keep your work.
+2. Open Claude Code (or Codex, OpenCode or whichever agent you installed the plugin in), and choose that folder as the one to work in. In the desktop apps, pick the folder when you start a new chat or project.
 
-```bash
-mkdir -p ~/UnifyApps/purchase-orders
-cd ~/UnifyApps/purchase-orders
-claude
-```
-
-Use `codex`, `opencode`, `gemini` or `copilot` instead of `claude` if that is the agent you installed the plugin in.
+Everything from here on happens in a chat in that folder.
 
 ## 2. Set up the folder
 
