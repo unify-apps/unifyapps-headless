@@ -158,6 +158,4 @@ Connections are read only. UnifyApps Headless uses them but does not create them
 
 ## License
 
-Copyright © 2026 UnifyApps. Licensed under the [Elastic License 2.0](./LICENSE).
-
-You may use, copy, modify and redistribute UnifyApps Headless, inside your company or for your clients, on the terms in [`LICENSE`](./LICENSE). You may not offer it to others as a hosted or managed service, or remove or work around any licence notice in it. UnifyApps and the UnifyApps logo are trademarks of UnifyApps; this licence grants no right to use them.
+[MIT](./LICENSE). Copyright © 2026 UnifyApps. The license covers the code; it grants no right to use the UnifyApps name or logo.

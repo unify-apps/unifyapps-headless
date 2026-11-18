@@ -40,4 +40,4 @@ First public release.
 
 ### License
 
-- Elastic License 2.0 (`LICENSE`).
+- MIT (`LICENSE`).
