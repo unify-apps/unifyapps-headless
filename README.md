@@ -40,29 +40,106 @@ No platform UI and no hand-built task list. Ask in chat, in your own words. Unif
 
 ## Install
 
-Works in Claude Code, Codex, OpenCode, Gemini CLI and GitHub Copilot CLI. You need a UnifyApps tenant you can sign in to.
+UnifyApps Headless works in Claude Code, Codex, OpenCode, Gemini CLI and GitHub Copilot CLI. Install it in the agent you use, then sign in to your UnifyApps tenant with `/ua:setup`. Updates are manual: run the update command when you want a newer version.
 
-**Every agent on your machine at once** (macOS or Linux; it asks which agents, and installs Node 22 if missing):
+### Claude Code
+
+Add the repository as a plugin marketplace, then install the plugin from it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/install.sh | bash
+claude plugin marketplace add unify-apps/unifyapps-headless
+claude plugin install ua@unifyapps-headless
 ```
 
-Add `-s -- --agents claude,codex` to pick agents without the question, or `-s -- --uninstall` to remove it.
+Start `claude` in an empty folder and type `/ua:setup`.
 
-**Or one agent, with its own command:**
+```bash
+# update
+claude plugin marketplace update unifyapps-headless
+claude plugin update ua@unifyapps-headless
 
-| Agent | Install |
-|---|---|
-| Claude Code | `claude plugin marketplace add unify-apps/unifyapps-headless && claude plugin install ua@unifyapps-headless` |
-| OpenCode | `opencode plugin -g github:unify-apps/unifyapps-headless` |
-| Gemini CLI | `gemini extensions install https://github.com/unify-apps/unifyapps-headless --consent` |
-| Copilot CLI | `copilot plugin marketplace add unify-apps/unifyapps-headless && copilot plugin install ua@unifyapps-headless` |
-| Codex | use the installer above with `-s -- --agents codex` |
+# remove
+claude plugin uninstall ua@unifyapps-headless
+claude plugin marketplace remove unifyapps-headless
+```
 
-**Then** open your agent in an empty folder and type `/ua:setup` (`$ua:setup` in Codex; in Copilot CLI, ask in words). Setup signs you in to your tenant and picks the solution to work on. Full steps: [getting_started.md](./getting_started.md).
+### Codex
 
-Updates are manual: run the same install command again.
+Codex's own plugin command cannot start the plugin's tenant tools in your folder yet, so Codex uses the installer script. It downloads the plugin, installs Node 22 if it is missing, and registers the plugin and its builder agents with Codex:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/install.sh | bash -s -- --agents codex
+```
+
+Start `codex` in an empty folder and type `$ua:setup`.
+
+```bash
+# update: run the same command again
+
+# remove
+curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/install.sh | bash -s -- --uninstall --agents codex
+```
+
+### OpenCode
+
+Install the repository as a global OpenCode plugin:
+
+```bash
+opencode plugin -g github:unify-apps/unifyapps-headless
+```
+
+Start `opencode` in an empty folder and type `/ua:setup`.
+
+```bash
+# update
+opencode plugin -g -f github:unify-apps/unifyapps-headless
+
+# remove: delete the "github:unify-apps/unifyapps-headless" line
+# from "plugin" in ~/.config/opencode/opencode.jsonc
+```
+
+### Gemini CLI
+
+Install the repository as a Gemini extension:
+
+```bash
+gemini extensions install https://github.com/unify-apps/unifyapps-headless --consent
+```
+
+Start `gemini` in an empty folder, trust the folder when Gemini asks (the tenant tools stay off otherwise), and type `/ua:setup`. Gemini has no builder agents, so the main session does their work.
+
+```bash
+# update
+gemini extensions update unifyapps-headless
+
+# remove
+gemini extensions uninstall unifyapps-headless
+```
+
+### GitHub Copilot CLI
+
+Add the repository as a plugin marketplace, then install the plugin from it:
+
+```bash
+copilot plugin marketplace add unify-apps/unifyapps-headless
+copilot plugin install ua@unifyapps-headless
+```
+
+Start `copilot` in an empty folder. Copilot has no slash commands for plugins, so ask in words: "set up UnifyApps Headless here".
+
+```bash
+# update
+copilot plugin marketplace update unifyapps-headless
+copilot plugin update ua@unifyapps-headless
+
+# remove
+copilot plugin uninstall ua@unifyapps-headless
+copilot plugin marketplace remove unifyapps-headless
+```
+
+### After installing
+
+`/ua:setup` signs you in to your tenant through your browser and picks the solution to work on. Then ask for the work in your own words. Full steps: [getting_started.md](./getting_started.md).
 
 ## What it builds
 
