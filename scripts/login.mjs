@@ -233,11 +233,6 @@ if (extraCookies) {
 const handoffEnabled = () => process.env.UA_HANDOFF_LOGIN !== "0";
 
 const HANDOFF_PATH = "/api/session/ide-handoff";
-// How long the handoff gets before the sign-in page follows it. A browser that
-// holds a session is redirected in well under a second; this only has to outlast
-// a browser that was not running yet. A person who is not signed in sees the
-// tenant's bare 401 for this long, so it is kept short.
-const SIGN_IN_AFTER_MS = 4_000;
 
 /**
  * Trades the session the person's own browser already holds for this tenant's
@@ -271,7 +266,6 @@ async function handoffLogin(tenant, { timeoutS: deadlineS }) {
 
   const shut = () => new Promise((resolve) => server.close(() => resolve()));
 
-  let signInTimer;
   const code = await new Promise((resolve) => {
     const timer = setTimeout(() => resolve(undefined), deadlineS * 1000);
     timer.unref();
@@ -289,7 +283,6 @@ async function handoffLogin(tenant, { timeoutS: deadlineS }) {
       // it lands afterwards, and a raw 127.0.0.1 URL is not it.
       res.writeHead(302, { location: tenantUrl(tenant, "/"), "cache-control": "no-store" }).end();
       clearTimeout(timer);
-      clearTimeout(signInTimer);
       resolve(asked.searchParams.get("code") ?? undefined);
     });
 
@@ -302,48 +295,28 @@ async function handoffLogin(tenant, { timeoutS: deadlineS }) {
       const browser = spawn(opener, [...lead, href], { stdio: "ignore", detached: true });
       // No opener on this machine kills the process instead of raising: without a
       // listener, a detached spawn's error is thrown. Fall through to Chrome instead.
-      browser.on("error", () => { clearTimeout(timer); clearTimeout(signInTimer); resolve(undefined); });
+      browser.on("error", () => { clearTimeout(timer); resolve(undefined); });
       browser.unref();
     };
 
-    // The handoff itself, first. A browser that already holds a session is
-    // redirected to the listener by it, with no page to look at and nothing to
-    // press, which is the whole point of this path.
-    const handoff = new URL(tenantUrl(tenant, HANDOFF_PATH));
-    handoff.searchParams.set("port", String(port));
-    handoff.searchParams.set("state", state);
-
-    // A browser with no session gets a bare 401 from it, because /api is served
-    // by the API, not by the pages, and nothing there sends anyone to a login
-    // page. The sign-in page cannot go first either: it is a public page that
-    // renders its form whether or not the person is already signed in, so
-    // leading with it would ask every person to sign in again. So: the handoff,
-    // then the sign-in page for whoever the handoff could not answer.
+    // One link for everyone: the tenant's sign-in page, which returns to the
+    // handoff once the person signs in. The handoff alone would serve a bare 401
+    // to a browser with no session, and the sign-in page shows its form even to
+    // a browser that has one, so a person already signed in signs in once more.
     const signIn = new URL(tenantUrl(tenant, "/login"));
     // `returnTo` stays a relative path, because the sign-in page drops an
     // absolute one. Its own query has to arrive encoded as part of the value.
     // Left raw, Next reads `port` and `state` as siblings of `returnTo` instead.
     signIn.searchParams.set("returnTo", `${HANDOFF_PATH}?port=${port}&state=${state}`);
 
-    openInBrowser(handoff.href);
-    signInTimer = setTimeout(() => {
-      log(`Not signed in to ${tenant} in that browser. Opening its sign-in page.`);
-      log(`SIGN_IN_LINK ${signIn.href}`);
-      openInBrowser(signIn.href);
-    }, SIGN_IN_AFTER_MS);
-    signInTimer.unref();
-
-    log(`Opening ${tenant} in your own browser. If you are already signed in there is nothing ` +
-      `to do and this finishes by itself; if you are not, the sign-in page follows. ` +
-      `UnifyApps Headless waits up to ${Math.round(deadlineS / 60)} minutes, and you can paste ` +
-      `the tenant cookie (_at) in this chat instead.`);
-    // The two links the person can paste themselves when no tab opens: the first
-    // finishes at once in a browser that is signed in, the second signs in first.
-    log(`HANDOFF_LINK ${handoff.href}`);
+    openInBrowser(signIn.href);
+    log(`Opening ${tenant}'s sign-in page in your own browser. Sign in there and this finishes ` +
+      `by itself. UnifyApps Headless waits up to ${Math.round(deadlineS / 60)} minutes, and you ` +
+      `can paste the tenant cookie (_at) in this chat instead.`);
+    // The link the person can paste themselves when no tab opens.
     log(`SIGN_IN_LINK ${signIn.href}`);
   });
 
-  clearTimeout(signInTimer);
   await shut();
   if (!code) return undefined;
 

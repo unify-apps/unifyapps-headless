@@ -2,11 +2,11 @@
 
 Notable changes to UnifyApps Headless.
 
-## 0.0.2
+## 0.0.3
 
-- Sign-in prints the two links it opens, so the person can paste one when no
-  browser tab opens, and the agent shows them in chat while sign-in waits.
-- The tenant's sign-in page follows the hand-off after 4 seconds, not 8.
+- Sign-in opens one link, the tenant's sign-in page, which returns to the
+  plugin once the person signs in. No 401 page and no second tab. The agent
+  shows the link in chat so it can be pasted when no tab opens.
 
 ## 0.0.1
 
