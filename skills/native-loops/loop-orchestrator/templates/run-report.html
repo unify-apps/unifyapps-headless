@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loops run report</title>
+<!-- Filled by `loops.mjs log report`: the JSON block below is the only part that changes. -->
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --good: #0ca30c; --good-ink: #006300; --warn: #fab219; --bad: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --good-ink: #0ca30c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --good-ink: #0ca30c;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1080px; margin: 0 auto; padding: 28px 16px 48px; }
+header h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--ink-2); }
+h2 { font-size: 16px; margin: 32px 0 10px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; color: var(--ink-2); font-size: 13px; }
+.meta b { color: var(--ink); font-weight: 600; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; }
+.tile .label { color: var(--muted); font-size: 12px; }
+.tile .value { font-size: 24px; font-weight: 600; margin-top: 2px; }
+.tile .sub { color: var(--ink-2); font-size: 12px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 14px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.empty { color: var(--muted); font-style: italic; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 0; font-size: 12px; color: var(--ink-2); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.bar { display: block; width: 100%; height: 14px; }
+.cell-bar { min-width: 120px; width: 30%; }
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--ring); color: var(--ink-2); }
+.chip.yes { color: var(--good-ink); }
+.chip.no { color: var(--bad); }
+footer { margin-top: 36px; color: var(--muted); font-size: 12px; }
+@media (max-width: 560px) { .tile .value { font-size: 20px; } th, td { padding: 6px; } }
+</style>
+</head>
+<body>
+<main id="app"><p class="empty">This report needs JavaScript to draw its data.</p></main>
+<script type="application/json" id="data">__LOOPS_DATA__</script>
+<script>
+(function () {
+  'use strict';
+  var data = JSON.parse(document.getElementById('data').textContent);
+  var SVG = 'http://www.w3.org/2000/svg';
+  var app = document.getElementById('app');
+  app.textContent = '';
+
+  function h(tag, attrs) {
+    var node = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (key) {
+      if (key === 'text') node.textContent = attrs[key];
+      else if (key === 'cls') node.className = attrs[key];
+      else node.setAttribute(key, attrs[key]);
+    });
+    for (var i = 2; i < arguments.length; i++) if (arguments[i] != null) node.appendChild(typeof arguments[i] === 'string' ? document.createTextNode(arguments[i]) : arguments[i]);
+    return node;
+  }
+  function svg(tag, attrs) {
+    var node = document.createElementNS(SVG, tag);
+    Object.keys(attrs || {}).forEach(function (key) { node.setAttribute(key, attrs[key]); });
+    return node;
+  }
+  function num(value) { return value == null ? '—' : Number(value).toLocaleString('en-US'); }
+  function compact(value) {
+    if (value == null) return '—';
+    var abs = Math.abs(value);
+    if (abs >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+    if (abs >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+    if (abs >= 1e4) return (value / 1e3).toFixed(0) + 'k';
+    return num(value);
+  }
+  function dur(ms) {
+    if (ms == null) return '—';
+    var s = Math.round(ms / 1000);
+    if (s < 60) return s + 's';
+    var m = Math.floor(s / 60);
+    if (m < 60) return m + 'm ' + String(s % 60).padStart(2, '0') + 's';
+    return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm';
+  }
+  function when(iso) { return iso ? iso.replace('T', ' ').replace(/\.\d+Z$/, 'Z') : '—'; }
+  function tile(label, value, sub) { return h('div', { cls: 'tile' }, h('div', { cls: 'label', text: label }), h('div', { cls: 'value', text: value }), sub ? h('div', { cls: 'sub', text: sub }) : null); }
+  function section(title, body) { app.appendChild(h('h2', { text: title })); app.appendChild(body); }
+  function empty(text) { return h('p', { cls: 'empty', text: text }); }
+
+  // One bar per cell, scaled to the column's largest value; data-end rounded, baseline square.
+  function bar(value, maxValue, color, label) {
+    var box = svg('svg', { class: 'bar', viewBox: '0 0 100 14', preserveAspectRatio: 'none', role: 'img', 'aria-label': label });
+    var width = maxValue > 0 && value > 0 ? Math.max(1, (value / maxValue) * 100) : 0;
+    box.appendChild(svg('rect', { x: 0, y: 3, width: 100, height: 8, fill: 'var(--grid)', rx: 2 }));
+    if (width) {
+      var rect = svg('rect', { x: 0, y: 3, width: width.toFixed(2), height: 8, fill: color, rx: 2 });
+      var title = svg('title', {}); title.textContent = label; rect.appendChild(title);
+      box.appendChild(rect);
+    }
+    return box;
+  }
+  // A stacked composition bar with a 2px surface gap between segments.
+  function stack(parts, label) {
+    var total = parts.reduce(function (sum, part) { return sum + (part.value || 0); }, 0);
+    var box = svg('svg', { class: 'bar', viewBox: '0 0 100 14', preserveAspectRatio: 'none', role: 'img', 'aria-label': label });
+    var x = 0;
+    parts.forEach(function (part) {
+      if (!total || !part.value) return;
+      var width = (part.value / total) * 100;
+      var rect = svg('rect', { x: x.toFixed(2), y: 2, width: Math.max(0, width - 0.4).toFixed(2), height: 10, fill: part.color });
+      var title = svg('title', {}); title.textContent = part.name + ': ' + num(part.value) + ' (' + Math.round((part.value / total) * 100) + '%)';
+      rect.appendChild(title); box.appendChild(rect); x += width;
+    });
+    return box;
+  }
+  function tableOf(columns, rows, emptyText) {
+    if (!rows.length) return empty(emptyText);
+    var head = h('tr');
+    columns.forEach(function (column) { head.appendChild(h('th', { cls: column.num ? 'num' : '', text: column.title })); });
+    var body = h('tbody');
+    rows.forEach(function (row) {
+      var tr = h('tr');
+      columns.forEach(function (column) {
+        var value = column.render(row);
+        var td = h('td', { cls: column.num ? 'num' : column.cls || '' });
+        if (value instanceof Node) td.appendChild(value); else td.textContent = value == null ? '—' : String(value);
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    return h('table', null, h('thead', null, head), body);
+  }
+  function card(child) { return h('div', { cls: 'card' }, child); }
+  function maxOf(rows, pick) { return rows.reduce(function (best, row) { return Math.max(best, pick(row) || 0); }, 0); }
+
+  var run = data.run || {};
+  var totals = data.totals || {};
+  var issues = data.issues || {};
+  document.title = 'Loops run report — ' + (run.id || 'run');
+
+  app.appendChild(h('header', null,
+    h('h1', { text: 'Loops run report' }),
+    h('p', { text: (run.goal ? run.goal + ' · ' : '') + (run.id || '') }),
+    h('div', { cls: 'meta' },
+      h('span', null, 'Started ', h('b', { text: when(run.startedAt) })),
+      h('span', null, 'Ended ', h('b', { text: when(run.endedAt) })),
+      h('span', null, 'Outcome ', h('b', { text: run.outcome || 'open' })),
+      h('span', null, 'Scope ', h('b', { text: Array.isArray(run.scope) ? run.scope.join(', ') : (run.scope || '—') })),
+      run.focus ? h('span', null, 'Focus ', h('b', { text: Array.isArray(run.focus) ? run.focus.join(', ') : run.focus })) : null,
+      h('span', null, h('b', { text: num(run.events) }), ' events'))));
+
+  app.appendChild(h('div', { cls: 'tiles' },
+    tile('Duration', dur(run.durationMs), totals.stages + ' stages'),
+    tile('Agents dispatched', num(totals.dispatches), totals.agentTypes + ' agent types'),
+    tile('Tokens', compact(totals.tokens), data.tokens ? 'from the session transcripts' : 'not summed: run log tokens'),
+    tile('Issues found', num(issues.found), num(issues.fixed) + ' fixed · ' + num(issues.open) + ' open'),
+    tile('Skill · loop calls', num(totals.skillCalls) + ' · ' + num(totals.loopCalls)),
+    tile('Approvals', num(totals.approvals), (data.releases || []).map(function (r) { return r.count + ' ' + r.name; }).join(' · ') || 'nothing released'),
+    tile('Errors', num(totals.errors), totals.errors ? 'tool or tenant failures, refusals, retries' : 'none logged')));
+
+  var stages = data.stages || [];
+  var stageMax = maxOf(stages, function (row) { return row.durationMs; });
+  section('Stages', card(tableOf([
+    { title: 'Stage', render: function (row) { return row.name; } },
+    { title: 'Duration', num: true, render: function (row) { return dur(row.durationMs); } },
+    { title: '', cls: 'cell-bar', render: function (row) { return bar(row.durationMs || 0, stageMax, 'var(--s1)', row.name + ': ' + dur(row.durationMs)); } },
+    { title: 'Dispatches', num: true, render: function (row) { return num(row.dispatches); } },
+    { title: 'Agents', render: function (row) { return (row.agents || []).map(function (a) { return a.name + ' ×' + a.count; }).join(', ') || '—'; } },
+    { title: 'Tokens', num: true, render: function (row) { return row.tokens ? compact(row.tokens.total) : '—'; } },
+    { title: 'Errors', num: true, render: function (row) { return num(row.errors); } },
+    { title: 'Outcome', render: function (row) { return row.outcome || '—'; } }
+  ], stages, 'No stage events.')));
+
+  if (data.tokens) {
+    var t = data.tokens;
+    var parts = [
+      { name: 'Input', value: t.input, color: 'var(--s1)' },
+      { name: 'Output', value: t.output, color: 'var(--s2)' },
+      { name: 'Cache read', value: t.cacheRead, color: 'var(--s3)' },
+      { name: 'Cache creation', value: t.cacheCreation, color: 'var(--s4)' }
+    ];
+    var legend = h('div', { cls: 'legend' });
+    parts.forEach(function (part) { var i = h('i'); i.style.background = part.color; legend.appendChild(h('span', null, i, part.name + ' ' + compact(part.value))); });
+    section('Tokens', card(h('div', null, stack(parts, 'Token mix'), legend)));
+  }
+
+  var agents = data.agents || [];
+  var agentMax = maxOf(agents, function (row) { return row.dispatches; });
+  section('Agents', card(tableOf([
+    { title: 'Agent type', render: function (row) { return row.type; } },
+    { title: 'Dispatched', num: true, render: function (row) { return num(row.dispatches); } },
+    { title: '', cls: 'cell-bar', render: function (row) { return bar(row.dispatches, agentMax, 'var(--s1)', row.type + ': ' + row.dispatches + ' dispatched'); } },
+    { title: 'Reports', num: true, render: function (row) { return num(row.reports); } },
+    { title: 'Tokens', num: true, render: function (row) { return compact(row.tokens); } }
+  ], agents, 'No dispatch events.')));
+
+  function counts(title, rows, emptyText) {
+    var top = maxOf(rows, function (row) { return row.count; });
+    return h('div', null, h('h2', { text: title }), card(tableOf([
+      { title: 'Name', render: function (row) { return row.name; } },
+      { title: 'Calls', num: true, render: function (row) { return num(row.count); } },
+      { title: '', cls: 'cell-bar', render: function (row) { return bar(row.count, top, 'var(--s1)', row.name + ': ' + row.count); } }
+    ], rows, emptyText)));
+  }
+  app.appendChild(counts('Skill calls', data.skills || [], 'No skill calls recorded.'));
+  app.appendChild(counts('Loop calls', data.loops || [], 'No loop calls recorded.'));
+
+  var sims = data.simulators || {};
+  var queue = sims.queue || {};
+  var simBody = h('div', null,
+    h('div', { cls: 'flow' },
+      tile('Reservations', num(sims.reservations), (sims.devices || []).length + ' simulators'),
+      tile('Reservation waits', num((sims.reservationWaits || {}).count), 'longest ' + dur((sims.reservationWaits || {}).maxMs)),
+      tile('Queued checks', num(queue.added), num(queue.done) + ' done · ' + num(queue.failed) + ' failed'),
+      tile('Queue waits', num((queue.waits || {}).count), 'longest ' + dur((queue.waits || {}).maxMs))),
+    h('div', { style: 'margin-top:12px' }, tableOf([
+      { title: 'Simulator', render: function (row) { return row.name; } },
+      { title: 'Reservations', num: true, render: function (row) { return num(row.holds); } },
+      { title: 'Held', num: true, render: function (row) { return dur(row.heldMs); } }
+    ], sims.devices || [], 'No reservations recorded.')));
+  section('Simulators', card(simBody));
+
+  var statusRows = Object.keys(issues.byStatus || {}).map(function (key) { return { name: key, count: issues.byStatus[key] }; });
+  var issueMax = maxOf(statusRows, function (row) { return row.count; });
+  section('Issue flow', card(h('div', null,
+    h('div', { cls: 'flow' },
+      tile('Found', num(issues.found)),
+      tile('Fixed', num(issues.fixed)),
+      tile('Reopened', num(issues.reopened), num(issues.reopens) + ' reopens · max ' + num(issues.maxAttempts) + ' attempts'),
+      tile('Open', num(issues.open))),
+    h('div', { style: 'margin-top:12px' }, tableOf([
+      { title: 'Latest status', render: function (row) { return row.name; } },
+      { title: 'Issues', num: true, render: function (row) { return num(row.count); } },
+      { title: '', cls: 'cell-bar', render: function (row) { return bar(row.count, issueMax, 'var(--s1)', row.name + ': ' + row.count); } }
+    ], statusRows, 'No issue events.')))));
+
+  section('Approvals', card(tableOf([
+    { title: 'Approval', render: function (row) { return row.approval; } },
+    { title: 'When', render: function (row) { return when(row.at); } },
+    { title: 'Answer', render: function (row) {
+      var answer = String(row.answer == null ? '—' : row.answer);
+      var kind = /^(yes|y|ok|approve)/i.test(answer) ? 'yes' : /^(no|n|stop|reject)/i.test(answer) ? 'no' : '';
+      return h('span', { cls: 'chip ' + kind, text: (kind === 'yes' ? '✓ ' : kind === 'no' ? '✕ ' : '') + answer });
+    } },
+    { title: 'Recommended taken', render: function (row) { return row.recommended == null ? '—' : row.recommended ? 'yes' : 'no'; } },
+    { title: 'Time to answer', num: true, render: function (row) { return row.seconds == null ? '—' : dur(row.seconds * 1000); } }
+  ], data.approvals || [], 'No approvals asked.')));
+
+  if ((data.errors || []).length) {
+    section('Errors', card(tableOf([
+      { title: 'When', render: function (row) { return when(row.at); } },
+      { title: 'Stage', render: function (row) { return row.stage || '—'; } },
+      { title: 'Error', render: function (row) { return row.text; } },
+      { title: 'Retried', render: function (row) { return row.retried == null ? '—' : String(row.retried); } }
+    ], data.errors, '')));
+  }
+
+  app.appendChild(h('footer', { text: 'Rendered by loops.mjs log report from run-log.jsonl' + (data.tokens ? ' and tokens.json' : '') + '. The same data always gives the same page.' }));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "loops.perf/1",
+  "title": "perf.json: every measurement of one performance check",
+  "description": "Checked by skills/native-loops/loop-orchestrator/scripts/lib/perf-json.mjs (references/perf-json.md is the full description). A WEB run's file is built by skills/web-loops/web-profile/scripts/profile.mjs build, which writes \"platform\": \"web\" and answers to perf-json.mjs WEB_METRICS. Rendered by `loops.mjs perf render <perf.json>`. Every path is relative to the run folder. A metric with no sample is listed in `unmeasured`, never guessed.",
+  "type": "object",
+  "required": ["schema", "runId", "generatedAt", "scope", "app", "pages", "device", "mode", "verdict", "metrics", "steps", "network", "frames", "memory", "assets", "rerenders", "lists", "cpu", "findings", "notes", "unmeasured"],
+  "$defs": {
+    "verdict": { "enum": ["pass", "warn", "fail"] },
+    "metric": {
+      "type": "object",
+      "required": ["value", "unit", "samples", "threshold", "verdict"],
+      "properties": {
+        "label": { "type": "string" },
+        "value": { "type": "number", "description": "the worst step's value (each step's value is the median of its runs)" },
+        "unit": { "type": "string" },
+        "samples": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["value"], "properties": { "step": { "type": ["string", "null"] }, "value": { "type": "number" } } } },
+        "threshold": { "type": "object", "required": ["pass", "warn"], "properties": { "pass": { "type": "number" }, "warn": { "type": "number" } } },
+        "verdict": { "$ref": "#/$defs/verdict" },
+        "evidence": { "type": ["string", "null"] },
+        "step": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "properties": {
+    "schema": { "const": "loops.perf/1" },
+    "platform": { "enum": ["mobile", "web"], "description": "whose metric table applies: mobile (a file without the field is mobile) or web (web-profile's build: the UnifyApps Headless browser on the builder preview route)" },
+    "runId": { "type": "string", "minLength": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "scope": { "enum": ["page", "app"] },
+    "app": { "type": "object", "required": ["id"], "properties": { "id": { "type": ["string", "null"] }, "name": { "type": ["string", "null"] } } },
+    "pages": { "type": "array", "items": { "type": "object", "required": ["id"], "properties": { "id": { "type": "string" }, "name": { "type": ["string", "null"] } } } },
+    "device": {
+      "type": "object",
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "udid": { "type": ["string", "null"] },
+        "runtime": { "type": ["string", "null"] },
+        "model": { "type": ["string", "null"] },
+        "platform": { "enum": ["ios", "android", "web", null], "description": "ios or android on a mobile file; web or null on a web file" },
+        "profile": { "enum": ["release", null] },
+        "buildKind": { "enum": ["release-embedded", null] },
+        "bundleId": { "type": ["string", "null"] },
+        "route": { "type": ["string", "null"], "description": "web: the route measured, the builder preview of the saved draft" }
+      }
+    },
+    "mode": { "enum": ["full", "release-subset"] },
+    "verdict": { "enum": ["pass", "warn", "fail", null] },
+    "metrics": {
+      "type": "object",
+      "description": "Lower is better for every metric: pass when value <= threshold.pass, warn when <= threshold.warn, else fail. A mobile file answers to perf-json.mjs METRICS (ttrMs to largestAssetKB), a web file to WEB_METRICS (ttfbMs to oversizedImages); jsHeapGrowthMB, mountedBlocks and largestAssetKB are in both.",
+      "propertyNames": { "enum": ["ttrMs", "ttiMs", "transitionMs", "longestFreezeMs", "framesDroppedPct", "requests", "duplicateRequests", "requestKB", "jsHeapGrowthMB", "memorySlopeMB", "mountedBlocks", "unvirtualisedLists", "maxBlockRenders", "largestAssetKB",
+        "ttfbMs", "fcpMs", "lcpMs", "domContentLoadedMs", "loadMs", "cls", "inpMs", "longestTaskMs", "totalBlockingTimeMs", "dataSourceCalls", "duplicateDataSourceCalls", "slowestDataSourceMs", "resourceCount", "transferKB", "jsHeapMB", "domNodes", "oversizedImages"] },
+      "additionalProperties": { "$ref": "#/$defs/metric" }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "files", "times"],
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "type": ["string", "null"], "description": "mobile: open, hop, tab, back, foreground, keystroke, scroll and the like; web: open or interaction" },
+          "openKind": { "type": ["string", "null"] },
+          "pageId": { "type": ["string", "null"] },
+          "files": { "type": "array", "items": { "type": "string" } },
+          "runs": { "type": "number" },
+          "times": {
+            "type": "object",
+            "description": "mobile: the step's times; web: the median of the step's runs, null where its kind does not measure it",
+            "properties": {
+              "firstCommitMs": {}, "ttrMs": {}, "ttiMs": {}, "transitionMs": {}, "longestFreezeMs": {}, "jsIdleMs": {}, "ttiQuietSeen": {},
+              "ttfbMs": {}, "fcpMs": {}, "lcpMs": {}, "domContentLoadedMs": {}, "loadMs": {}, "inpMs": {}, "longestTaskMs": {}, "totalBlockingTimeMs": {}, "cls": {}
+            }
+          },
+          "frames": { "type": ["object", "null"] },
+          "requests": { "type": "object", "properties": { "calls": { "type": "number" }, "bytes": { "type": "number" }, "failed": { "type": "number" }, "duplicateCalls": { "type": "number" }, "duplicates": { "type": "array" } } },
+          "memory": { "type": "object" },
+          "counts": { "type": "object" },
+          "resources": { "type": ["object", "null"], "description": "web: resource timing of the step", "properties": { "count": { "type": "number" }, "transferKB": { "type": "number" }, "sizeUnknown": { "type": "number" }, "byType": { "type": "object" }, "largest": { "type": "array" } } },
+          "lcp": { "type": ["object", "null"], "description": "web: the largest contentful paint", "properties": { "ms": {}, "tag": {}, "blockId": {}, "url": { "description": "path only" } } },
+          "shifts": { "type": "array", "description": "web: the layout shifts the step saw" },
+          "longTasks": { "type": ["object", "null"], "description": "web: long tasks, or long animation frames when the browser reports none", "properties": { "source": { "enum": ["longtask", "long-animation-frame", "none"] }, "count": { "type": "number" }, "longestMs": { "type": "number" }, "totalBlockingMs": { "type": "number" } } },
+          "inp": { "type": ["object", "null"], "description": "web: interaction to next paint from event timing", "properties": { "ms": {}, "interactions": { "type": "number" }, "approximate": { "type": "boolean" } } },
+          "cache": { "type": "array", "items": { "enum": ["cold", "warm"] }, "description": "web: the browser cache of each run" },
+          "viewport": { "type": ["object", "null"], "description": "web: the window the step ran in", "properties": { "w": { "type": "number" }, "h": { "type": "number" } } },
+          "notes": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "required": ["calls", "bytes", "duplicates"],
+      "properties": {
+        "calls": { "type": "number" },
+        "bytes": { "type": "number" },
+        "failed": { "type": "number" },
+        "duplicates": { "type": "array", "items": { "type": "object", "properties": { "method": {}, "url": { "type": ["string", "null"], "description": "path only, no host or query" }, "name": { "type": ["string", "null"], "description": "web: the data source browser.mjs recorded" }, "bodyHash": { "type": ["string", "null"] }, "atMs": { "type": "array" }, "repeats": { "type": "number" }, "count": { "type": "number" }, "step": { "type": "string" } } } },
+        "slowest": { "type": "array", "items": { "type": "object", "properties": { "step": {}, "method": {}, "url": {}, "name": { "type": ["string", "null"], "description": "web: the data source" }, "ms": { "type": "number" }, "bytes": {}, "status": {} } } }
+      }
+    },
+    "frames": {
+      "type": ["object", "null"],
+      "description": "mobile: JS frames of the step; web: null (each step's longTasks stand in)",
+      "required": ["dropped", "total", "worstGapMs"],
+      "properties": { "dropped": { "type": "number" }, "total": { "type": "number" }, "droppedPct": { "type": "number" }, "worstGapMs": { "type": "number" }, "longFrames": { "type": "number" } }
+    },
+    "memory": {
+      "type": "object",
+      "required": ["samples", "leakSuspect"],
+      "properties": {
+        "samples": { "type": "array" },
+        "trends": { "type": "array", "items": { "type": "object", "properties": { "label": {}, "key": { "enum": ["jsHeapMB", "rssMB"] }, "points": { "type": "number" }, "first": {}, "last": {}, "peak": {}, "slopePerSample": { "type": "number" }, "leakSuspect": { "type": "boolean" }, "file": {} } } },
+        "leakSuspect": { "type": "boolean" },
+        "jsHeapPeakMB": { "type": ["number", "null"] },
+        "rssPeakMB": { "type": ["number", "null"] },
+        "appGone": { "type": "boolean" }
+      }
+    },
+    "assets": { "type": "array", "items": { "type": "object", "properties": { "uri": {}, "scheme": {}, "component": {}, "count": {}, "width": {}, "height": {}, "bytes": {}, "type": {}, "format": {}, "kb": {}, "verdict": { "enum": ["pass", "warn", "fail", null] }, "why": {}, "pageId": {}, "file": {} } } },
+    "rerenders": { "type": "array", "items": { "type": "object", "properties": { "kind": { "enum": ["block", "component"] }, "id": { "type": "string" }, "renders": { "type": "number" }, "step": { "type": "string" } } } },
+    "lists": { "type": "array", "items": { "type": "object", "properties": { "listBlockId": {}, "rows": {}, "blocksPerRow": {}, "dataRows": {}, "verdict": {}, "step": {} } } },
+    "cpu": {
+      "type": "object",
+      "description": "mobile: CPU profiles and their groups; web: empty, with cpu in unmeasured (tracing is refused in a signed-in browser; long tasks stand in)",
+      "required": ["profiles", "topGroups"],
+      "properties": {
+        "profiles": { "type": "array", "items": { "type": "object", "properties": { "path": { "type": "string" }, "meta": {}, "groups": {} } } },
+        "topGroups": { "type": "array", "items": { "type": "object", "properties": { "group": { "type": "string" }, "pct": { "type": "number" }, "sec": {}, "window": {}, "groupsFile": {} } } },
+        "devOnlyPctMax": { "type": ["number", "null"] }
+      }
+    },
+    "duplicates": { "type": "array", "description": "flat alias of network.duplicates (perf render reads the nested one)" },
+    "profiles": { "type": "array", "description": "flat alias of cpu.profiles (perf render reads the nested one)" },
+    "leaks": { "type": "array", "description": "memory.trends with leakSuspect (perf render reads memory.trends)" },
+    "findings": { "type": ["object", "null"], "required": ["path", "count"], "properties": { "path": { "type": "string" }, "count": { "type": "number" }, "kinds": { "type": "array", "items": { "type": "string" } } } },
+    "notes": { "type": "array", "items": { "type": "string" } },
+    "unmeasured": { "type": "array", "items": { "type": "object", "required": ["metric", "reason"], "properties": { "metric": { "type": "string" }, "reason": { "type": "string" } } } }
+  }
+}

@@ -1,0 +1,6 @@
+description = "Fixes a UnifyApps AI agent that answered wrongly."
+prompt = """
+Run the UnifyApps Headless `ai-agent-fix-loop` skill: read `loops/ai-agent-fix-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

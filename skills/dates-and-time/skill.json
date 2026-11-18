@@ -1,0 +1,7 @@
+{
+  "name": "dates-and-time",
+  "description": "MANDATORY before choosing query windows or schedules, using date_diff, comparing dates, converting dates and epochs, formatting or transforming dates in code nodes, or passing a maybe-absent date into a node. Covers accepted representations, units, ordering, and missing-value behavior.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

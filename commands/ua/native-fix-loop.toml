@@ -1,0 +1,6 @@
+description = "Fixes a UnifyApps MOBILE app - its pages against their design, the open issues an audit or a triage left, or one issue described in chat, reproduced first on a test device (or from its automation's ru"
+prompt = """
+Run the UnifyApps Headless `native-fix-loop` skill: read `loops/native-fix-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

@@ -1,0 +1,7 @@
+{
+  "name": "resiliency",
+  "description": "Read when an automation needs node-level error handling, retries, rate limiting, partial-failure behavior, or recovery from connector and platform failures.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

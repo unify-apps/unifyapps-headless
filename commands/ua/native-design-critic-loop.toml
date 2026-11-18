@@ -1,0 +1,6 @@
+description = "Critique a finished mobile app (iOS or Android, production or release build) page by page as a demanding end user, through argent screenshots and the accessibility tree, and report UI and UX issues ra"
+prompt = """
+Run the UnifyApps Headless `native-design-critic-loop` skill: read `loops/native-design-critic-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

@@ -1,0 +1,7 @@
+{
+  "name": "data-transforms-and-code",
+  "description": "Read when transforming data in memory or considering a Code by UnifyApps node. Covers native utilities, list operations, templates, code selection, sandbox rules, input bindings, and result conventions. Not for files, persistence, external calls, or external SQL databases.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

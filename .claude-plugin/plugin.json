@@ -1,0 +1,140 @@
+{
+  "name": "ua",
+  "version": "0.0.1",
+  "description": "Build UnifyApps solutions from chat: apps, pages, objects, automations and AI agents, each one read back from the platform before it is called done.",
+  "author": {
+    "name": "UnifyApps Frontend"
+  },
+  "skills": [
+    "./skills/",
+    "./skills/native-loops/",
+    "./skills/web-loops/",
+    "./loops/"
+  ],
+  "mcpServers": {
+    "application-builder": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/application-builder"
+      ]
+    },
+    "object": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/object"
+      ]
+    },
+    "automation-code": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/automation-code"
+      ]
+    },
+    "agent-builder": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/agent-builder"
+      ]
+    },
+    "app-testing": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/app-testing"
+      ]
+    },
+    "connection": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/connection"
+      ]
+    },
+    "solution": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/solution"
+      ]
+    },
+    "evaluation": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/evaluation"
+      ]
+    },
+    "api-gateway": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/api-gateway"
+      ]
+    },
+    "connectors-sdk": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/connectors-sdk"
+      ]
+    },
+    "changeset": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/changeset"
+      ]
+    },
+    "code-builder": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/code-builder"
+      ]
+    },
+    "context-graph": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/context-graph"
+      ]
+    },
+    "playwright": {
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/playwright-mcp.sh"
+      ]
+    }
+  },
+  "license": "Elastic-2.0",
+  "homepage": "https://github.com/unify-apps/unifyapps-headless",
+  "repository": "https://github.com/unify-apps/unifyapps-headless",
+  "keywords": [
+    "unifyapps",
+    "solutions",
+    "apps",
+    "objects",
+    "automations",
+    "application-builder",
+    "ai-agents",
+    "mcp"
+  ],
+  "displayName": "UnifyApps Headless"
+}

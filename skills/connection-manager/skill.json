@@ -1,0 +1,8 @@
+{
+  "name": "connection-manager",
+  "description": "Assist users in the connection manager support in UnifyApps platform",
+  "version": 49,
+  "tools": 8,
+  "writeTools": 5,
+  "files": []
+}

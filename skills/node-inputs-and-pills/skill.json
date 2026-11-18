@@ -1,0 +1,7 @@
+{
+  "name": "node-inputs-and-pills",
+  "description": "Read before validating runtime node inputs, using a lookup or search result that may be empty, a maybe-absent upstream value, a dynamic input schema, a mapped array, or an output path that is not explicit in the operation schema. The core prompt owns ordinary required and optional fields plus basic pill reachability.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

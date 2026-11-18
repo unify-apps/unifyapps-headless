@@ -1,0 +1,6 @@
+description = "Builds a new page, a feature or a set of pages of a UnifyApps MOBILE app, as drafts, in two ways."
+prompt = """
+Run the UnifyApps Headless `native-build-loop` skill: read `loops/native-build-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

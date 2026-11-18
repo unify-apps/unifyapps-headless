@@ -1,0 +1,425 @@
+#!/usr/bin/env node
+// `npm test`. Checks the plugin loads and its entry points answer, without a
+// tenant, a sign-in or a network call.
+//
+// Every check here catches a class of breakage that reading the code does not:
+// a module that parses but imports something deleted, a hook that throws on an
+// empty event, a CLI that cannot print its own help, a manifest the plugin
+// loader will not accept.
+//
+//   node scripts/smoke-test.mjs
+//
+// Exits 0 when every check passed, 1 on the first failure class, 2 on usage.
+import { execFileSync, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+if (process.argv.length > 2) {
+  process.stderr.write('Usage: node scripts/smoke-test.mjs\n');
+  process.exit(2);
+}
+
+const results = [];
+const record = (name, ok, detail = '') => {
+  results.push({ name, ok, detail });
+  process.stdout.write(`${ok ? 'ok  ' : 'FAIL'}  ${name}${detail && !ok ? `\n        ${detail}` : ''}\n`);
+};
+
+/** The files git tracks, or null outside a checkout. The suite ships with the
+ * plugin, so it also runs from an installed copy, which has no git. */
+function trackedFiles(...patterns) {
+  try {
+    return execFileSync('git', ['ls-files', ...patterns], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .split('\n').filter(Boolean);
+  } catch { return null; }
+}
+
+/** Everything under the plugin, for when git cannot answer. */
+function walk(dir, into = []) {
+  for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+    if (entry.name === '.git' || entry.name === 'node_modules') continue;
+    const relative = path.posix.join(dir, entry.name);
+    if (entry.isDirectory()) walk(relative, into);
+    else into.push(relative);
+  }
+  return into;
+}
+
+const allFiles = () => trackedFiles() ?? walk('.').map((file) => file.replace(/^\.\//u, ''));
+
+/** Every .mjs and .js file, so a deleted import shows up as a parse or load
+ * error. A loop's `workflows/` scripts are skipped: they are orchestration
+ * scripts run by their host with a top-level `return`, which no module parser
+ * accepts. */
+function sourceFiles() {
+  return allFiles().filter((file) => /\.(?:mjs|js)$/u.test(file)).filter((file) => !file.includes('/workflows/'));
+}
+
+// 1. Every source file parses. A syntax error here reaches users as a skill
+// that silently does nothing.
+let parsed = 0;
+const unparsed = [];
+for (const file of sourceFiles()) {
+  const check = spawnSync(process.execPath, ['--check', path.join(root, file)], { encoding: 'utf8' });
+  if (check.status === 0) parsed++;
+  else unparsed.push(`${file}: ${(check.stderr || '').split('\n').find((line) => line.includes('Error')) ?? 'parse failed'}`);
+}
+record(`${parsed} source files parse`, unparsed.length === 0, unparsed.slice(0, 5).join('\n        '));
+
+// 2. The hooks answer an empty event. They run on every session start and
+// before every tool call, so a dead import stops the plugin outright; a parse
+// check cannot see it, because an import only resolves when the file is loaded.
+for (const script of ['hooks.mjs', 'tool-guard.mjs']) {
+  const run = spawnSync(process.execPath, [path.join(root, 'scripts', script)], { input: '{}', encoding: 'utf8', timeout: 30_000 });
+  const failed = run.status !== 0 || /ERR_MODULE_NOT_FOUND|Cannot find module/u.test(run.stderr ?? '');
+  record(`scripts/${script} runs`, !failed, (run.stderr ?? '').split('\n').slice(0, 3).join(' '));
+}
+
+// 3. The CLI prints its own help. This loads the command table and every
+// module it names.
+const help = spawnSync(process.execPath, [path.join(root, 'scripts', 'ua.mjs'), '--help'], { encoding: 'utf8', timeout: 30_000 });
+record('scripts/ua.mjs --help answers', help.status === 0 && /solution/u.test(help.stdout ?? ''), (help.stderr ?? '').split('\n').slice(0, 3).join(' '));
+
+// 4. The manifests are valid JSON and name what they must. `claude plugin
+// validate` is the real check and runs in CI, where the CLI is installed; this
+// keeps the suite useful on a machine without it.
+for (const file of ['.claude-plugin/plugin.json', '.claude-plugin/marketplace.json', '.mcp.json', 'hooks/hooks.json', 'package.json']) {
+  let ok = false, detail = '';
+  try { JSON.parse(fs.readFileSync(path.join(root, file), 'utf8')); ok = true; }
+  catch (error) { detail = error.message; }
+  record(`${file} is valid JSON`, ok, detail);
+}
+
+// 5. Every MCP server the manifest declares points at a file that exists, and
+// every hook command names a script that exists. A renamed script otherwise
+// fails only when a person first uses that server.
+const mcp = JSON.parse(fs.readFileSync(path.join(root, '.mcp.json'), 'utf8'));
+const missingTargets = [];
+for (const [name, server] of Object.entries(mcp.mcpServers ?? {})) {
+  const named = JSON.stringify(server.args ?? []);
+  for (const match of named.matchAll(/scripts\/[\w./-]+?\.(?:mjs|sh)/gu)) {
+    if (!fs.existsSync(path.join(root, match[0]))) missingTargets.push(`${name} -> ${match[0]}`);
+  }
+}
+const hooks = JSON.parse(fs.readFileSync(path.join(root, 'hooks/hooks.json'), 'utf8'));
+for (const [event, groups] of Object.entries(hooks.hooks ?? {})) {
+  for (const group of groups) {
+    for (const hook of group.hooks ?? []) {
+      for (const match of String(hook.command ?? '').matchAll(/(?:scripts|skills)\/[\w./-]+?\.(?:mjs|sh)/gu)) {
+        if (!fs.existsSync(path.join(root, match[0]))) missingTargets.push(`${event} -> ${match[0]}`);
+      }
+    }
+  }
+}
+record('every declared MCP server and hook target exists', missingTargets.length === 0, missingTargets.join('\n        '));
+
+// 6. Every skill folder the plugin manifest lists has a readable SKILL.md with
+// the two fields the Agent Skills format requires, and a name that matches its
+// folder. A skill short of either is skipped silently at load time.
+const manifest = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin/plugin.json'), 'utf8'));
+const badSkills = [];
+let skillCount = 0;
+for (const folder of manifest.skills ?? []) {
+  const dir = path.join(root, folder);
+  if (!fs.existsSync(dir)) { badSkills.push(`${folder}: folder in plugin.json does not exist`); continue; }
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const skillFile = path.join(dir, entry.name, 'SKILL.md');
+    if (!fs.existsSync(skillFile)) continue;
+    skillCount++;
+    const front = /^---\n([\s\S]*?)\n---/u.exec(fs.readFileSync(skillFile, 'utf8'));
+    if (!front) { badSkills.push(`${entry.name}: no frontmatter`); continue; }
+    const name = /^name:\s*(.+)$/mu.exec(front[1])?.[1]?.trim();
+    if (!name) badSkills.push(`${entry.name}: no name`);
+    else if (name !== entry.name) badSkills.push(`${entry.name}: name is "${name}"`);
+    const description = /^description:\s*(.+)$/mu.exec(front[1])?.[1]?.trim();
+    if (!description) badSkills.push(`${entry.name}: no description`);
+    // A plain YAML scalar ends at a colon followed by a space, so an unquoted
+    // description holding one is not valid YAML. Claude Code reads it anyway;
+    // Copilot CLI drops the whole skill, and the model never learns it exists.
+    else if (!/^["']/u.test(description) && description.includes(': ')) badSkills.push(`${entry.name}: the description holds ": " and is not quoted`);
+  }
+}
+record(`${skillCount} skills have a valid SKILL.md`, badSkills.length === 0, badSkills.slice(0, 8).join('\n        '));
+
+// 7. Nothing left behind by the internal build. These names belong to code that
+// is not part of this plugin, so a reference to one is a stale instruction an
+// agent would try to follow.
+const forbidden = ['mcp-telemetry', 'client-metadata', 'x-ua-device-serial-number', 'x-ua-ai-client-email', 'UA_TELEMETRY'];
+const stale = [];
+for (const file of allFiles()) {
+  // This check's own list names the removed code on purpose.
+  if (file === 'scripts/smoke-test.mjs') continue;
+  let text;
+  try { text = fs.readFileSync(path.join(root, file), 'utf8'); } catch { continue; }
+  for (const word of forbidden) if (text.includes(word)) stale.push(`${file}: ${word}`);
+}
+record('no references to removed internal code', stale.length === 0, stale.slice(0, 10).join('\n        '));
+
+// 8. The delete gate opens for one answer and no other. A call that cannot be
+// undone is refused unless the person said yes, so each way of not saying yes
+// is checked by name: a client that cannot be asked, one that says no, one that
+// cancels, one that breaks, and one that never answers.
+try {
+  const { createBridge } = await import(new URL('./mcp-bridge.mjs', import.meta.url));
+  const context = () => ({ tenant: 'example.uat.unifyapps.com', url: 'https://example.uat.unifyapps.com/llm-tools/mcp',
+    cookie: 'smoke-test', home: '/tmp/nowhere', tenantOnly: false, client: {}, identity: { version: '0.0.0' } });
+  const call = { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'delete_object', arguments: { objectId: 'e_throwaway' } } };
+  const outcomeWith = async (answer) => {
+    const bridge = createBridge('/mcp/object', {
+      context,
+      // The gate refuses before anything is sent, so reaching this is the failure.
+      request: async () => { throw new Error('SENT TO THE TENANT'); },
+      elicit: answer === null ? null : async () => answer,
+      // Every outward call is stubbed, so this reaches the gate and nothing
+      // else. `identify` is the sign-in read the bridge makes before it looks
+      // at the arguments; left real it would try the network and throw first,
+      // and the gate below would never be reached at all.
+      identify: async () => ({ email: 'smoke@example.invalid', id: 0, name: 'smoke' }),
+      verifySignIn: async () => ({ ok: true }),
+    });
+    try { return JSON.stringify(await bridge(call)); } catch (error) { return `THREW: ${error.message}`; }
+  };
+  // A refusal is the gate's own answer and nothing else. An error — the bridge
+  // failing for an unrelated reason — is not a refusal: counting it as one once
+  // let this whole check pass while the gate was never reached.
+  const refused = (text) => !text.startsWith('THREW:') && (text.includes('CONFIRM_REQUIRED') || text.includes('CONFIRM_DECLINED'));
+  const wrong = [];
+  for (const answer of [null, 'decline', 'cancel', 'failed', 'timeout']) {
+    const text = await outcomeWith(answer);
+    if (!refused(text)) wrong.push(`${answer ?? 'cannot be asked'}: expected a refusal, got ${text.slice(0, 120)}`);
+  }
+  // A yes must let the call through to the tenant, which the stub above marks
+  // by throwing. Anything else means the gate stayed shut on an approved call.
+  const accepted = await outcomeWith('accept');
+  if (!accepted.includes('SENT TO THE TENANT')) wrong.push(`accept: a yes did not open the gate, got ${accepted.slice(0, 120)}`);
+  record('a delete waits for the person, and only a yes lets it through', wrong.length === 0, wrong.join('\n        '));
+} catch (error) {
+  record('a delete waits for the person, and only a yes lets it through', false, error.message);
+}
+
+// 8b. A tool call sends the tenant the call and nothing about the person or the
+// machine, and nothing else at all. Every request the process makes is caught:
+// the bridge's own `request` and the global fetch a side channel would use. The
+// context carries a serial and an AI-client email, in its identity and in its
+// headers, the way an older session's state or a hand-built context could, so a
+// bridge that still forwarded either would fail here.
+{
+  const name = 'a tool call carries no device or AI-account header and sends no telemetry';
+  const sent = [];
+  const realFetch = globalThis.fetch;
+  const answer = (url, init = {}) => {
+    sent.push({ url: String(url), headers: Object.fromEntries(Object.entries(init.headers ?? {}).map(([key, value]) => [key.toLowerCase(), String(value)])) });
+    return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: { content: [{ type: 'text', text: '{"ok":true}' }] } }),
+      { headers: { 'content-type': 'application/json' } });
+  };
+  globalThis.fetch = async (url, init) => answer(url, init);
+  try {
+    const { createBridge } = await import(new URL('./mcp-bridge.mjs', import.meta.url));
+    const bridge = createBridge('/mcp/object', {
+      context: () => ({ tenant: 'example.uat.unifyapps.com', url: 'https://example.uat.unifyapps.com/llm-tools',
+        cookie: 'smoke-test', home: null, tenantOnly: false,
+        identity: { version: '0.0.0', sessionId: 'smoke-session', deviceSerialNumber: 'SMOKESERIAL1', claudeCodeEmail: 'ai@example.invalid' },
+        client: { 'x-ua-device-serial-number': 'SMOKESERIAL1', 'x-ua-ai-client-email': 'ai@example.invalid' } }),
+      request: async (url, init) => answer(url, init),
+      identify: async () => ({ email: 'smoke@example.invalid', id: 0, name: 'smoke' }),
+      verifySignIn: async () => ({ ok: true }),
+    });
+    const replies = await bridge({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'get_objects', arguments: {} } });
+    // A side channel may send after the answer; give it a moment to show itself.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const problems = [];
+    if (replies?.[0]?.result?.content?.[0]?.text !== '{"ok":true}') problems.push(`the call was not answered: ${JSON.stringify(replies).slice(0, 120)}`);
+    if (!sent.some((request) => request.url.includes('/llm-tools/mcp/object'))) problems.push('the call never reached the tenant');
+    for (const request of sent) {
+      const url = new URL(request.url);
+      if (url.pathname !== '/llm-tools/mcp/object') problems.push(`a request went to ${url.pathname}`);
+      for (const header of ['x-ua-device-serial-number', 'x-ua-ai-client-email', 'x-ua-user-email', 'x-ua-record-usage']) {
+        if (header in request.headers) problems.push(`${url.pathname} carried ${header}`);
+      }
+      const all = JSON.stringify(request.headers);
+      if (all.includes('SMOKESERIAL1') || all.includes('ai@example.invalid') || all.includes('smoke@example.invalid')) problems.push(`${url.pathname} carried an identity value`);
+    }
+    if (sent.some((request) => request.url.includes('/api/workflow/trigger'))) problems.push('a request went to /api/workflow/trigger');
+    record(name, problems.length === 0, problems.join('\n        '));
+  } catch (error) {
+    record(name, false, error.message);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
+// 9. Every builder is written out for the other agents, and each one keeps its
+// name, its description and the rule that holds it to its own tools. A builder
+// that lost any of those would still load and would then work outside its job.
+try {
+  const targets = await import(new URL('./workspace/agent-targets.mjs', import.meta.url));
+  const dir = path.join(root, 'agents');
+  const problems = [];
+  let count = 0;
+  for (const file of fs.readdirSync(dir).filter((name) => name.endsWith('.md')).sort()) {
+    const agent = targets.parseAgent(fs.readFileSync(path.join(dir, file), 'utf8'));
+    if (!agent) { problems.push(`${file}: no frontmatter this can read`); continue; }
+    count++;
+    const wantsServers = agent.tools.some((tool) => tool.startsWith('mcp__plugin_ua_'));
+    for (const [label, text] of [['codex', targets.codexAgent(agent)], ['opencode', targets.opencodeAgent(agent)], ['copilot', targets.copilotAgent(agent)]]) {
+      if (!text.includes(agent.description.slice(0, 40))) problems.push(`${agent.name} (${label}): lost its description`);
+      if (!text.includes(agent.body.slice(0, 60))) problems.push(`${agent.name} (${label}): lost its instructions`);
+      // A builder given tenant servers must carry the rule naming them; one
+      // given none has nothing to be held to.
+      if (wantsServers && !text.includes('and no other')) problems.push(`${agent.name} (${label}): no tool rule`);
+      // Only the rule's own sentence, because a repeat in it means a server
+      // was listed twice; the same words in prose are just prose.
+      const rule = /Your job needs the (.+?) MCP server/u.exec(text)?.[1] ?? '';
+      const named = rule.split(/,| and /u).map((part) => part.trim()).filter(Boolean);
+      if (named.length !== new Set(named).size) problems.push(`${agent.name} (${label}): a server is named twice`);
+    }
+  }
+  record(`${count} builders are written out for Codex, OpenCode and Copilot`, problems.length === 0, problems.slice(0, 8).join('\n        '));
+} catch (error) {
+  record('builders are written out for Codex, OpenCode and Copilot', false, error.message);
+}
+
+// 10. The OpenCode plugin gives OpenCode what Claude Code reads from the
+// manifests: every tenant server, every builder, every skill folder, a
+// /ua:<name> command per typed skill, and the plugin root in every shell. The
+// person's own config wins on a name both define.
+try {
+  const { UnifyAppsHeadless } = await import(new URL('../opencode/plugin.mjs', import.meta.url));
+  const hooks = await UnifyAppsHeadless({ directory: root });
+  const config = { mcp: { object: { type: 'local', command: ['mine'] } }, permission: { '*': 'allow', 'solution_*': 'ask' } };
+  await hooks.config(config);
+  const servers = Object.keys(JSON.parse(fs.readFileSync(path.join(root, '.mcp.json'), 'utf8')).mcpServers).filter((name) => name !== 'playwright');
+  const agents = fs.readdirSync(path.join(root, 'agents')).filter((name) => name.endsWith('.md')).map((name) => name.slice(0, -3));
+  const problems = [];
+  // `opencode plugin <repo>` loads package.json's entry and calls every function it exports.
+  const entry = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).main;
+  const exported = Object.keys(await import(pathToFileURL(path.join(root, entry)).href));
+  if (exported.join() !== 'UnifyAppsHeadless') problems.push(`package entry ${entry} exports ${exported.join(', ') || 'nothing'}, not the plugin alone`);
+  for (const name of servers) if (!config.mcp[name]) problems.push(`server ${name} missing`);
+  if (config.mcp.object.command[0] !== 'mine') problems.push('the person\'s own server was replaced');
+  for (const [name, server] of Object.entries(config.mcp)) {
+    if (name !== 'object' && !server.command.slice(1).every((part) => part.startsWith('/mcp/') || fs.existsSync(part))) problems.push(`server ${name} names a file that does not exist`);
+  }
+  for (const name of agents) if (config.agent?.[name]?.mode !== 'subagent') problems.push(`builder ${name} missing`);
+  if (!config.command?.['ua:setup']?.template?.includes('`setup` skill')) problems.push('no /ua:setup command');
+  if (config.command?.['ua:loop-orchestrator']) problems.push('a skill marked user-invocable: false became a command');
+  if (!config.skills?.paths?.length || !config.skills.paths.every((dir) => fs.existsSync(dir))) problems.push('skill folders missing');
+  // OpenCode applies the last rule whose key matches, the agent's after the config's.
+  const allowed = (agent, tool) => {
+    const rules = [...Object.entries(config.permission), ...Object.entries(config.agent?.[agent]?.permission ?? {})];
+    const matches = (key) => new RegExp(`^${key.replace(/[.+?^${}()|[\]\\]/gu, '\\$&').replaceAll('*', '.*')}$`, 'u').test(tool);
+    return rules.findLast(([key]) => matches(key))?.[1];
+  };
+  for (const [agent, tool, want] of [
+    [null, 'object_get_objects', 'deny'], [null, 'application-builder_get_page', 'deny'], [null, 'solution_get_solution', 'ask'],
+    ['app-agent', 'application-builder_get_page', 'allow'], ['app-agent', 'object_get_objects', 'allow'], ['app-agent', 'api-gateway_get_api', 'deny'],
+    ['fde-agent', 'application-builder_get_user_details', 'allow'], ['fde-agent', 'application-builder_get_page', 'deny'],
+  ]) if (allowed(agent, tool) !== want) problems.push(`${agent ?? 'the main session'} gets ${allowed(agent, tool)} for ${tool}, not ${want}`);
+  const env = { env: {} };
+  await hooks['shell.env']({ cwd: root }, env);
+  if (env.env.CLAUDE_PLUGIN_ROOT !== root) problems.push('CLAUDE_PLUGIN_ROOT is not set in the shell');
+  record('the OpenCode plugin registers the servers, builders, skills and /ua: commands, and limits each server to its builders', problems.length === 0, problems.slice(0, 8).join('\n        '));
+} catch (error) {
+  record('the OpenCode plugin registers the servers, builders, skills and /ua: commands, and limits each server to its builders', false, error.message);
+}
+
+// 11. In OpenCode, a "Yes" to the `question` tool approves a refused delete the
+// way an AskUserQuestion answer does in Claude Code, and a "No" does not. Run
+// in a child with its own UA_HOME, so no real pending delete is touched.
+{
+  const home = fs.mkdtempSync(path.join((await import('node:os')).tmpdir(), 'ua-smoke-'));
+  const child = `
+    const yes = await import(${JSON.stringify(new URL('./workspace/delete-yes.mjs', import.meta.url).href)});
+    const { UnifyAppsHeadless } = await import(${JSON.stringify(new URL('../opencode/plugin.mjs', import.meta.url).href)});
+    const hooks = await UnifyAppsHeadless({ directory: process.cwd() });
+    const answer = async (key, choice) => {
+      const summary = 'Delete the object Throwaway (' + key + ')';
+      const id = yes.addPendingDelete({ key, tool: 'delete_object', summary });
+      const question = summary + '? (' + id + ')';
+      await hooks['tool.execute.after']({ tool: 'question', sessionID: 's', callID: 'c', args: { questions: [{ question, header: 'Delete', options: [] }] } },
+        { title: '', output: 'User has answered your questions: "' + question + '"="' + choice + '".', metadata: { answers: [[choice]] } });
+      return yes.takeDeleteYes(key);
+    };
+    process.stdout.write(JSON.stringify({ yes: await answer('k-yes', 'Yes'), no: await answer('k-no', 'No') }));`;
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', child], { cwd: root, encoding: 'utf8', env: { ...process.env, UA_HOME: home }, timeout: 60_000 });
+  let outcome = null;
+  try { outcome = JSON.parse(result.stdout); } catch { /* reported below */ }
+  fs.rmSync(home, { recursive: true, force: true });
+  record('in OpenCode a Yes to the question approves a refused delete, and a No does not',
+    outcome?.yes === true && outcome?.no === false, outcome ? JSON.stringify(outcome) : (result.stderr ?? '').split('\n').slice(0, 3).join(' '));
+}
+
+// 12. The installer: every target has the shape the registry promises, choices
+// parse, a missing agent cannot be chosen, and Codex gets a manifest whose
+// servers exist and whose skills are the resolved copy.
+try {
+  const { TARGETS } = await import(new URL('./install/targets.mjs', import.meta.url));
+  const { parseChoice } = await import(new URL('./install/index.mjs', import.meta.url));
+  const { codexManifest } = await import(new URL('./install/targets/codex.mjs', import.meta.url));
+  const problems = [];
+  for (const target of TARGETS) {
+    for (const key of ['id', 'label']) if (typeof target[key] !== 'string') problems.push(`${target.id ?? '?'}: no ${key}`);
+    for (const key of ['detect', 'install', 'uninstall']) if (typeof target[key] !== 'function') problems.push(`${target.id}: no ${key}()`);
+  }
+  const rows = TARGETS.map((target, index) => ({ target, state: { found: index !== 1 } }));
+  if (parseChoice('1 3', rows, []).map((target) => target.id).join() !== `${TARGETS[0].id},${TARGETS[2].id}`) problems.push('"1 3" did not pick the first and third agents');
+  if (parseChoice('', rows, ['fallback'])[0] !== 'fallback') problems.push('an empty answer did not take the default');
+  let refused = false;
+  try { parseChoice(TARGETS[1].id, rows, []); } catch { refused = true; }
+  if (!refused) problems.push('an agent that is not installed could be chosen');
+  if (parseChoice('all', rows, []).some((target) => target === TARGETS[1])) problems.push('"all" chose an agent that is not installed');
+  if (TARGETS.some((target) => 'installAgent' in target)) problems.push('the installer can install an agent; it must only add the plugin');
+  const manifest = codexManifest(root);
+  if (manifest.skills?.[0] !== './codex-skills/') problems.push('the Codex manifest does not use the resolved skill copy');
+  for (const [name, server] of Object.entries(manifest.mcpServers ?? {})) {
+    if (!server.args.every((part) => part.startsWith('/mcp/') || fs.existsSync(part))) problems.push(`Codex server ${name} names a file that does not exist`);
+  }
+  record(`the installer knows ${TARGETS.map((target) => target.label).join(', ')}`, problems.length === 0, problems.slice(0, 8).join('\n        '));
+} catch (error) {
+  record('the installer knows its agents', false, error.message);
+}
+
+// Gemini CLI installs the repository as it is in git, so its manifest and
+// commands are committed and must match what the generator writes. Gemini reads
+// the same hooks/hooks.json as Claude Code but fills in only ${extensionPath}:
+// each Claude hook on an event Gemini also has exits when the plugin root is
+// unset, and the Gemini session note exits when it is set.
+try {
+  const { geminiDrift, geminiManifest } = await import(new URL('./install/gemini.mjs', import.meta.url));
+  const problems = geminiDrift().map((file) => `${file} is out of date: run node scripts/install/gemini.mjs`);
+  const servers = Object.keys(JSON.parse(fs.readFileSync(path.join(root, '.mcp.json'), 'utf8')).mcpServers).filter((name) => name !== 'playwright');
+  for (const name of servers) if (!geminiManifest().mcpServers[name]) problems.push(`Gemini has no ${name} server`);
+  if (!fs.readFileSync(path.join(root, 'commands', 'ua', 'setup.toml'), 'utf8').includes('skills/setup/SKILL.md')) problems.push('/ua:setup does not name the setup skill');
+  const hooks = JSON.parse(fs.readFileSync(path.join(root, 'hooks', 'hooks.json'), 'utf8')).hooks;
+  for (const event of ['SessionStart', 'SessionEnd', 'Notification', 'BeforeTool', 'AfterTool', 'BeforeAgent', 'AfterAgent', 'PreCompress', 'BeforeModel', 'AfterModel', 'BeforeToolSelection']) {
+    for (const { command } of (hooks[event] ?? []).flatMap((group) => group.hooks)) {
+      const gemini = command.includes('${extensionPath}');
+      if (gemini ? !command.startsWith('[ -z "${CLAUDE_PLUGIN_ROOT}" ] || exit 0;') : !command.startsWith('[ -n "${CLAUDE_PLUGIN_ROOT}" ] || exit 0;')) problems.push(`${event} hook runs in the wrong agent: ${command.slice(0, 80)}`);
+    }
+  }
+  const note = spawnSync(process.execPath, [path.join(root, 'scripts', 'gemini-session.mjs')], { encoding: 'utf8' });
+  const context = JSON.parse(note.stdout || '{}').hookSpecificOutput?.additionalContext ?? '';
+  if (!context.includes(root) || /[<>]/u.test(context)) problems.push('the Gemini session note does not name the plugin folder, or has angle brackets Gemini would escape');
+  record('Gemini CLI gets the servers, /ua: commands and a session note, and runs no Claude hook', problems.length === 0, problems.slice(0, 8).join('\n        '));
+} catch (error) {
+  record('Gemini CLI gets the servers, /ua: commands and a session note, and runs no Claude hook', false, error.message);
+}
+
+// Signing out with nothing saved is not an error and calls no tenant, so it
+// runs here with a home of its own.
+{
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ua-logout-'));
+  const run = spawnSync(process.execPath, [path.join(root, 'scripts', 'login.mjs'), 'smoke.invalid', '--logout', '--quiet'], { encoding: 'utf8', env: { ...process.env, UA_HOME: home } });
+  let answer = {};
+  try { answer = JSON.parse(run.stdout); } catch { /* checked below */ }
+  fs.rmSync(home, { recursive: true, force: true });
+  record('login.mjs --logout with nothing saved is a no-op', run.status === 0 && answer.loggedOut === true && answer.had === false, run.stderr || run.stdout);
+}
+
+const failed = results.filter((result) => !result.ok);
+process.stdout.write(`\n${results.length - failed.length}/${results.length} checks passed\n`);
+process.exit(failed.length ? 1 : 0);

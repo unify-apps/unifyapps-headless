@@ -1,0 +1,95 @@
+/* The story theme. A 1920x1080 stage; light paper by default, the deep ground for the scenes that matter most (or for
+ * every scene, in a dark story). The accent carries emphasis, the alert colour only marks a failure. The serif for what
+ * is said, the sans only for small labels. :root holds the UnifyApps theme; the page overrides every colour and font
+ * here with the story's own (core/theme.mjs). A player adds its own controls around the frame. */
+:root {
+  --paper: #fbf9f5; --paper2: #f4efe6; --paper3: #efe8dc; --card: #fffdf8;
+  --ink: #1b1a0e; --ink2: #2e2814; --body: #4c4841; --muted: #857e6e; --rule: #e6decf;
+  --accent: #847347; --accent2: #938256; --accent-on-deep: #c4b58c; --accent-halo: rgba(132, 115, 71, .22);
+  --alert: #b6502f; --alert-bg: #fbede6; --mark: #efe2b8;
+  --deep: #1a3a0c; --deep2: #2a5216; --deep3: #3f6b26; --deep-glow: #2f5a1a;
+  --deep-hi: #224a0f; --deep-bg: #163a08; --deep-bg2: #12300a; --deep-bg3: #10280a; --deep-lo: #0d2104; --deep-edge: #081403;
+  --on-deep: #f7f3ed; --on-deep-body: #b9bfad; --on-deep2: #e9e1cf; --on-deep3: #e8dfcc; --on-deep-rule: rgba(247, 243, 237, .16);
+  --shadow: rgba(27, 26, 14, .18); --edge: rgba(27, 26, 14, .08); --deep-shadow: rgba(22, 58, 8, .28);
+  --view: #ffffff; --frame-bar: #f1ede5; --frame-line: #e3dccd; --frame-dot: #d8d0bf; --frame-text: #6a6662;
+  --backdrop: #0b0b08; --player: #12120e; --player-ink: #e8e2d4; --player-line: #4a4638; --player-btn: #23221b;
+  --serif: 'Spectral', Georgia, 'Times New Roman', serif; --sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --side: 112px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--backdrop); overflow: hidden; height: 100%; }
+body { font-family: var(--serif); color: var(--ink); -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; }
+#frame { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; margin: -540px 0 0 -960px; transform-origin: 50% 50%; }
+body.render #frame { left: 0; top: 0; margin: 0; transform: none !important; }
+#stage { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(160deg, var(--paper) 0%, var(--paper2) 62%, var(--paper3) 100%); }
+#bg-deep { position: absolute; inset: 0; background: radial-gradient(120% 90% at 78% 30%, var(--deep-hi) 0%, var(--deep-bg) 38%, var(--deep-lo) 78%, var(--deep-edge) 100%); }
+/* a dark story stays on the deep ground throughout, so its ground goes nearly black, with the deep colour as a glow */
+body.dark #bg-deep { background: radial-gradient(90% 80% at 76% 22%, var(--deep-bg2) 0%, var(--deep-lo) 34%, var(--deep-edge) 62%, color-mix(in srgb, var(--deep-edge) 55%, black) 100%); }
+#amb { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; }
+#bar { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: var(--accent); opacity: .55; transform-origin: 0 50%; transform: scaleX(0); z-index: 5; }
+#foot { position: absolute; left: var(--side); right: var(--side); bottom: 34px; height: 30px; display: flex; align-items: center; justify-content: flex-end; z-index: 4; opacity: 0; }
+#foot img { position: absolute; left: 0; top: 0; height: 30px; }
+#foot span { font: 600 15px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+
+.scene { position: absolute; inset: 0; visibility: hidden; z-index: 2; }
+.gr-deep { color: var(--on-deep); }
+.hd { position: absolute; left: var(--side); right: var(--side); top: 92px; }
+.kicker { font: 600 20px/1 var(--sans); letter-spacing: .17em; text-transform: uppercase; color: var(--accent); margin-bottom: 26px; }
+.gr-deep .kicker { color: var(--accent-on-deep); }
+.h2 { font: 400 66px/1.12 var(--serif); letter-spacing: -.014em; color: var(--ink); max-width: 1500px; text-wrap: balance; }
+.gr-deep .h2 { color: var(--on-deep); }
+.h2 em, .em { font-style: italic; color: var(--accent); }
+.gr-deep .h2 em, .gr-deep .em { color: var(--accent-on-deep); }
+/* a word's mask (its words rise through it) is wider and taller than the word by what italic and heavy glyphs reach
+   past their box, and gives it back in margins, so no letter is cut and nothing moves */
+.w { display: inline-block; overflow: hidden; vertical-align: top; padding: .12em .22em .08em .12em; margin: -.12em -.22em -.08em -.12em; }
+.w > span { display: inline-block; }
+.lbl { font: 600 18px/1.2 var(--sans); letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+.gr-deep .lbl { color: var(--on-deep-body); }
+.body { font: 400 28px/1.45 var(--serif); color: var(--body); }
+.gr-deep .body { color: var(--on-deep-body); }
+.footnote { position: absolute; left: var(--side); bottom: 84px; font: italic 400 19px/1.3 var(--serif); color: var(--muted); max-width: 1300px; }
+.gr-deep .footnote { color: var(--on-deep-body); }
+
+/* the space under a heading, with its content centred in it */
+.area { position: absolute; left: var(--side); right: var(--side); top: 330px; bottom: 150px; display: flex; flex-direction: column; justify-content: center; }
+
+/* the camera layer every scene's content sits in; a video moves it, a deck leaves it still */
+.lens { position: absolute; inset: 0; transform-origin: 0 0; }
+.scene { transform-origin: 50% 50%; }
+/* a video's captions: one short line at the foot of the frame, the spoken word lit */
+#cap { position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%); z-index: 6; max-width: 1500px; padding: 12px 28px; border-radius: 14px; white-space: nowrap;
+  background: color-mix(in srgb, var(--ink) 80%, transparent); color: color-mix(in srgb, var(--paper) 58%, transparent); font: 600 33px/1.25 var(--sans); letter-spacing: -.005em; opacity: 0; }
+#cap span.said { color: var(--paper); }
+#cap span.now { color: var(--accent-on-deep); }
+body.captions #foot { visibility: hidden; }
+
+/* live motion's own layers (ctx.current, travel, halo, ping, sheen): drawn over or around a part, never on it */
+.ua-fx { pointer-events: none; }
+/* the pointer a scene moves with ctx.pointer(): the system arrow, pressed on a click */
+.ua-cur { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 6; pointer-events: none; opacity: 0; }
+.ua-cur svg { position: absolute; left: -3px; top: -2px; width: 30px; height: 39px; transform-origin: 3px 2px; filter: drop-shadow(0 3px 6px var(--shadow)); }
+.ua-cur svg path { fill: var(--ink); stroke: var(--paper); stroke-width: 2; stroke-linejoin: round; }
+#stage .ua-current { fill: none; stroke: var(--accent); opacity: 0; }
+#stage .gr-deep .ua-current { stroke: var(--accent-on-deep); }
+.ua-dot { fill: var(--accent); opacity: 0; }
+.gr-deep .ua-dot { fill: var(--accent-on-deep); }
+.ua-halo { position: absolute; inset: 0; border-radius: inherit; opacity: 0; box-shadow: 0 0 0 12px var(--accent-halo), 0 0 46px 14px var(--accent-halo); }
+.ua-ping { position: absolute; inset: -2px; border-radius: inherit; border: 2px solid var(--accent); opacity: 0; }
+.gr-deep .ua-ping { border-color: var(--accent-on-deep); }
+.ua-sheen { position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(100deg, transparent 42%, color-mix(in srgb, var(--paper) 24%, transparent) 50%, transparent 58%) no-repeat; background-size: 250% 100%; background-position: 200% 0; }
+
+/* a story made for a customer: their logo beside ours, after a quiet ×, in the footer and in the title and end lockups */
+#foot .fc { position: absolute; left: 112px; top: 0; height: 30px; display: flex; align-items: center; gap: 16px; }
+#foot .fc i { font: 400 20px/1 var(--sans); font-style: normal; color: var(--muted); }
+#foot .fcl { display: grid; }
+#foot .fcl b { grid-area: 1 / 1; display: flex; align-items: center; height: 30px; }
+#foot .fc img { position: static; height: 24px; max-width: 150px; object-fit: contain; }
+.ua-co-logo.white { filter: brightness(0) invert(1); }
+.ua-co { display: inline-flex; align-items: center; gap: 22px; vertical-align: middle; margin-left: 22px; }
+.ua-co i { font: 300 34px/1 var(--sans); font-style: normal; color: var(--muted); }
+.gr-deep .ua-co i { color: var(--on-deep-body); }
+.ua-co img { height: 46px; max-width: 280px; object-fit: contain; }
+.sc-title .ua-co { position: absolute; left: calc(var(--side) + 236px); top: 96px; height: 54px; }
+.sc-end .ua-co img { height: 72px; max-width: 360px; }
+.sc-end .ua-word:has(+ .ua-co) { vertical-align: middle; }

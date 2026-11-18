@@ -1,0 +1,242 @@
+# Components
+
+Tables, repeatables, forms, charts, cards and Copilot used the way they are built to be used.
+
+218 rules: P0 9, P1 71, P2 110, P3 28.
+
+## Contents
+
+- P0
+- P1
+- P2
+- P3
+
+## P0
+
+- Never mark a document verified, a payment paid or a request sent from a timer or a click; wait for the server answer.
+- With Camera face detection on, keep detectFace true; detectFace false with orientation set removes the shutter button.
+- Give a CommentInput a sendMessage action wired to onAddComment; the seeded empty actions list leaves no way to send.
+- Set a Comments block's assetId; without it reads work and every post, reply and delete silently does nothing.
+- Set aiAgentId on every Copilot and CopilotVoice; without it the block renders nothing at all.
+- Use only catalogue tokens in supportedFileTypes (text/plain, image/jpg); one unknown like .txt hides the whole block.
+- Write a Link's openInNewTab as {value:true}; a bare boolean takes the whole block down.
+- Write Slider and AxisIconPicker editable flags as {value:bool}; a bare true throws and takes the page down.
+- Keep a Table's columns key, even as []; a missing columns key makes the block throw.
+
+## P1
+
+- Define a primary key for tables.
+- Define a primary key for repeatables.
+- Enable message send Action for Copilot inputs.
+- Use 'sm' size for Copilot on mobile overrides. (mobile only)
+- Reimplement Icon with Card, Pressable or IconButton.
+- Ensure card components contain header and footer.
+- Pressable must include interactions, otherwise use Stack.
+- Tables should have pagination enabled.
+- Use Dynamic Pagination Total for Repeatables.
+- Pagination State Not Wired to Data Source.
+- Use an Image block for external images or graphics.
+- Rebuild identical hand-built sibling subtrees as one Repeatable, using literal `content.data` and `content.primaryKey`.
+- Chain actions after a form only on Submit form; Validate form always resolves, so a chained action runs even with empty required fields.
+- Every input that feeds a form's validity function re-runs it on change, so the last field picked can still enable submit.
+- No control or screen behind navigation shows Coming soon in a released app; build the flow or remove the entry point.
+- Give every Drawer and Modal an action that opens it and one that closes it; it starts closed and no key opens it.
+- Bind Export data to a real data source on native; the inline-array export does not work there. (mobile only)
+- Give every Pressable, Button, IconButton, Link or Chip outside a Form an event.
+- Read a CodeEditor's typed text from b_<id>['value'], never content.payload, which is only the seed.
+- Never pair a Button's type submit and formBlockId with a hand-wired submitForm onClick; one click submits the form twice.
+- Hang post-submit actions on the Form's onSubmit event; an onSubmit stored on a Button never fires.
+- Set a Button's type submit or reset together with formBlockId; either half alone does nothing.
+- Give an Avatar's content.data a type (image or icon) and always a fallbackText name; without it mobile renders no avatar.
+- Bind an AvatarGroup's rows at content.mappedAvatars.data and give its accessors field names, never {{ }} expressions.
+- Set a ButtonGroup's content.type to default or toggle explicitly; absent or misspelled renders a single dropdown.
+- Use a web Calendar view name that exists on web; timeGridTwoDay renders nothing there. (web only)
+- Write a Camera recording duration in milliseconds; 10 stops the clip almost at once.
+- Replace a new Carousel's five seeded example slides and delete their subtrees; don't append real slides after them.
+- Give a DYNAMIC Carousel a row template block, or it renders nothing.
+- On a DYNAMIC Cascader fill mappedOptions.mapping.value; without it no tree is built at all.
+- After repointing a Chart's data, map xAxisValue, groupBy and every series to fields the new source returns.
+- Fill every Chart series value with a real column; the builder's placeholder series2 resolves to nothing.
+- Store a Chart's chartType only through the whole-component transform; a lone chartType write leaves it unrenderable.
+- Map id and createdTime in a CommentList's mappedMessageDetails, or every row is dropped and the empty state shows.
+- Give a CommentList replyComment add-on an actions list and an inner id; without them the block or button vanishes.
+- Bind a Comments block's data to the data source expression itself, not a list of comment objects, or writes no-op.
+- Open a ContextualDialog from an event (showContextualDialog); dialogBlockId only anchors it.
+- Point a CopilotVoiceTranscripts or CopilotVideo copilotId at a Copilot or CopilotVoice on the same page.
+- Give a Copilot and its CopilotHistory the same chatSource spelled identically, or the history stays empty.
+- Set a Drawer's variant explicitly; absent renders the page form, an empty panel without a pageId.
+- Store FileUpload maxFiles and maxFileSize as whole numbers; a string or decimal silently means no cap.
+- Store FileUpload restriction and access keys flat on content, never under fileRestrictions or accessOptions.
+- List in allowedFilterFields every field a field filter control points at; others vanish in the published app.
+- Give every options form field its real options; one created without them ships three sample options.
+- Bind a dropdown field's foreignKeyReference dataSource to the list, not one record ([0]).
+- Store form field types as ids (STRING, BOOLEAN, FILE_UPLOADER, OTP), not the builder's labels.
+- Never leave an Image as type UPLOAD with missing or half uploadDetails; it renders empty space.
+- Bind KeyValue mappedFields.data to an array of rows and give each mapped field a type, or the block renders empty.
+- Keep KeyValue appearance.size set; the first mapped field added without it throws.
+- Set a hand-written Menu's type to exactly STATIC; anything else picks DYNAMIC and renders nothing without menuItem.value.
+- Wire MessageInput and CopilotInput events with a targetId that matches an action id; untargeted events never fire.
+- Point an OrganizationChart's primaryKey at a unique field; duplicates silently drop every later record.
+- Give a PAGE-paged Repeatable an addOns.page.total, or the footer renders nothing.
+- Point a Repeatable primaryKey at a field the row has; a missing field falls back to positions.
+- Give single-select options flat label and value keys, not name, text or id.
+- Bind a StepIndicator's content.source to the stepper's currentStep; absent shows every step pending.
+- Point a Stepper's defaultStepValue at a visible step's value; a label or hidden step leaves nothing active.
+- Fill mapping keys (stepMappings, mappedTab, menuItem, options.label) with field names, never display text.
+- Wire an onClick event to every Table row action id; a row action carries no behaviour of its own.
+- Set a Table's gridLineAxis when row selection is on; absent breaks the selection column.
+- Add Table bulk actions only with MULTIPLE row selection; SINGLE or NONE never shows the bulk bar.
+- Fill every Tab's panel; a tab left on __PLACEHOLDER__ shows a blank panel.
+- Write every Timer value in milliseconds and the mode as a bare string, re-setting start and end when switching mode.
+- Write controlMediaUploads maxFileSize in megabytes; a byte count means no limit.
+- Don't use pickFromGallery on web; it throws there, use uploadFiles. (web only)
+- Include an image type in supportedFileTypes on capturePhoto, or every captured photo is rejected.
+- Give exportData a literal fileName without extension, a fileType, and a sheetName under 31 chars with no slash.
+- Match copilot and platform automation properties_type to the seeded record byte for byte, case included.
+- Give every CURRENCY value a currencyCode; without it the amount renders with no symbol.
+- Don't use BottomSheet or controlBottomSheet on web; a bottom Drawer is a side drawer on desktop. (web only)
+- Give a Calendar in events mode events.data plus id, start and end mapping paths, or no events draw.
+
+## P2
+
+- Enable pagination for repeatables.
+- Enable pull-to-refresh when using pagination. (mobile only)
+- Avoid Using Index as Primary Key When Sorting Is Enabled.
+- Paginate a nested table once it passes 50 rows.
+- Use a time x-axis only when the data holds epochs; otherwise Category.
+- Don't set barWidth on a chart with a dynamic size.
+- Use the x-axis value for the first dimension and groupBy for the second.
+- Tally block types first; flag a large page using only 2-3 types, usually `stack` and `typography`.
+- Flag a complete screen at or under `composition.md`'s block-type-diversity floor.
+- Flag 2+ `stat-card` blocks with no non-stat-card content block beneath them.
+- Flag a `stat-card` or repeated row with no container ancestor.
+- Right-align number and money columns, left-align text, centre nothing; headers align like their column.
+- Flag any large, low-diversity page with no justification line in the report's notes.
+- Flag a list whose spec names a per-record action but has no affordance wired to it.
+- Flag a list the spec calls grouped or filtered that has no real filter or grouping control.
+- Flag a page whose whole body is one row of same-size icon-heading-text `card` blocks.
+- Make a Table's first column a name a person reads, not an id.
+- Round numbers shown for a quick look ($3.8M), keeping the exact value in the record.
+- Show bulk actions only after rows are selected; show an active filter as on, with a clear.
+- Put form labels above fields in one column, never a placeholder as label; mark the smaller group.
+- Put a form error next to its field, saying how to fix it and keeping the input.
+- Check the hand-rolled shape table against every page's outline before judging any single block.
+- Name the replacement block and confirm it is in this app's catalog; `stepper`, `timeline`, `tag`, `statcard` are web-only.
+- Read the replacement block's sheet before proposing it, including tab items and pane binding.
+- Cite parent `blockId`, child count, repeated componentType sequence and `displayName` numbering as evidence.
+- Don't flag a fixed small layout that will never be state- or data-driven.
+- Check the form actually does what it promises.
+- Give every interactive-looking control a real handler, judged by integration stage.
+- Put no editable column inside a nested table's detail columns; edits work on outer columns only and need a primary key and a field key. (web only)
+- A form that can turn read-only has its submit hidden or disabled then; a read-only form never validates or submits.
+- Bind a Nested Table column's Has Children to a field so rows without detail show no expand arrow. (web only)
+- Set min and max on date and range inputs and enforce them in validation too; Min above Max is rejected.
+- One tap, one handler: a row event and its child checkbox event must not both flip the same variable.
+- Verification code screens submit on the last digit or paste, show a resend timer, and have wrong and expired states.
+- Test phone, email and ID validators with valid and invalid samples; never hardcode a country code that ignores the picker.
+- Before deleting a lookup option, count the records using it and tell the user.
+- Give every chart a tooltip, and a chart with 2 or more series or slices a legend or slice labels.
+- Use a Select to choose a value and a dropdown menu to fire actions; never a button with a hand-built popover.
+- Use at least 2 block types beyond stack, typography and divider on a complete screen (not a drawer, modal or one-field edit).
+- Show a record's current state in its list (status badge, grouping by state, or stepper-v2) when it moves through named states.
+- Replace Stacks drawn as bars, lines or axes at fixed positions with a Chart block bound to data.
+- Keep one primary button per form; every other action takes a secondary variant.
+- Keep a status set to 5 or 6 values, each drawn the same way on every page.
+- In a grid-layout table let the main column grow and set grow false on the rest, so no empty filler column shows. (web only)
+- Set rowHeight comfortable on a table with a TEXT_DESCRIPTION column; compact clips the second line to nothing. (web only)
+- Show money as a CURRENCY column with addOns.currencyCode, right-aligned. (web only)
+- Put the main action in the region whose data it uses, and show a row action only on rows that allow it.
+- List a Typography, Card or Button custom tooltip block in its parent's slots; a slot block missing there shows no tooltip.
+- Pick a TIME field timeStepSize that divides 60; phones round the stored time onto the step and web does not, so they disagree.
+- Set CodeEditor content.editable and content.lineNumber explicitly; absent means read-only and no line numbers.
+- Fill the content slot when a Button's contentMode is custom, or it renders empty.
+- Give an Alert's linkText a linkUrl beside it, or no button is built and the label is dropped.
+- Use the Barcode CODE128 format for arbitrary text; EAN13, EAN8, UPC and ITF14 draw nothing for non-digit values.
+- On a mapped ButtonGroup set initialSelectedItemIdForMapped, not initialSelectedItemId, which it never reads.
+- Don't rely on a Camera's gallery or torch button on web; both render and do nothing there. (web only)
+- Write booleans as booleans; a string "false" in a flag like showDivider is truthy and turns it on.
+- Write a draggable Card's data as an object; a plain string spreads into character keys on drop.
+- Point a Chart series' path and originalPath at the same column, or data point clicks hand actions the wrong field.
+- Keep a distribution Chart's keys to its own chartLayout; HONEYCOMB with rows or columns draws nothing.
+- Start a Checkbox checked only with the string "true"; "1", "yes" or "TRUE" leave it unchecked.
+- Make sure a Chat block's chatId resolves; an id naming nothing looks exactly like an empty new conversation.
+- Set Comments content.source to mapped before filling its slots, or the slots never render.
+- Give mention add-ons (userMentions) data and field mappings; an empty {} opens a picker with nothing in it.
+- Give a CopilotInput sendMessage action shown as a label a displayLabel, or the button renders with no words.
+- Keep Copilot keys to its variant: aiAgentId only on AI_AGENT, conversationType only on LIVE_CHAT.
+- Store Divider orientation, height, width and style under appearance with an explicit orientation; content copies draw nothing.
+- Don't set pageId on a card-variant Drawer; the slot renderer never reads it.
+- Set a Drawer's hideOnClickOutside explicitly; absent means off on side drawers and on for bottom sheets.
+- Pair Drawer snapPoints with heightMode snapPoints on a bottom sheet, with each value a bare numeric string.
+- Point a FileUpload template file at a fetchable url; source file renders nothing.
+- Keep at most one data, date, search, sort or ai control per Filters block; the later one wins and the earlier is blank.
+- Store Filters persistFilters flat on content; under interactions it is read by nothing.
+- Fill mappedInitialValue, not initialValue, on a mapped filter control; give a date filter initialValue a preset.
+- Pre-select at most one quick filter chip per type; a second chip of the same type is ignored.
+- Clear both content.readonly and appearance.readOnly to make a Form editable; they are OR'd.
+- Use a full format token in a DATE_TIME field's displayFormat; DATE shorthands like Mdy render digits with no separators.
+- Pick a date displayFormat the user can type back; it is also the parse grammar.
+- Pre-fill a file uploader field with a file object, never a URL string, which shows nothing.
+- Set decimalPlaces when using a number field's decimal add-on; without it the add-on never runs.
+- Give an ARRAY field with an options entry type (dropdown, radio) its options inside the entry, not on the field.
+- Give a currency field with a locked code a default.currencyCode, or it locks onto the list's first currency.
+- Use a RADIO or dropdown, not a switch, when "not answered" must differ from "no"; a switch always submits a boolean.
+- Set an Icon's appearance.variant explicitly; absent renders the filled featured shape.
+- Hide an Image with block visibility, not an empty src, which leaves an empty box.
+- Store an Image's objectFit with the object- prefix; a bare cover or contain stretches the picture. (web only)
+- Spell LiveCollaborators entityType the same as the rest of the app for that record, or users join different rooms.
+- Give a Lottie content.data a type, use animationType loop to repeat, and never ship autoPlay false.
+- Give each Marquee item a unique value and its own blockId.
+- Point a MessageInput chatId at the linked Chat block's id, not a case id.
+- Store a Module's rememberStateWhenHidden flat on content; under interactions it is ignored.
+- Give PDFViewer highlightCoOrdinates a list using pageNumber, x1, y1, x2, y2 and a highlight backgroundColor.
+- Give a Repeatable a content.primaryKey before relying on sortable; without it the list renders static.
+- On a range Slider use defaultStart and defaultEnd; defaultValue is never read.
+- Store a StatCard trend value as a number; a formatted string like "+9.9%" renders no pill at all.
+- Bind a StepSeparator's source to the stepper with a {{ }} and give it a borderWidth; a literal object never updates.
+- Store StepperV2 allowClickNavigation and step icon keys flat, not under interactions or iconStyle.
+- Don't leave hand-written columns on a Table with columnType mapped; they are dropped.
+- Don't configure sub-rows and a detail panel on one Table; sub-rows win and the panel never shows.
+- Turn a Table's top toolbar on before adding customActions; don't mix filter/sort/search switches with primaryActions.
+- Choose the opening tab with defaultValue (defaultValueForMappedTab on mapped), never content.value.
+- Wire an action that hides a dismissible Tag on onDismiss; dismissing alone only fires the event.
+- Set a custom Timeline's type to lower-case custom and its user as an object with name.
+- Set Typography content.type for markdown or HTML (PLAIN_HTML to render as written); absent renders plain text.
+- Give a TreeView a primaryKey when it has more than one level or drag-and-drop, and a nestedDataKey holding an array.
+- Give a Progress Circle a styles.height and a gauge an explicit max; set a label when min/max are not 0/100.
+- Map a media viewer's url through the object form and bind its source to an array; a string field name becomes every url.
+- Give downloadFile a fileName and the platform's file url, never a file id or hand-built path.
+- Don't put a Button, Link, Checkbox or Toggle inside a clickable Stack or Card expecting both to fire; the child's click stops there.
+- Store PERCENT values as the number to show (9.9 for 9.9%) and TIME values in milliseconds.
+- Never set a text transform on ids, codes or URLs; it splits words and drops punctuation.
+
+## P3
+
+- Avoid using inline thoughts layout.
+- Use dual axes when series differ a lot in magnitude.
+- Fill or remove composite slots left as `__PLACEHOLDER__`.
+- Build repeated rows from Stack + Typography, not a Card.
+- Merge two Typography blocks holding one sentence only when already editing that block.
+- Replace a Card used as a plain box with a Stack.
+- Give one table column Grow when the columns do not fill the width; otherwise an empty column shows at the end. (web only)
+- Set a maximum length on text inputs bound to bounded fields, and say the limit beside the field.
+- List the same kind of data with the same column order and row actions on every page.
+- Use icons from the platform icon set, never emoji or plain characters standing in as icons.
+- Order table columns by importance, with related columns side by side.
+- Size each form field to its expected answer, not full width for a short value.
+- Give a long form an error summary at the top as well as each error beside its field.
+- Prefer bar and line charts over pie charts.
+- Draw table lines between rows only (gridLineAxis xBetween), not the default dark line on every cell. (web only)
+- Turn off a web Video's download with content.allowDownload false, not custom CSS; on the phone the key does nothing. (web only)
+- Make a button taller with a bigger size, not a height; the size caps the height of solid, outline and soft buttons.
+- Give a floating Drawer an explicit floatingOffset; the builder default is never stored.
+- Write TextInput, Password and PhoneNumber autoFocus as {value:true}; TextArea takes a plain lowercase autofocus boolean.
+- Set Table pageSizeMode to a non-fixed mode when giving pageSizeOptions, or no picker appears.
+- Hide a Tag, Typography or Image with block visibility, not by clearing its label or value.
+- Use RoutineEditor mode edit, not create, to prefill from a routineId.
+- Give a dropdown option with showBadge a badgeValue; without it no badge renders.
+- Don't rely on Copilot content.welcomeText; the empty state never reads it.
+- Set Copilot maxPollDuration only with shouldPollInfinitely false; it is read only then.
+- Pair decimalPlaces with padDecimalPlaces true when number columns must line up.
+- Give a StatCard with enableTrendColor a thresholdValue to compare against.
+- Keep form field show/hide chains shallow; chained visibility resolves in at most 8 passes.

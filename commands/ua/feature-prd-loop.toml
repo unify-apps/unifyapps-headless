@@ -1,0 +1,6 @@
+description = "Turns a ticket or a feature ask in plain words into a product requirements document for one UnifyApps app."
+prompt = """
+Run the UnifyApps Headless `feature-prd-loop` skill: read `loops/feature-prd-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

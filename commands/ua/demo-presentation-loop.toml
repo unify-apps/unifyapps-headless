@@ -1,0 +1,6 @@
+description = "Makes an animated HTML presentation from a client's material, end to end, in the UnifyApps theme by default - one self-contained file that steps through each scene build by build, with speaker notes, "
+prompt = """
+Run the UnifyApps Headless `demo-presentation-loop` skill: read `loops/demo-presentation-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

@@ -1,0 +1,6 @@
+description = "Stage one of a UnifyApps AI agent."
+prompt = """
+Run the UnifyApps Headless `ai-agent-scope-loop` skill: read `loops/ai-agent-scope-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

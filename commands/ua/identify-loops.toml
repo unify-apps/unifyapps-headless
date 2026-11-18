@@ -1,0 +1,6 @@
+description = "Turns work done in one or more Claude Code sessions into a reusable loop."
+prompt = """
+Run the UnifyApps Headless `identify-loops` skill: read `skills/identify-loops/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

@@ -1,0 +1,25 @@
+{
+  "name": "unifyapps-headless",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "opencode/index.mjs",
+  "exports": {
+    ".": "./opencode/index.mjs"
+  },
+  "description": "Build UnifyApps solutions from your AI coding agent",
+  "license": "Elastic-2.0",
+  "homepage": "https://github.com/unify-apps/unifyapps-headless",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unify-apps/unifyapps-headless.git"
+  },
+  "scripts": {
+    "cli": "node scripts/ua.mjs",
+    "test": "node scripts/smoke-test.mjs",
+    "validate": "claude plugin validate ."
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

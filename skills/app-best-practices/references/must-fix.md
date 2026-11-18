@@ -1,0 +1,804 @@
+# Must fix: P0 and P1
+
+Every P0 and P1 rule, by area. A page you build or change meets each one that applies to the app type before you report it done.
+
+716 rules.
+
+## Contents
+
+- Configuration integrity
+- Data sources and queries
+- Performance and page weight
+- Custom code and expressions
+- Loading, empty and error states
+- Components
+- Layout, sizing and responsive
+- Navigation and routing
+- Theme, styles and branding
+- Security and access
+- Accessibility
+- Naming, copy and localisation
+- Intent and simplicity
+- How it is built
+- Files and uploads
+- Export and print
+- Objects the app binds to
+- Automations the app calls
+- Agents the app calls
+- Mobile only
+
+## Configuration integrity
+
+- Delete unused page variable from the page for better performance.
+- Delete unused page function from the page for better performance.
+- Delete unused page data source from the page for better performance.
+- Delete unused page blocks (check switched off in the builder).
+- Remove deprecated CodeEditor content binding.
+- Give blocks, variables and functions on a page unique names.
+- No dangling references in the dependency graph.
+- Remove duplicate page slugs and duplicate sibling segments.
+- Place every page the tree reports with a null address.
+- Reconcile any `parentId` that disagrees with the parent's `children` array.
+- Attach segments the root can't reach, and pages holding a slug no segment holds.
+- Check config arrays like a Carousel's `items[].blockId` before calling an outline `unreferenced` block an orphan.
+- Switch `header_id` / `footer_id` visibility on after filling them.
+- Replace deprecated block types.
+- Every cross-reference id resolves: navigation, action payloads, parentId, slots, dpOn paths.
+- Data source references resolve by id or by name.
+- Every block is reachable from body, header or footer.
+- No cycles in parentId chains.
+- Every data source dpOn names blocks that still exist.
+- Treat `Handler with ID … already registered` as module double-mount noise until config shows a real duplicate.
+- Keep the platform prefix on block ids; an id like startWithEntityDataTable drops out of dependencies, so its source never refetches.
+- A Module block nested in another module names the module's interface (moduleInterfaceRecordId or moduleId$$interfaceId), not a bare id.
+- No block lists the same child id twice in content.blockIds.
+- A saved dependency list (dP, dpOn) never names the block itself or a runtime-only path such as currentData[1].role.
+- After cloning an app, check its custom login, signup, MFA and password pages use the clone's ids and the clone has a domain mapping. (web only)
+- No image, icon or font URL points at another tenant, environment or localhost; host every asset on the app's own tenant.
+- A module embedded from another app runs that app's deployed version; publish it before the host or the host shows old behaviour. (web only)
+- Every embedded module id resolves to a live, published module; a deleted module fails with a 500 on each page load. (web only)
+- Host every image on the app's own tenant: no other-environment links and no data: image values in blocks or variables.
+- Get every page and every automation it calls above a Best Practice score of 90 before review; treat 90 as a floor.
+- Place no visible blocks on the global page; its blocks render nowhere.
+- A public page never reads global-page variables or functions; they read as nothing there. Keep its constants on the page.
+- Never put a header, menu or banner block on the global page; it is stored and never drawn.
+- Copy every enum and token value exactly as its sheet gives it; an unknown value is silently ignored.
+- Remove duplicate rows from CSP lists, app variants and Pusher channels or events; a duplicate Pusher event runs its actions twice.
+- Compare a Stepper's activeStepId or a Tabs' activeTab only to a value its own steps or tabs list; any other never or always fires.
+- Keep the same child list under every block on every device; per-device overrides change props, not the tree.
+- Store closed-set keys (variant, type, mode) as one of the values the block's sheet lists; others store and render wrong silently.
+- Pass a Drawer, Modal or ContextualDialog only the inputs its target page declares; other names are silent no-ops.
+- Keep action and option ids stable when editing in place; every event pointing at the old id stops firing.
+- Keep every Form field present in schema, layout and ui:order together; a field in only one half half-exists.
+- After renaming a form field key, update every binding that named the old key; nothing follows the rename.
+- After turning on multipleFiles, index every binding to that field ([0]); single-file paths stop resolving.
+- After switching a slider or date field to range, update bindings; the value becomes an object.
+- Remove a stored appearance.disabled: true the panel can't show unless the button is meant to be dead.
+- After repointing a Modal, Drawer or Module at another page, rewrite its inputs for the new target.
+- Set both moduleId and moduleInterfaceRecordId on a Module embed; moduleId alone does not load.
+- Set both templateComponentId and templateInterfaceRecordId on a TemplateComponent, copied from one options row.
+- After repointing a TemplateComponent, rewrite its inputs, overrides, slots and inbound event ids.
+- Spell event types exactly as the block declares them (onClick, not OnClick or on_click).
+- Write controlModal, controlDrawer and controlMediaUploads operation explicitly; the builder default is not stored.
+- Point controlDrawer at a Drawer on the same page as the trigger, and controlModal at a real Modal block.
+- Use operation values like setLanguage or logout inside controlUser, never as the actionType.
+- Write variableId and functionId as literal ids; a {{ }} there never resolves and the action dies silently.
+- Point submitForm formId at an existing Form block; a stale id runs onSuccessActions over a form that never submitted.
+- Reference entities in bindings by id (var_x, func_x, e_x, b_x), never by display name; a name fails silently.
+- Read a module's output off the Module block id and its inputs inside as pageInputs; wire each outbound event by eventType.
+- Embed another app's module with moduleId <moduleId>$$<interfaceId>.
+- Send a TemplateComponent or Module inbound event only by a name it declares; a missing inboundEvent fails silently.
+- Omit targetId on block-level handlers and copy column and field target ids from the block; a miss never falls back.
+- Never store both content.blockId and content.blockIds on one block; the next save deletes every child in the list.
+- Keep a Repeatable's row template out of every parent child list, or it renders twice.
+- Use only slot keys the block declares; an invented slot key's subtree is deleted on the next save or builder open.
+- Build page content inside root_id; a second root Stack is never rendered.
+- Keep event definitions in page.events and handlers in interactions.events; the wrong shape in either is dead.
+- Point page layout.body, header and footer at existing blocks (root_id, header_id, footer_id); a missing body id renders blank.
+- Give every declared page output a matching entry in output; a declaration alone publishes nothing.
+- After renaming a page input, update every link, embedding block and binding; nothing follows the old name.
+- Don't set isTemplate on a working app page; it hides the page from the app while still routing to it.
+- Point integrations.copilotChat.interfaceId at a separate COPILOT app, never the current app.
+- Never store visibility or enabled as {value:'conditions'} without a conditions payload.
+- Never bind a data source's previewResult; it is filled only by builder preview runs and empty in the app.
+- Give page-input reads a fallback unless the inputSchema layout carries ua:valueSemanticsVersion 2; defaults skip published apps.
+- Read inputs inside a module or template component from pageInputs; pageParams of the host are never passed in.
+- Store block visibility only at block.visibility; a condition under component or appearance is ignored and the block always shows.
+- Don't call controlBlockMethod from a host on a block inside a module; drive it through module inputs and events.
+- Fill every key a block's chosen mode requires (mapped mode its mapping, page variant its pageId, snapPoints mode its points).
+
+## Data sources and queries
+
+- Disable run on page load for automatic data sources.
+- Use manual data sources for nested tables.
+- Don't trigger a data source right before a Go to Page action.
+- Run periodic queries no more often than every 5 seconds.
+- Use debounce, not delay, for onChange data source triggers.
+- Delete and update mutations are constrained by a record id or filter.
+- Use `['context']['item']` inside rows and `['selectedItem']` in the Repeatable's own events.
+- Point every Table column over a Storage source at `properties.<field>` in its `fieldKey`.
+- Trigger one network refresh per interaction: one `setPageVariable` `MERGE`, no extra `controlDataSource`. (mobile only)
+- List fetches set paginateBy and a limit; MULTIPLE without a limit is unbounded.
+- Dependent reads refetch after a create, update or delete.
+- refetchOnWindowFocus off for mutations and reference data.
+- Fetch unchanging data once: no per-tap automation for local compute, no needless refetch, cache lookups. (mobile only)
+- Each data source answers the question the screen asks.
+- Aggregate at the source, not in a page function over thousands of rows.
+- A selection-driven refetch never re-downloads an unfiltered heavy source.
+- Callable data sources bind to a deployed automation; a saved but undeployed one fails at run time while the build looks fine. (web only)
+- A page never falls back to a hardcoded demo user, record or file when its input id is missing; show a not-found state.
+- Run filter, search, sort and counts in the source query; a client-side function over a capped page hides records.
+- A list source's limit and offset must be exactly the list's pagination pills; any wrapper expression turns paging into one fetch. (web only)
+- A variable copied from a page or module input is re-synced when the input changes; validation reads the live source, not the stale copy.
+- Handle a mutation's outcome in its onSuccess and onFailure; sibling actions after the trigger run before the answer exists.
+- Filter keyword fields with EQUAL or IN; CONTAINS on a keyword field in a storage fetch silently narrows to the viewer's own records. (web only)
+- Inside a Table CUSTOM cell or Repeatable row, read a cell block's value from the row context or event, never b_<id>['value']. (web only)
+- A source that reads variables or blocks not set yet on load carries a disable condition until its inputs resolve. (web only)
+- A list source has no silent 200-row default cap; set paginateBy, limit and a pager or rows past the cap vanish. (web only)
+- Keep holds, lockouts and expiry deadlines in a server-owned record; a page-variable timer restarts on reopen and blocks nobody.
+- Refetch a page's main source on page focus when its data changes on another page, skipping the first open; native keeps old pages mounted. (mobile only)
+- Filter page reads of tables that grow every day by date, with a default range when the user picks none.
+- Resolve related names from one loaded list mapped by id; never one request per row.
+- After a write, also refresh other sources the page derives from it, such as an audit trail or a count.
+- Write a file into a file-uploader field as the file descriptor object, never a bare URL string; a string stores {}.
+- Never store a file as base64 in a record field; store the uploaded file's URL or descriptor.
+- Write the record only after the upload finishes; never save a preview blob: URL.
+- Filter rows in the data source, never by fetching everything and filtering in a page function.
+- Check every label a state binding picks against the row's real values; state names that don't match the data show wrong labels.
+- Put a callable's inputs under inputs.parameters; inputs left under callable_loader are stored but never read.
+- Turn refetchOnWindowFocus off on a source whose onSuccess sets page variables; each return to the tab resets that state. (web only)
+- Run a data source that calls a writing automation as manual, never automatic.
+- Never bind a page variable in an app-scoped data source; an app-level binding reads only global variables.
+- Filter a storage fetch only through inputs.triggerInputCondition in its documented shape; any other shape silently returns every row.
+- Totals computed from fetched rows count only the fetched page (limit 20 by default); compute totals at the source.
+- Replace a layout's literal sample in content.data with a real binding before release; sample rows on screen prove nothing.
+- Navigate or show a success toast only in the write's onSuccess, never earlier in the same chain.
+- Every data source calls a deployed callable whose inputs match its parameters by name and type.
+- Every bound path exists in its source's output schema.
+- A refresh timer triggers only its region's source, never every source or one whose onSuccess sets page variables.
+- Leave no sample people, numbers or dates from the design where a source's data belongs.
+- Never bind an editable input's default or seed value to a source that refreshes; each refresh overwrites what the user typed.
+- Bind a FileUpload uploadFolderPath to a record, user or date; a constant path makes each upload replace the last.
+- Bind a Filters block's value into each consuming source's filter input; listing sources in dataSourceIds filters nothing.
+- Give an entity Form an action, or submit reports success and writes nothing.
+- Don't wire your own save onto an entity Form's submit; it already saves the record, so a second write duplicates it.
+- Keep a Form's initialFormData to field keys only; an extra key like a record id makes submit fail and onSubmit never runs.
+- Don't test an untouched form checkbox or toggle for false; it submits no key at all.
+- Never give a form option the value 0 or empty string; it is replaced by the label.
+- Give form options explicit value and label when anything matches on value; bare strings get camel-cased values.
+- Give a phone field a default country when the code is hidden; the submitted dialCode is otherwise 91 for everyone.
+- Bind a Repeatable, TreeView or Table data to the record list, never the response envelope object.
+- Give a Table with editable columns an identifier; without it every edit is thrown away.
+- Wire an onSave handler to a Table's saveAction add-on; without it inline edits are lost on reload.
+- Keep an entity Table's inputs bindings; clearing them disconnects the toolbar filters from the server.
+- Use controlDataSource method trigger only; refresh, run or reload run nothing.
+- Don't add queryKeyPrefix to an ordinary trigger; its result is filed under another key and every binding reads nothing.
+- Use deleteFile per file, not resetMediaUploads, to remove one block's files; reset clears every block on the page.
+- Write Razorpay amounts in the smallest unit (paise); 100 is one rupee.
+- Point exportData at a data source on this page to export all records; a bound visible-rows list exports only the browser view.
+- Use REMOVE with a key, never CLEAR, to drop one local storage value; CLEAR wipes every key the app stored.
+- Filter long lists on the server (triggerInputCondition or searchField); a {{ }} filter over fetched rows sees one page.
+- Store a data source's resolvedFilter.filter as a string binding and IN lists flat; a nested list returns zero rows.
+- Make a source page-scoped when its limit or offset binds to a Table or Repeatable's pagination state.
+- Read fetch-records rows at data.objects and the total at data.total; never bind an invented result field.
+- Run data-dependent work on the source's onSuccess, not onPageLoad; page-load queries are still outstanding there.
+- Don't seed a page variable's initialValue from another page variable; it reads nothing at init.
+- Seed boolean variables with "true" or "false" only; "0" or "no" start as true.
+- Send only uploaded files: filter mediaUploads on isUploaded before passing urls to a data source.
+- Inside a row template read sibling blocks by plain id; never assemble runtime block ids from a row index.
+- Trigger a manual source before a block needs it, and use queryDisabled to hold an automatic source with empty inputs.
+- Bind an infinite Repeatable's source limit and offset to exactly its pagination pills; any expression around them stops paging.
+
+## Performance and page weight
+
+- Remove always hidden blocks.
+- Keep action delays at 200 ms or less.
+- Limit Number of Table Columns Displayed.
+- Limit the total number of blocks under 500 per page.
+- Keep data sources under 50 per page.
+- Keep each page at or under 100 data sources (hard cap).
+- A hidden subtree of tens of blocks, or one bound to a heavy query, still ships.
+- Keep block inputs plain references: no functions, array methods or `{{ }}` over 200 characters. (mobile only)
+- Keep on-load data sources below 2 (blocking at 5+); merge sources hitting the same automation. (mobile only)
+- Serve static images as WebP at 1×-2× the box, under 200 KB, with width and height set. (mobile only)
+- Past 160 blocks, defer below-the-fold heavy regions behind a 150-300 ms `onPageLoad` variable or Tabs. (mobile only)
+- Search and filter inputs debounce 250 to 500 ms before refetching.
+- No more than 3 sources run on page load, fewer if synchronous.
+- No base64 or data: images, or large inline blobs, in block props or page variables; upload the file and use its URL.
+- A visibility or run condition that reads a variable nothing ever writes is a constant; the block is always hidden or always shown.
+- Hold only edited fields keyed by row id in a draft variable, never a full copy of every row.
+- Never cache approval state, stock, prices or a read that feeds a write.
+- Don't set a Repeatable's containerId while the list's own height is clamped; the render window freezes.
+- Don't set flags.shouldUseBuiltDependencies true on a hand-assembled page; bindings stop updating.
+
+## Custom code and expressions
+
+- Custom CSS should be valid.
+- Fix custom CSS marked invalid before publishing.
+- Fix custom CSS the save marked invalid (`additional.isCustomCSSValid: false`).
+- Make a page function read its source in the body as `{{ e_<dsId>[…] }}`, so `dataSourceIds` is non-empty.
+- Store flags as condition objects, never a raw `{{ a && b }}` string.
+- Test array emptiness with `.length == 0`, not an is-empty check.
+- Remove IIFEs and parser-breaking filter operators from bindings; move aggregation into a page function.
+- No early return followed by more logic.
+- No window.open or document access in functions; use platform actions.
+- Page-load code never reads block state before blocks mount.
+- Variable types match their use (no .map on a string).
+- Visibility operators and values match the bound property's type.
+- Never leave `{{ }}` layout arithmetic inside display text.
+- Never put a // comment inside a {{ }} binding; it silently empties the value. (web only)
+- An automatic page function must not read a manual data source; it loses the dependency and goes blank after each refetch. (web only)
+- No literal date or timestamp stands for today or now; compute it at run time in the user's time zone, not UTC.
+- Mint record numbers on the server and show the returned code; never build them in the page with random, Date.now or count + 1. (web only)
+- For a paginated source test emptiness on totalRecords or the first row's id; the pager wraps an undefined list as [null] so length is 1. (web only)
+- Page and app scripts may reach only user, customer, environment and modules; they cannot read blocks, variables or sources. (web only)
+- Write controlBlockMethod's methodName as a literal; a binding there matches nothing and the step does nothing.
+- No async work (await, fetch, a promise) inside a binding; bindings are synchronous.
+- Read a page function as func_<id>['value']; never call it with ().
+- Never rely on a set-value action to fire the target's onChange; programmatic changes fire no user event.
+- Treat platform dates as epoch milliseconds, never seconds; a date-only string means midnight UTC.
+- Never read document, window, localStorage or fetch in a {{ }} binding; read-only evaluation answers undefined for all of them. (web only)
+- Wrap a condition stored in appearance.disabled, readOnly or loading as {type:'filter',payload}; a bare group is truthy forever.
+- Write a disabled condition for when the control should NOT work; an inverted one kills it exactly when it is needed.
+- Treat a date field's epoch value as milliseconds when passing it on to an API.
+- Never carry a {conditionalValueFilters, defaultValue} wrapper into appearance.disabled; it is not collapsed there and stays truthy.
+- Gate a stepper's Next action with a runCondition; allowNavigation only blocks clicking the track.
+- Match stepper visibility conditions on a step's value, never its label or an invented id.
+- Write an IN or NOT_IN list as a {{ [...] }} binding; a raw JSON array is wiped the first time a maker opens the condition.
+- Use only operators in the condition menu; an unknown one like ICONTAINS throws and the whole condition tree reads false.
+- Put page-state logic in {type:'filter'}; a {type:'boolean'} payload holding an expression string always reads true.
+- Store a runCondition as a condition object; a bare string fails silently.
+- Don't let a later action depend on a debounce or throttle node; those run unawaited and the next one can't see their work.
+- Write emitPageEvent eventType verbatim from the page's declared events, never as a binding or invented key.
+- Signal executeScript failure through a page variable; a throw inside the script is caught and onErrorActions never fire.
+- Reference entities in scripts by id, never by display name, and never put {{ }} inside a script string.
+- Guard importObjects with a runCondition on objectId; an empty id stalls the whole chain silently.
+- Use SET_IN and path for session storage, SET and key for local storage; the wrong vocabulary stores nothing.
+- Give every setPageVariable an operation valid for the variable's type; absent or misspelled silently does nothing.
+- Wrap a single item as {{ [item] }} for array APPEND or PREPEND; a bare item is rejected and the array unchanged.
+- Guard shareEntityRecord with a runCondition on entityId; an unloaded id reports success with no dialog.
+- Never return a Promise from a page function; it becomes undefined with no error, so do async work in a data source.
+- Gate a button on a validator with NOT_EQUAL "true", not EQUAL "false"; before the first run the value is undefined.
+- Trigger a manual validator after each field write and on onPageLoad; it never runs by itself.
+- Guard every level of a nested binding read with ?.; a missing key voids the whole expression, its fallback included.
+- Test deviceContext biometric.available, not the biometric object, which is truthy on every web page.
+- Compare envVariables against strings ('5', 'true'); a number or boolean comparison is always false.
+- Format dates with MM for month (not mm) and pass values with a time; a date-only value prints a day early west of UTC.
+- Never call utils.downloadFile from a displayed binding; it fires on every recompute.
+- Read a block's own value in its handlers as b_<id>['value'], never self, this or bare value, which clear silently.
+- Use only preset names in formatDateByFormatType and convert ISO or epoch text to a Date first; relative presets throw on the wrong text.
+- Use /* */, never //, for comments inside {{ }}; bindings are joined onto one line and // empties the value.
+
+## Loading, empty and error states
+
+- Add empty state condition when using empty state slot in tables.
+- Gate every data region with a `CONTENT` Loader shown when neither `data` nor `error` exists; render chrome immediately. (mobile only)
+- Bind `appearance.loading` on source and submit buttons, and add `showNotification` on success and error of writes. (mobile only)
+- Give every data region an empty state tested by length and an error state on `['error']`. (mobile only)
+- Every data-bound block has a fallback or an error block driven by failureEvents.
+- Mutations have onErrorActions or the source has failureEvents.
+- Show the empty state only when the source succeeded; a failed or refused answer never reads as no items yet.
+- After a successful submit, close the modal or reset the form, and disable submit while the write runs, so no duplicate booking.
+- Guard each create or save tap with a runCondition on the source's isLoading and send a client request id so repeats are ignored.
+- Bind each upload slot to the upload's uploading and error state (progress, failed, retry) and disable Continue or Save while any upload runs.
+- Format-check every field whose name implies a format: email, phone of 7 to 15 digits, number in range, a real date.
+- Never clear a form's fields before its write resolves.
+- Remove a new Form's seeded 'Form submitted successfully' notification unless a real save runs before it.
+- Write and read a value pages share under one name in one store (app variable, session, local storage, page input) on every page.
+- Never bind appearance.loading to a value that stays true; the button never presses.
+- Reset the variable bound to a ConnectionFormModal's isOpen in On Close; it opens on change, so a leftover true never reopens it. (web only)
+- Set resetFormWhenHidden false on a Form inside a Modal or Drawer whose typed values must survive closing it.
+- Use a validation rule, not required, to force a box ticked or a toggle on; required passes when it is off.
+- Write form validationRules for the VALID state; a rule written for the invalid state passes every bad value.
+- Pair date field minDate and maxDate with dateRangeLimit, or out-of-range values from defaults or bindings submit.
+- Don't rely on required for an OTP field; a single digit passes, so validate the full length.
+- Give a CONTENT Loader styles.width w-full and a real height; a w-fit skeleton renders nothing.
+- Set a Table's isDataEmpty to a row-count test; unset shows the empty state forever, a missing-data test shows it before load.
+- Test emptiness on the bound row path plus ['length'], never data['length'] on the envelope or data MISSING.
+- Put a step that must not run on failure in the failing node's onSuccessActions; sibling actions run even after an error.
+- Hang refetch success toasts and retries on the data source's own onSuccess and onFailure, not on a controlDataSource node.
+- Check mediaUploads errors after an upload; maxFiles drops extra files silently and success fires on partial uploads.
+- Save unsaved input on the action that navigates away; there is no leave or unload event, except the Android back button a mobile page takes with the onPageBack trigger.
+- Give bindings on required page inputs a fallback or an on-page message; required stops no navigation.
+- Read upload failures from mediaUploads errors[blockId], never an entry's error or hasError.
+
+## Components
+
+- Define a primary key for tables.
+- Define a primary key for repeatables.
+- Enable message send Action for Copilot inputs.
+- Use 'sm' size for Copilot on mobile overrides. (mobile only)
+- Reimplement Icon with Card, Pressable or IconButton.
+- Ensure card components contain header and footer.
+- Pressable must include interactions, otherwise use Stack.
+- Tables should have pagination enabled.
+- Use Dynamic Pagination Total for Repeatables.
+- Pagination State Not Wired to Data Source.
+- Use an Image block for external images or graphics.
+- Rebuild identical hand-built sibling subtrees as one Repeatable, using literal `content.data` and `content.primaryKey`.
+- Never mark a document verified, a payment paid or a request sent from a timer or a click; wait for the server answer.
+- Chain actions after a form only on Submit form; Validate form always resolves, so a chained action runs even with empty required fields.
+- Every input that feeds a form's validity function re-runs it on change, so the last field picked can still enable submit.
+- No control or screen behind navigation shows Coming soon in a released app; build the flow or remove the entry point.
+- Give every Drawer and Modal an action that opens it and one that closes it; it starts closed and no key opens it.
+- Bind Export data to a real data source on native; the inline-array export does not work there. (mobile only)
+- Give every Pressable, Button, IconButton, Link or Chip outside a Form an event.
+- Read a CodeEditor's typed text from b_<id>['value'], never content.payload, which is only the seed.
+- Never pair a Button's type submit and formBlockId with a hand-wired submitForm onClick; one click submits the form twice.
+- Hang post-submit actions on the Form's onSubmit event; an onSubmit stored on a Button never fires.
+- Set a Button's type submit or reset together with formBlockId; either half alone does nothing.
+- Give an Avatar's content.data a type (image or icon) and always a fallbackText name; without it mobile renders no avatar.
+- Bind an AvatarGroup's rows at content.mappedAvatars.data and give its accessors field names, never {{ }} expressions.
+- Set a ButtonGroup's content.type to default or toggle explicitly; absent or misspelled renders a single dropdown.
+- Use a web Calendar view name that exists on web; timeGridTwoDay renders nothing there. (web only)
+- With Camera face detection on, keep detectFace true; detectFace false with orientation set removes the shutter button.
+- Write a Camera recording duration in milliseconds; 10 stops the clip almost at once.
+- Replace a new Carousel's five seeded example slides and delete their subtrees; don't append real slides after them.
+- Give a DYNAMIC Carousel a row template block, or it renders nothing.
+- On a DYNAMIC Cascader fill mappedOptions.mapping.value; without it no tree is built at all.
+- After repointing a Chart's data, map xAxisValue, groupBy and every series to fields the new source returns.
+- Fill every Chart series value with a real column; the builder's placeholder series2 resolves to nothing.
+- Store a Chart's chartType only through the whole-component transform; a lone chartType write leaves it unrenderable.
+- Give a CommentInput a sendMessage action wired to onAddComment; the seeded empty actions list leaves no way to send.
+- Map id and createdTime in a CommentList's mappedMessageDetails, or every row is dropped and the empty state shows.
+- Give a CommentList replyComment add-on an actions list and an inner id; without them the block or button vanishes.
+- Set a Comments block's assetId; without it reads work and every post, reply and delete silently does nothing.
+- Bind a Comments block's data to the data source expression itself, not a list of comment objects, or writes no-op.
+- Open a ContextualDialog from an event (showContextualDialog); dialogBlockId only anchors it.
+- Set aiAgentId on every Copilot and CopilotVoice; without it the block renders nothing at all.
+- Point a CopilotVoiceTranscripts or CopilotVideo copilotId at a Copilot or CopilotVoice on the same page.
+- Give a Copilot and its CopilotHistory the same chatSource spelled identically, or the history stays empty.
+- Set a Drawer's variant explicitly; absent renders the page form, an empty panel without a pageId.
+- Store FileUpload maxFiles and maxFileSize as whole numbers; a string or decimal silently means no cap.
+- Use only catalogue tokens in supportedFileTypes (text/plain, image/jpg); one unknown like .txt hides the whole block.
+- Store FileUpload restriction and access keys flat on content, never under fileRestrictions or accessOptions.
+- List in allowedFilterFields every field a field filter control points at; others vanish in the published app.
+- Give every options form field its real options; one created without them ships three sample options.
+- Bind a dropdown field's foreignKeyReference dataSource to the list, not one record ([0]).
+- Store form field types as ids (STRING, BOOLEAN, FILE_UPLOADER, OTP), not the builder's labels.
+- Never leave an Image as type UPLOAD with missing or half uploadDetails; it renders empty space.
+- Bind KeyValue mappedFields.data to an array of rows and give each mapped field a type, or the block renders empty.
+- Keep KeyValue appearance.size set; the first mapped field added without it throws.
+- Write a Link's openInNewTab as {value:true}; a bare boolean takes the whole block down.
+- Set a hand-written Menu's type to exactly STATIC; anything else picks DYNAMIC and renders nothing without menuItem.value.
+- Wire MessageInput and CopilotInput events with a targetId that matches an action id; untargeted events never fire.
+- Point an OrganizationChart's primaryKey at a unique field; duplicates silently drop every later record.
+- Give a PAGE-paged Repeatable an addOns.page.total, or the footer renders nothing.
+- Point a Repeatable primaryKey at a field the row has; a missing field falls back to positions.
+- Give single-select options flat label and value keys, not name, text or id.
+- Write Slider and AxisIconPicker editable flags as {value:bool}; a bare true throws and takes the page down.
+- Bind a StepIndicator's content.source to the stepper's currentStep; absent shows every step pending.
+- Point a Stepper's defaultStepValue at a visible step's value; a label or hidden step leaves nothing active.
+- Fill mapping keys (stepMappings, mappedTab, menuItem, options.label) with field names, never display text.
+- Keep a Table's columns key, even as []; a missing columns key makes the block throw.
+- Wire an onClick event to every Table row action id; a row action carries no behaviour of its own.
+- Set a Table's gridLineAxis when row selection is on; absent breaks the selection column.
+- Add Table bulk actions only with MULTIPLE row selection; SINGLE or NONE never shows the bulk bar.
+- Fill every Tab's panel; a tab left on __PLACEHOLDER__ shows a blank panel.
+- Write every Timer value in milliseconds and the mode as a bare string, re-setting start and end when switching mode.
+- Write controlMediaUploads maxFileSize in megabytes; a byte count means no limit.
+- Don't use pickFromGallery on web; it throws there, use uploadFiles. (web only)
+- Include an image type in supportedFileTypes on capturePhoto, or every captured photo is rejected.
+- Give exportData a literal fileName without extension, a fileType, and a sheetName under 31 chars with no slash.
+- Match copilot and platform automation properties_type to the seeded record byte for byte, case included.
+- Give every CURRENCY value a currencyCode; without it the amount renders with no symbol.
+- Don't use BottomSheet or controlBottomSheet on web; a bottom Drawer is a side drawer on desktop. (web only)
+- Give a Calendar in events mode events.data plus id, start and end mapping paths, or no events draw.
+
+## Layout, sizing and responsive
+
+- Give a chart using h-full or a percentage height a parent with a fixed height.
+- Give images in an export header or footer a fixed height.
+- Add at least minHeight or maxHeight for vertical repeatable.
+- Add at least min or max width for horizontal repeatable.
+- Set width and height on bound Images, `CONTENT` Loaders and progress blocks before data lands. (mobile only)
+- Put sticky CTAs in the footer socket, not as the body's last child.
+- Give a PAGE-mode Repeatable an explicit height or minHeight on itself or a parent; otherwise only the pager renders and rows are blank. (web only)
+- List every child of the base parent in a device's own copy of that parent (content.blockIds), or a new child is invisible on that device.
+- Keep per-device overrides to presentation (style, visibility, text); flag overrides of data binding, defaults, module or child refs.
+- A page meant for PDF export has no iframe or fixed-height box that scrolls inside it; a scrolling box prints as one page. (web only)
+- When root_id has h-full, give each direct child flex-shrink-0 or unset the root height; else sections with overflow hidden cut content. (web only)
+- Keep a Calendar's h-full only under a parent with a resolvable height; otherwise the calendar collapses to nothing.
+- Put a real visible block inside header_id; an empty header shows in the builder but is absent when published.
+- Pair a fixed height with the same minHeight or flex-shrink-0 on charts and loaders in a column Stack, or they shrink.
+
+## Navigation and routing
+
+- No more than 8 navigation items at the first level.
+- The page route tree has no problems (get_page_paths).
+- Give every back control an event; a back arrow with `events: []` is a dead control.
+- Pair `navigateToSpecificPage: true` with a real `pageId` and fill every `:param` of the destination.
+- Link to this app's pages with `navigateToPage`, never `navigate` with a path like `/home`.
+- Wire every back control to `navigateBack`, never to `navigateToPage`.
+- Move a hand-built app menu into the app menu with `apply_navigation_edits` and delete its blocks.
+- Provide a reachable Log out in every app with sign-in, in Profile or More. (mobile only)
+- In a hand-built tab bar, navigate with replace and a run condition on the selected tab; each tap must not push a page. (mobile only)
+- Set a default page for logged-in users and one for logged-out users, both with static paths.
+- Make the logged-out default page public, or logged-out users land on a page they cannot open.
+- Point every menu item at a page that exists and that the people who see the item can open.
+- Give every Custom navigation bar a module that exists; a missing or deleted module draws an empty strip with no error.
+- Give every nav item and appearance entry an id; group children saved without ids can hide the whole web menu. (web only)
+- Set a home page (defaultPageId) whose path has no : params; a new app starts with none.
+- Point defaultPublicPageId at a public page that still exists; deleting a page does not clear it.
+- Fill every : param of a PAGE menu item's path with a plain value; an empty one makes the click do nothing.
+- Give each nav item permission a real permission group id; a wrong id hides the item from everyone.
+- Never put a page id in a MODULE nav item's moduleId; it replaces that page's route and the page can stop opening.
+- Don't build pages at login, signup, mfa-verification, forgot-password, update-password or reset-password; the platform serves them. (web only)
+- Declare every page input a mobile page reads, with its type; an undeclared input arrives as text. (mobile only)
+- Add each new primary item to every navigation.appearance.<SM|MD|LG|XL>.primary list; those lists override navigation.primary.
+- Never navigateToPage to a bottom-tab page from a pushed page; the phone lands on the first tab. Use navigateBack. (mobile only)
+- Never open an adaptive_sheet from a page already open as a sheet; the phone silently does nothing. (mobile only)
+- Return a result with navigateBack: navigateToSpecificPage, pageId and every original pageInput, read in onPageFocus. (mobile only)
+- Set navigationBar.navigatorType on a mobile app; unset with no navigator module, every tab page renders blank. (mobile only)
+- Keep defaultPageId on a top-level tab or drawer item; a default page outside them opens with no tab bar. (mobile only)
+- Keep navigation.primary empty on a stack-only mobile app; items under navigator None make navigation to them do nothing. (mobile only)
+- In a navigator module read the active screen from pageInputs['activeTab'] (a slug), never activeItem or a page id. (mobile only)
+- Give a floating tab bar's module root position absolute, with no overflow scroll token or background image; either breaks the float. (mobile only)
+- Give a full_screen_modal page its own close or continue button; iOS cannot swipe it away. (mobile only)
+- Every page that opens another sends every input that page needs.
+- Keep a way to close a Modal: hideOnClickOutside, hideOnEscape or a wired close action.
+- Keep a NavigationContainer's navigationMenuId and header blockId on the same Navigation menu.
+- Replace a new Navigation's six seeded items (Home, Projects, Analytics...) instead of appending real ones.
+- Pass every page input a navigation item needs explicitly; page defaults apply in builder and preview, not published.
+- Give every Navigation item a type, every group an items list, and label items variant custom.
+- Make every Navigation page item's pageId resolve; a dead one loads the app's default page when published.
+- Fill every :param of the target page in navigateToPage and navigateBack pageParams; short params do nothing when published.
+- Write navigateToPage history as literal push or replace; a binding skips the navigation entirely.
+- Write external navigate paths with https:// and internal ones with a leading slash.
+- Never store a bare modifier (Shift) as a shortcut key; it fires on every keystroke. (web only)
+- Make a detail page dynamic with a :param folder in its path, never a :param slug.
+- Give every nav item a re-derived appearance entry, and every MODULE item its entityDetailsMap entry.
+- Pass nav item pageInputs and pageParams the destination declares, as literals; a {{ }} there is stored as text.
+- Read path segments from pageParams and query params from declared pageInputs, never location.pathParams or location.search.
+- Don't rely on app navigation or app variables on a public page an anonymous visitor opens; that layout has neither. (web only)
+- End a custom login on a public page with a full document load, not a soft navigateToPage, so calls switch to /api. (web only)
+
+## Theme, styles and branding
+
+- Don't pick text-white from the colour picker for typography.
+- Fix style values stored as character-indexed objects like `{"0":"b","1":"g"}`.
+- Store the theme font as one bare family name and pick only weights it ships; native matches by exact name, else draws the system font. (mobile only)
+- Point the app at a theme id that exists on the tenant; a missing theme falls back to the default purple.
+- Never put an underscore token name in a Tailwind arbitrary class (bg-[var(--x_y)]); it breaks the app's whole stylesheet. (web only)
+
+## Security and access
+
+- Avoid using logged-in user pills in data sources.
+- Avoid Using HTML Type in Typography Block.
+- Don't make the app public unless it must be.
+- Define a Content Security Policy.
+- Client id and secret encrypted in the IdP config, never inline.
+- Promptguard on any publicly embedded agent.
+- enforce.validate.redirect.url is TRUE, so there is no open redirect.
+- No inline <script> in the custom code header or footer.
+- A public page's sources read deployed entities; a module's sources need its own publicAccess.
+- No permission group that nobody holds; it locks everyone out.
+- Rate-limit queries per user on public surfaces.
+- Mask PII in uploaded documents; keep chat and email bodies out of observability when the client asks.
+- Page permissions gate nothing on their own; check the publicity lists and groups.
+- Never hold a password, card number or CVV in a page variable, event payload or navigation parameter.
+- Remove hidden developer shortcuts such as a long-press or tap sequence that signs in or opens a test screen before release.
+- Lockout, rate limit and code checks run on the server; a client counter or page variable is not a security control.
+- Do not store passwords, hashes or card tokens in an app object or write them to logs; sign in through the IdP.
+- Grant the app's roles VIEW on every standard entity type its sources read; entityTypeEnablement ALL does not cover standard types. (web only)
+- Never ship a fixed or demo verification code or a mock 200 standing in for the real check.
+- Never pass a user id from the page to an automation or source that reads or writes user-owned records; take the user from the session.
+- Every module inside a private app has publicAccess off unless a public page uses it.
+- Do not set forceCSPHeaders on the app record; it replaces whole directives (img-src, media-src, script-src) and beats Resource Control rows. (web only)
+- List every third-party host the app loads (maps, Teams SDK, captcha, CDN fonts) in CSP Resource Control; check the console after publish. (web only)
+- Restrict a browser-exposed map API key by HTTP referrer, API list and daily quota in the provider console. (web only)
+- Give the default All users role view permission on apps and pages; an empty role leaves members seeing only apps they created. (web only)
+- Review pages and apps switched to public in a change set; AI agent tools can make them public with only edit permission.
+- Actions that write a user's data check sign-in and role first; guests and co-tenants must not reach them by tapping.
+- Serve receipts and private documents through expiring signed links, never permanent public URLs.
+- Make Log Out clear every locally stored user key and unregister the push token, then land on sign-in; the next user sees nothing. (mobile only)
+- Handle an expired or revoked session app-wide: clear it, open sign-in with a clear message and return the user to the page they were on. (mobile only)
+- Never write ID document images or personal data to local storage; keep only a server file id. (mobile only)
+- Give an app that has a Login template page a separate home page; login returns to / and reopens the login form otherwise. (web only)
+- An embedded app lists the parent origin in its frame-ancestors; a login token in the parent page's URL is never accepted by the child. (web only)
+- SSO inside an iframe signs in through a popup, and the identity provider's partitioned-cookie setting matches the deployed build. (web only)
+- List only named hosts in the CSP allowed sources; no "*" or bare "https:". (web only)
+- Fill "Who can embed this app" only with the client's own domains, and leave it empty when nothing embeds the app. (web only)
+- Add every third-party host the app loads (head code, iframes, image and font URLs) to CSP allowed sources, or it breaks once CSP is on. (web only)
+- No API keys, tokens or secrets in head code, footer code or custom HTML attributes.
+- Set initial file visibility to private when users upload personal or business documents.
+- Give each upload block or action a visibility that matches what it accepts; its own setting overrides the app default.
+- Never upload sensitive images or documents as builder assets; property-panel uploads are always public.
+- Read the signed-in user from userContext; never a hard-coded name, id, initials or a persona picker in place of sign-in.
+- Never build an in-app persona or role switcher; give each persona a real login with a real role.
+- Use PUBLIC file access only for images and files the app displays; private documents get USER or APPLICATION scope.
+- Use anonymous user identification in Microsoft Clarity unless the client approved named tracking. (web only)
+- Renew certificate-pinning public-key hashes before their expiry date; an expired pin breaks every request. (mobile only)
+- Keep impersonation, delegation and hierarchy impersonation off unless the client asked for them.
+- Point UAE Pass at env production in a production app, never staging.
+- List only the client's own origins in allowedOrigins; never a wildcard.
+- Never take who the user is from a page input (userId, employeeId) and pass it on; any page or agent can open it as anyone.
+- No key, token or password-shaped value in a page variable, constant, function or custom code.
+- No object the app reads has skipPermissionsFilter: true or external: true unless the request asked for it.
+- Never bind data into an on* attribute, href, src or style in htmlAttributes; only data-* attributes take data.
+- No eval, innerHTML or document.write with data in page or app header and footer code.
+- Never bind user-typed text or an AI agent's answer unstripped into a Table HTML column, rich text or HTML Typography.
+- Check any URL a page opens, loads or navigates to that comes from a record or user input against an allowlist.
+- Set allowed types, size and count on every file upload; allow a named list, never svg or html unless the job needs it.
+- Prefix ' to export cells starting with =, +, - or @ so a spreadsheet can't run them as formulas.
+- Never bind a whole form or input object as a write parameter; send named fields only, never owner, status, amount or role.
+- Give every Storage fetch a fields list of what the page shows; without one every field reaches the browser.
+- Never build an update or delete filter from page input alone; whoever sets the filter sets how many rows it hits.
+- Answer not found and not yours with the same message, so record ids can't be probed.
+- Never rely on a page data source filter to hide other users' records; use the permission filter or an owner-checked callable.
+- Never send a price, total, fee, discount or eligibility date from the page as a fact; the server works it out.
+- Never show a raw source error (stack trace, SQL, connector error, host name) to the user; show one plain sentence.
+- No page, source or agent input names who a message goes to; the automation reads the recipient from the record.
+- Never put typed text, search terms or form values in a usage-tracking event; only event codes and control names.
+- Grant the users, teams or roles record types only to an admin role; a holder could widen their own access.
+- Keep properties.flags.allowReadWriteExpressions off; it lets every {{ }} binding reach the real document, cookies and storage. (web only)
+- Turn on properties.flags.shouldReEvaluateUsingEntityIds so {{ }} text arriving in page inputs or records is shown, never run.
+- Make every CSP row a host-shaped URL, 'self' or a bare scheme like data:; a pasted sentence there 500s every request of the app. (web only)
+- Put block.permissions at the block root beside component; written under component or content it gates nothing.
+- Treat a Comments delete add-on as visible on every comment; enforce who may delete on the server.
+- Restrict a file with fileVisibility, not allowDownload false; hiding the button leaves the URL working.
+- Verify the storage provider supports ONLY_ME or PUBLIC fileVisibility; otherwise files silently fall back to restricted.
+- Make a PDFViewer customDownloadUrl point at the document shown; it silently replaces what Download saves.
+- Set fileVisibility explicitly on every FileUpload and upload action; the app default visibility seeds only the builder panel.
+- Don't wire controlUser checkAuth or signInWithSSO on web; both are stubs that authenticate nobody and report success. (web only)
+- Never put private values in setUrlParameters pageInputs; they land in the address bar, shared links and history.
+- Omit allowedRoleIds to allow every role; keep defaultRoleId inside the allowed list when restricting.
+- Give a POPOVER share an anchorBlockId, or use MODAL with GENERAL_ACCESS; otherwise role restrictions are silently dropped. (web only)
+- Declare a public page's variables, functions and constants on that page; it can't read the global page's app variables.
+- Restrict a block's data with the data source's advancedOptions.permissions too; block permissions only hide the view.
+- Remember permission groups in one map are ANDed; listing two groups to mean either locks out most users.
+- Check every permission group id and name resolves; an unknown one locks everyone out silently.
+- Grant a new permission group to a Role and a RoleMapping before gating blocks on it.
+- Create login, signup, MFA, forgot and update password pages from the auth templates, not plain pages at those slugs.
+- Set page permissions through the app record (page settings), never the page's own permissions key, which gates nothing.
+- Make a page private by removing it from both app-record public lists; clearing one flag leaves it public.
+- Never key data or permissions on deviceInfo.deviceId or isRooted; they identify a handset, not a person, and protect nothing. (mobile only)
+- Keep environment variables off the path that decides what a public page shows; they are not loaded there.
+- Never let a page input decide access; it is part of the URL a visitor can retype.
+- Never gate what a user may see or do on userContext roles in a binding; use interface and data source permissions.
+- Don't embed a private module in a public page or public app; make the module public or move the content.
+- On a PUBLIC app with public uploads allowed, treat every upload as public; don't collect sensitive files there.
+- Never upload sensitive files through property panels (Image, PDF, brand); builder assets are stored PUBLIC.
+- Never put utils.getAuthToken output into displayed text, a link or a query string; it leaks the credential.
+
+## Accessibility
+
+- Give every IconButton a tooltip add-on; the icon is its only name otherwise.
+- Replace an Image's seeded alt text "placeholder" with a real description, or empty alt for decoration.
+
+## Naming, copy and localisation
+
+- Names start with a letter, have 3+ characters, use only letters, digits and underscores, avoid reserved words.
+- Never switch language with a locale condition inside block text; translate through the app's namespaces.
+- Set defaultLocale, the language the source text is in, whenever supportedLocales is set.
+- Bind a Tag label or Typography value to a string field; a bound object shows [object Object] or raw JSON.
+- Replace the seeded Typography text Hello {{ userContext.name or 'world' }}; it renders in the published app.
+- Build a real confirm step (a Modal) for destructive actions; an action's confirmation field is never read.
+- Translate text through namespace rows, never a {{ lang === 'ar' ? ... }} ternary.
+- Keep every translated key in the default locale row; saving another locale prunes keys the default row lacks.
+
+## Intent and simplicity
+
+- Each data-bound query answers the page's purpose (e.g. a user's requests filtered by user).
+- Bind dynamic regions (carousels, tiles, charts, counts, badges) to data; no fixed slides, made-up arrays or design sample images.
+- On a page shown inside a chat message keep every declared input, page event and button message text the agent routes on.
+- Every starter, card or promise a chat page offers maps to a tool its AI agent has.
+
+## How it is built
+
+- Use what the platform offers, not scripts, click or key listeners, timers, watchers, fake key presses or CSS that patch or hide what it does; a workaround breaks quietly when the platform changes.
+- Keep a value that matters in one saved record every screen reads; not only in page memory, browser storage or two copies that drift.
+- Pass ids, the host and the user into the page; never work them out from the web address, the app around it or fixed demo names.
+- Show done, failed or slow from the real state the server reports, never from a timer or a fixed schedule, and stop checking when the work ends.
+
+## Files and uploads
+
+- Set an explicit private file visibility (USER) on every upload action for identity or personal documents; never rely on the platform default.
+- No stored file URL in a private app starts with /api-endpoint/external or /auth; files uploaded from a public app carry it and 404 elsewhere.
+- Keep private documents out of builder-panel uploads (Image, Lottie, PDF viewer, Avatar); they are stored public-read.
+- Set file visibility explicitly on each FileUpload block; blocks nobody reopened keep the old runtime default, not the app setting.
+- A maker-set upload folder path is a plain relative path: no leading slash, no .., no binding that can resolve to either.
+- Give every Control Media Uploads action onErrorActions with a message; rejected files and a denied camera show no toast.
+- Show anonymous visitors only PUBLIC files; USER, APPLICATION and ALL_USERS files fail to load on a public page. (web only)
+
+## Export and print
+
+- Point exportLayout header and footer at existing blocks; a missing id reflows the print with a blank band. (web only)
+- Put print-only content in the export header or footer; exportLayout.body blocks are pruned as unreachable. (web only)
+- Set the export ready signal (globalThis.__UA_EXPORT_READY__ = true) on the data source's success; the node timeout is a sleep. (web only)
+- Keep exported content out of scroll containers and iframes; the first sheet edge cuts them. (web only)
+- Don't use 100vh or h-full chains on an exported page; under print they are one sheet tall and clip the rest. (web only)
+- Give the export node a full page object (format, layout, timeout) and a unique fileName per page. (web only)
+
+## Objects the app binds to
+
+- Never update a JSON-store object through analytics nodes; those updates do not show.
+- Store a choice from a user-editable list (status, stage, tag) as the option's id, not its copied text.
+- Index every field a list filters or sorts on, equality fields first; at most five custom indexes per object.
+- Make several-field uniqueness one unique index over those fields, never uniqueKey on each field.
+- Never mark a field secure when a lookup, duplicate check or filter reads it; secure values match no filter.
+- Store money as integer minor units with a currency code, never a float.
+- Give every user-owned object an owner field set from USER.id at create; the caller never sends it.
+
+## Automations the app calls
+
+- Turn off input and output capture on nodes that carry secret keys so reporting never ingests them.
+- Give every While loop a real exit or Max Iterations; a condition comparing a value with itself never ends.
+- Turn on distribute load for Call Automation (Batch) when it waits for completion or runs IN_MEMORY.
+- Split an automation that reaches 175 nodes; it slows execution and strains the environment.
+- Define every environment variable an automation reads on the Environment Variables page.
+- Never hard-code passwords, secrets, tokens, client or account ids, endpoints or auth values in node inputs.
+- Don't nest a scope inside another scope.
+- Turn on DLQ tracking (enableDlqTracking) when polling event streams, or failed events are lost.
+- Never run an analytics query inside a For Each loop.
+- Never schedule an automation more often than once a minute.
+- Map only a List or Array into a For Each loop.
+- Give every Wait for Signal action a non-zero timeout.
+- Never create records in the same object from parallel branches.
+- Never create in one parallel branch while another updates the same object.
+- Build the full list and write Excel once outside the loop, never row by row inside it.
+- Use Iterate over rows, not Extract data from sheet, for Excel files that can be large.
+- Turn on streaming for Excel Iterate over rows.
+- Prefer structured filters or parameterised queries over raw SQL execute actions.
+- Break any Call Automation cycle where a downstream automation calls this one back.
+- Never write to the object or stream that triggered the automation, directly or through a callee.
+- Never call Thread.sleep or similar in Groovy code; use a Delay node, a signal or a retry policy.
+- Assume an automation an app or agent calls runs IN_MEMORY: 5-minute timeout and 256 MiB budget, whatever mode it shows.
+- Keep waits in an automation an app calls under 2 minutes; put long waits in the node's retry config.
+- Keep an endpoint-fronted automation shorter than the endpoint timeout (often 30 s), or its runs are cancelled.
+- Never have an automation call itself to fetch the next page; page inside one run with a loop.
+- Pass a whole list to a child automation instead of calling it once per record; call it async if nothing reads the output.
+- Count database and external calls per run, not loop turns; a loop that batches but still calls once per item is not fixed.
+- Give every record read in an automation a date filter, with a default range when the caller passes none.
+- Process and write each batch as you go; never collect every row into one list first.
+- Loop over a list rather than until a condition; if a condition loop stays, cap its turns.
+- Set a failure alert on the Alerts tab for every scheduled or client-facing automation.
+- Give LLM steps an error path, and handle predictable bad input (a locked PDF) without crashing the run.
+- Download a file once before the loop, never inside it.
+
+## Agents the app calls
+
+- Turn on at least one guardrail: blocked messaging, denied topics, word filter, PII redaction or content filter.
+- Give the agent a clear, unambiguous name, goals, role and instructions.
+- Give every app an agent tool uses an active runtime connection.
+- Mask PII when indexing knowledge and in agent queries.
+- Move a task's only tool up to an agent-level tool.
+- Give every agent task and tool a clear name and a description of when to use it.
+- Expose complex operations to an agent through an automation, not as raw tools.
+- Give an agent an automation tool instead of indexing an object past a few thousand records as knowledge.
+- Attach every skill and tool the agent's instructions name, under the exact name the model sees.
+- Resolve pairs of absolute rules (NEVER, ALWAYS, MUST) in agent instructions and skills that order different actions.
+- Remove tool descriptions that tell the agent to invent data rather than ask or say not found.
+- Remove tools the agent has no use for; an IngestKnowledge tool lets any user add files to the shared knowledge.
+- Never rely on a tool description to hide data; restrict it in the tool or the connection's permissions.
+- Keep personal names, emails, internal URLs and ticket ids out of agent prompts, and add a rule against revealing them.
+
+## Mobile only
+
+- No list nested inside a list that scrolls the same way.
+- Don't deep-link to a bottom-tab-hosted page; `matrix://<slug>` can't reach it.
+- Never put `onClick` on a Stack or an Icon; it is dead on native.
+- Wire `onChange` on every TextInput, or typed text silently drops.
+- Keep inputs out of Repeatable rows; they render but never take taps.
+- Give every input a keyboard-aware ancestor so the focused field never sits behind the keyboard.
+- Set explicit width and height on Camera, PhotoBooth, QRCode, PDFViewer and Iframe; unsized they render nothing.
+- Never leave empty-string style values like `borderRadius {all:""}`; they throw on every render.
+- Never put a Repeatable with `content.scrollable` true or unset inside a Scrollable.
+- Keep exactly one scroll owner per axis.
+- Give every scroll container a bounded height from a parent; `h-full` on the scroll block itself is correct.
+- Never use `flex:1` or `h-full` along the scroll axis inside a scroll region; use `flexGrow`.
+- Apply the no-relative-height rule to every descendant of the scroll owner, slot contents included.
+- Don't flag fixed pixel heights inside a scroll region; only relative heights collapse.
+- Never flag a `Scrollable` directly under `root_id` as double-nesting the body.
+- Set the BottomSheet's `appearance.behaviour.scrollableBody: false` when it holds a Repeatable.
+- Don't expect `overflow` on a Container, or Stack `overflow` beyond its sheet's scroll tokens, to scroll.
+- Wrap Typography in a Pressable to make text tappable.
+- Put `keyboardConfig` only on a Stack or Scrollable, never on one with `linearGradient` or `blurConfig`.
+- In a BottomSheet set `appearance.behaviour.keyboardAvoidance: true`, never `keyboardConfig`; tall sheets keep `scrollableBody` on.
+- Pick blocks only from the 71-block native catalog.
+- Give every BottomSheet a height: explicit, snap points, or `h-auto`.
+- Never pass a `data:` URI to an Iframe.
+- Use the same map form across `borderWidth`, `borderStyle` and `borderColor`.
+- Never set `backgroundColor` and `backgroundImage` on one block.
+- Write numeric styles as numbers, `bottom:8`, never px strings.
+- Never bind `deviceContext`; use the `userContext['context']` mirror.
+- Give every tappable visible press feedback through a Pressable's `appearance.interactions`; no events on Stack, Icon, Typography.
+- Keep one scroll owner per axis; no same-axis Scrollable or scrolling Stack inside another scroller.
+- Give every input a working keyboard-aware ancestor: `keyboardConfig` Stack or Scrollable, Modal, or avoiding BottomSheet.
+- Clip a fixed scrolling BottomSheet with `contentContainerStyle` `overflow: hidden`; drop the radius and colour keys it ignores.
+- Give every sheet-closing action a `runCondition` reading that sheet's `{{ <id>.state.open }}`.
+- Never nest a scrolling Repeatable inside a same-axis scroller; give the list its own scroll.
+- Never put a visibility condition on a virtualized list; collapse it with a bound `maxHeight`.
+- Bind an `INFINITE` list's `content.data` and `addOns.page.total` to the source, with `content.scrollable: true`.
+- Give a `PAGE`-paged Repeatable a `goToPage` control, or switch it to `INFINITE`.
+- Store `additional.customCSS` on mobile as one strict JSON object, or clear it.
+- Give body content that can outgrow the screen one scroll owner; the page body doesn't scroll.
+- Decide which single block owns the scroll before judging any height.
+- Put `keyboardConfig: {"type": "scroll"}` on the vertical scroll owner, else the nearest Stack holding the inputs.
+- Read the block's native sheet, per `app-native` § Sheets on a native target.
+- Treat two pages that resolve to the same path pattern as P0 on mobile; the native router blanks the whole app before any page mounts.
+- Fill the iOS usage texts and Android permission list in native client settings for each capability used (camera, mic, location, photos).
+- Give every camera, mic and location use a denied path: Open Settings that works on iOS and Android, a re-check on focus, and a fallback.
+- Make emailed or texted links (reset, invite, verify) open the app: set the app link or domain and map the token to a page path input.
+- For push, store a device token per user on permission grant, drop it on logout, and open the target page on tap.
+- On iPhone an onSuccess can read stale data; branch navigation on a field that always exists, or navigate from the tap's own chain.
+- Drive wizard steps with containers switched by a page variable; the change-tab action does not switch Tabs on a physical iPhone.
+- Offset the last row and floating buttons above a floating tab bar by its height plus the bottom inset so they stay tappable.
+- Check Form field types and block options against the native sheets; editor, rich text, rating, key-value, JSON, vertical Tabs fail on device.
+- Put only top-level PAGE items, at most 5, in a mobile app's menu; groups, URLs, modules and actions are dropped.
+- Open a BottomSheet with controlDrawer {drawerId, operation}; controlBottomSheet and controlBlockMethod open save fine and do nothing.
+- Set the current-row variable before controlDrawer show in the same chain, or the sheet shows the previous row.
+- Wire Button taps on onClick; Button.onPress never fires on native.
+- Use only PIE, GAUGE or LINE charts on native; BAR and COLUMN render nothing and other types draw as a pie.
+- Replace web-only blocks on native (Password, Stepper, Kanban, RichText, Slider, Timeline, Menu); they save and render nothing.
+- Use KeyValue only to show values on native; its inline value editor is stubbed out.
+- Confirm the client's build ships a gated block (DISABLE_BLOCK_*, camera family) before a screen depends on it.
+- Never bind currentItem in a list row; it does not exist and the evaluator throws.
+- Guard every bound path in a list or row with a default (|| [], ?? ''); an undefined path toasts per row and a throw blanks the template.
+- Open MobileContextualDialog only from its trigger slot; show, hide and toggle actions on it are dead.
+- Use https:// for every link, image, iframe and API a mobile page calls; release builds block http://.
+- Never read b_<list>['instances'] in a page function or via Object.values, Object.keys or .length; it is empty on the phone.
+- Give every native customStyles a matching additional.customCSS JSON text; without it the phone drops the style.
+- Never put a {{ }} expression inside native custom style JSON; the phone does not evaluate it and shows a parse toast.
+- Give a mobile Image a numeric height, never a word like Auto; a word stretches it over the screen.
+- Don't rely on app header or footer code, injected script or a vendor tag on a mobile app; none of it runs.
+- Set both range defaults on a Calendar range picker; with one missing it breaks or draws nothing.
+- Never put a SingleSelect inside a BottomSheet on mobile; it closes without selecting. Use Pressable option rows.
+- Never build approve or reject on SwipeableStack's swipeLeft or swipeRight methods; they are dead. Use OnSwipeItem.
+- Upload mobile app icons, adaptive icons and splash logos as PNG; an SVG saved there fails the native build much later.
+- Mirror every appearance.customStyles object as JSON text in additional.customCSS; without it the phone deletes the style at load.
+- Use a Button with a navigate action instead of an Alert linkUrl or a markdown link; on the phone both tap to nothing.
+- Keep Button, IconButton and ButtonGroup sizes to xs, sm, md, lg on mobile; a theme size like xl throws and blanks the page.
+- Gate a mobile ButtonGroup's initially selected option's onClick with a runCondition; it runs once when the group appears.
+- Write a mobile Calendar defaultDate as an ISO timestamp; a date like 14/09/2026 crashes the block.
+- Give a mobile dateRange Calendar both defaultStartDate and defaultEndDate, or a span cannot be picked.
+- Never set Camera recording autoRecord true on mobile; it hides the shutter and records nothing.
+- Remove a Card's seeded minWidth 360px when it sits in a row; it overflows the phone.
+- Keep a mobile Carousel indicator's label object present; unsetting it throws and unmounts the carousel.
+- Use only listed Container layouts on mobile; an unknown variant renders nothing when published.
+- Resolve disabled bindings to real booleans on mobile; a "false" string disables the block.
+- Use Drawer variant card with slots on mobile; page variant or absent renders nothing.
+- Keep hideOnClickOutside true on a bottom Drawer; otherwise a pulled-away sheet can't be reopened.
+- Set a mobile Drawer's position bottom explicitly, a phone-size width on side drawers, and no h-full on a bottom sheet.
+- Bind a mobile EventsCalendar to the event list, not the envelope, and don't use web view names like timeGridWeek.
+- Don't put a Button or other tappable inside a tap-to-flip FlippableCard; the card takes every tap.
+- Make a FloatingActionButton a direct child of the page root sized h-full; gate it by visibility, not disabled.
+- Make mobile customCSS JSON strict: no comments, no trailing commas, numbers not "16px" strings.
+- Wire a mobile Link to a navigate onClick for in-app paths; a /path url can't open on the phone.
+- Give a mobile Modal a close control when hideOnClickOutside is false; it draws no close and ignores Android back.
+- Use Modal variant card on mobile; variant page opens a dialog that only spins.
+- Put a Scrollable in a mobile Modal's body when it holds a list; the dialog clips at 90% and does not scroll.
+- Give every BottomSheet snap point a non-zero value; an empty row is dropped and snapToIndex then throws.
+- Write PhotoBooth and Stories video durations in milliseconds; 30 leaves the recording uncapped.
+- Don't pair PhotoBooth showImagePreview with the photoCrop add-on; Save can't produce a usable photo.
+- Bind a mobile PinInput length to a number; null or text builds zero cells.
+- Store a Pressable's children in content.blockIds as an array, and set direction before alignItems or justifyContent.
+- Don't put a stateful input or Form inside a Pressable with interactions and a bound style; it remounts and loses state.
+- Keep a QRCode's encoded text short, an id or short URL; past about 2,300 bytes the block disappears.
+- Keep checkbox, radio and text input sizes to sm or md and input variants to outlined, solid or ghost on mobile.
+- Don't set bounces false on a list or Scrollable that wires onPullDown; iOS pull-to-refresh stops working.
+- Declare a page variable that seeds a list as array, not object; an object variable drops a JSON array.
+- Make a page-owning mobile Repeatable scroll with content.scrollable true and flex 1, never styles.overflow.
+- Write literal values under a Scanner's capture group; a {{ }} there is read as text and nothing is scanned.
+- Wire a control to the Scanner capture method when autoCapture is off, or no scan ever happens.
+- Resume a Scanner with pauseAfterScan and ignoreDuplicateCodes from a button, not only onScan, or it stays paused.
+- Give a Scrollable a bounded height (flex 1 in a sized parent) and size its children to content, never h-full or flex 1.
+- Use keyboardConfig type scroll on a Scrollable; keyboardAvoidingView and sticky do nothing there.
+- Give a Signature pad a height or minHeight; with none it renders nothing and takes no touch.
+- Give every mobile SingleSelect option a label and keep optionsType set in the exact case.
+- Point a mobile StepperV2 defaultStepValue at a real step value when replacing the seeded steps; the seed carries step1.
+- Give a SwipeableButton a width and a size from xs to lg; out of range the track disappears and no swipe completes.
+- Always store a mobile Tabs tabItemAppearance; without it the whole Tabs block throws and is blank.
+- Keep mobile tab values unique and don't restrict the default tab with permissions.
+- Don't put a scrollable Repeatable in a pane of a Tabs strip that has a header slot; it is a second same-axis scroller.
+- Set showKeyboardOnFocus false on any TextInput whose value is picked from a sheet on focus.
+- Give a countUp Timer a real endValue and startValue 0; the seeded countdown values expire on the first tick.
+- Keep controls on a Video that must be heard; showControls false mutes it on the phone.
+- Give a Video a full https url and w-full width; protocol-less urls load nothing and the seeded 540px width overflows.
+- Replace the seeded h-full on a mobile Camera or Scanner inside a content-sized Stack with a custom height; it measures zero.
+- Don't ship an exportData button in a mobile app; the operation is silently dead there.
+- Return from a picker page with navigateBack and navigateToSpecificPage, resending every caller input with the result.
+- Make the mobile defaultPageId a tab page; otherwise the app opens with no tab bar.
+- Use the downloadFile action, not utils.downloadFile, on mobile; the helper does nothing there.
+- Give safe-area padding a numeric fallback on sign-in screens; deviceContext safeArea is missing there.
+- Run the location action before binding deviceContext location coordinates; nothing reads a position on its own.

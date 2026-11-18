@@ -1,0 +1,6 @@
+description = "Reviews a finished app the way a demanding user and a senior designer would, in one command, before a go-live or a demo."
+prompt = """
+Run the UnifyApps Headless `review-loop` skill: read `loops/review-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

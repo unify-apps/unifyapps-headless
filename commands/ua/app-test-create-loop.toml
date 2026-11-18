@@ -1,0 +1,6 @@
+description = "Authors every in-scope UI test case of one UnifyApps app with no person in the loop between kickoff and the final report — the person answers a short run contract once, every test user is signed in on"
+prompt = """
+Run the UnifyApps Headless `app-test-create-loop` skill: read `loops/app-test-create-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

@@ -1,0 +1,7 @@
+{
+  "name": "automation-run-debugging",
+  "description": "Read when an existing automation is broken, stuck, produces the wrong value, completes without the expected effect, or has a failed run. Covers safe reproduction, run evidence, silent failures, and repair through Workflow Agent. Not for authoring test cases, suites, or plans.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

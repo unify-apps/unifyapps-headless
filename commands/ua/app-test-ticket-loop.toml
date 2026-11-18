@@ -1,0 +1,6 @@
+description = "\"Writes the tickets for what one run of the triage loop found — one ticket per root cause, never one per failing test case: a bug ticket per defect behind the confirmed App bugs, and a product-questio"
+prompt = """
+Run the UnifyApps Headless `app-test-ticket-loop` skill: read `loops/app-test-ticket-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

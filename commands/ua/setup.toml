@@ -1,0 +1,6 @@
+description = "\"Sets up a folder for UnifyApps Headless once (tenant, sign-in, storage, solution, AGENTS.md guide, first sync), and later checks and repairs a set-up folder or switches its solution."
+prompt = """
+Run the UnifyApps Headless `setup` skill: read `skills/setup/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

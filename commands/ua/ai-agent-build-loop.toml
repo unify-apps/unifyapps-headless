@@ -1,0 +1,6 @@
+description = "Builds one ticket or capability of a UnifyApps AI agent and proves it."
+prompt = """
+Run the UnifyApps Headless `ai-agent-build-loop` skill: read `loops/ai-agent-build-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

@@ -1,0 +1,236 @@
+# Mobile only
+
+Rules for MOBILE apps on the UnifyApps mobile renderer.
+
+212 rules: P0 24, P1 103, P2 74, P3 11.
+
+## Contents
+
+- P0
+- P1
+- P2
+- P3
+
+## P0
+
+- Don't deep-link to a bottom-tab-hosted page; `matrix://<slug>` can't reach it.
+- Never put `onClick` on a Stack or an Icon; it is dead on native.
+- Wire `onChange` on every TextInput, or typed text silently drops.
+- Keep inputs out of Repeatable rows; they render but never take taps.
+- Give every input a keyboard-aware ancestor so the focused field never sits behind the keyboard.
+- Set explicit width and height on Camera, PhotoBooth, QRCode, PDFViewer and Iframe; unsized they render nothing.
+- Never leave empty-string style values like `borderRadius {all:""}`; they throw on every render.
+- Give body content that can outgrow the screen one scroll owner; the page body doesn't scroll.
+- Treat two pages that resolve to the same path pattern as P0 on mobile; the native router blanks the whole app before any page mounts.
+- Open a BottomSheet with controlDrawer {drawerId, operation}; controlBottomSheet and controlBlockMethod open save fine and do nothing.
+- Wire Button taps on onClick; Button.onPress never fires on native.
+- Use only PIE, GAUGE or LINE charts on native; BAR and COLUMN render nothing and other types draw as a pie.
+- Keep Button, IconButton and ButtonGroup sizes to xs, sm, md, lg on mobile; a theme size like xl throws and blanks the page.
+- Write a mobile Calendar defaultDate as an ISO timestamp; a date like 14/09/2026 crashes the block.
+- Never set Camera recording autoRecord true on mobile; it hides the shutter and records nothing.
+- Use only listed Container layouts on mobile; an unknown variant renders nothing when published.
+- Use Drawer variant card with slots on mobile; page variant or absent renders nothing.
+- Bind a mobile EventsCalendar to the event list, not the envelope, and don't use web view names like timeGridWeek.
+- Give a mobile Modal a close control when hideOnClickOutside is false; it draws no close and ignores Android back.
+- Use Modal variant card on mobile; variant page opens a dialog that only spins.
+- Write literal values under a Scanner's capture group; a {{ }} there is read as text and nothing is scanned.
+- Wire a control to the Scanner capture method when autoCapture is off, or no scan ever happens.
+- Give a SwipeableButton a width and a size from xs to lg; out of range the track disappears and no swipe completes.
+- Always store a mobile Tabs tabItemAppearance; without it the whole Tabs block throws and is blank.
+
+## P1
+
+- No list nested inside a list that scrolls the same way.
+- Never put a Repeatable with `content.scrollable` true or unset inside a Scrollable.
+- Keep exactly one scroll owner per axis.
+- Give every scroll container a bounded height from a parent; `h-full` on the scroll block itself is correct.
+- Never use `flex:1` or `h-full` along the scroll axis inside a scroll region; use `flexGrow`.
+- Apply the no-relative-height rule to every descendant of the scroll owner, slot contents included.
+- Don't flag fixed pixel heights inside a scroll region; only relative heights collapse.
+- Never flag a `Scrollable` directly under `root_id` as double-nesting the body.
+- Set the BottomSheet's `appearance.behaviour.scrollableBody: false` when it holds a Repeatable.
+- Don't expect `overflow` on a Container, or Stack `overflow` beyond its sheet's scroll tokens, to scroll.
+- Wrap Typography in a Pressable to make text tappable.
+- Put `keyboardConfig` only on a Stack or Scrollable, never on one with `linearGradient` or `blurConfig`.
+- In a BottomSheet set `appearance.behaviour.keyboardAvoidance: true`, never `keyboardConfig`; tall sheets keep `scrollableBody` on.
+- Pick blocks only from the 71-block native catalog.
+- Give every BottomSheet a height: explicit, snap points, or `h-auto`.
+- Never pass a `data:` URI to an Iframe.
+- Use the same map form across `borderWidth`, `borderStyle` and `borderColor`.
+- Never set `backgroundColor` and `backgroundImage` on one block.
+- Write numeric styles as numbers, `bottom:8`, never px strings.
+- Never bind `deviceContext`; use the `userContext['context']` mirror.
+- Give every tappable visible press feedback through a Pressable's `appearance.interactions`; no events on Stack, Icon, Typography.
+- Keep one scroll owner per axis; no same-axis Scrollable or scrolling Stack inside another scroller.
+- Give every input a working keyboard-aware ancestor: `keyboardConfig` Stack or Scrollable, Modal, or avoiding BottomSheet.
+- Clip a fixed scrolling BottomSheet with `contentContainerStyle` `overflow: hidden`; drop the radius and colour keys it ignores.
+- Give every sheet-closing action a `runCondition` reading that sheet's `{{ <id>.state.open }}`.
+- Never nest a scrolling Repeatable inside a same-axis scroller; give the list its own scroll.
+- Never put a visibility condition on a virtualized list; collapse it with a bound `maxHeight`.
+- Bind an `INFINITE` list's `content.data` and `addOns.page.total` to the source, with `content.scrollable: true`.
+- Give a `PAGE`-paged Repeatable a `goToPage` control, or switch it to `INFINITE`.
+- Store `additional.customCSS` on mobile as one strict JSON object, or clear it.
+- Decide which single block owns the scroll before judging any height.
+- Put `keyboardConfig: {"type": "scroll"}` on the vertical scroll owner, else the nearest Stack holding the inputs.
+- Read the block's native sheet, per `app-native` § Sheets on a native target.
+- Fill the iOS usage texts and Android permission list in native client settings for each capability used (camera, mic, location, photos).
+- Give every camera, mic and location use a denied path: Open Settings that works on iOS and Android, a re-check on focus, and a fallback.
+- Make emailed or texted links (reset, invite, verify) open the app: set the app link or domain and map the token to a page path input.
+- For push, store a device token per user on permission grant, drop it on logout, and open the target page on tap.
+- On iPhone an onSuccess can read stale data; branch navigation on a field that always exists, or navigate from the tap's own chain.
+- Drive wizard steps with containers switched by a page variable; the change-tab action does not switch Tabs on a physical iPhone.
+- Offset the last row and floating buttons above a floating tab bar by its height plus the bottom inset so they stay tappable.
+- Check Form field types and block options against the native sheets; editor, rich text, rating, key-value, JSON, vertical Tabs fail on device.
+- Put only top-level PAGE items, at most 5, in a mobile app's menu; groups, URLs, modules and actions are dropped.
+- Set the current-row variable before controlDrawer show in the same chain, or the sheet shows the previous row.
+- Replace web-only blocks on native (Password, Stepper, Kanban, RichText, Slider, Timeline, Menu); they save and render nothing.
+- Use KeyValue only to show values on native; its inline value editor is stubbed out.
+- Confirm the client's build ships a gated block (DISABLE_BLOCK_*, camera family) before a screen depends on it.
+- Never bind currentItem in a list row; it does not exist and the evaluator throws.
+- Guard every bound path in a list or row with a default (|| [], ?? ''); an undefined path toasts per row and a throw blanks the template.
+- Open MobileContextualDialog only from its trigger slot; show, hide and toggle actions on it are dead.
+- Use https:// for every link, image, iframe and API a mobile page calls; release builds block http://.
+- Never read b_<list>['instances'] in a page function or via Object.values, Object.keys or .length; it is empty on the phone.
+- Give every native customStyles a matching additional.customCSS JSON text; without it the phone drops the style.
+- Never put a {{ }} expression inside native custom style JSON; the phone does not evaluate it and shows a parse toast.
+- Give a mobile Image a numeric height, never a word like Auto; a word stretches it over the screen.
+- Don't rely on app header or footer code, injected script or a vendor tag on a mobile app; none of it runs.
+- Set both range defaults on a Calendar range picker; with one missing it breaks or draws nothing.
+- Never put a SingleSelect inside a BottomSheet on mobile; it closes without selecting. Use Pressable option rows.
+- Never build approve or reject on SwipeableStack's swipeLeft or swipeRight methods; they are dead. Use OnSwipeItem.
+- Upload mobile app icons, adaptive icons and splash logos as PNG; an SVG saved there fails the native build much later.
+- Mirror every appearance.customStyles object as JSON text in additional.customCSS; without it the phone deletes the style at load.
+- Use a Button with a navigate action instead of an Alert linkUrl or a markdown link; on the phone both tap to nothing.
+- Gate a mobile ButtonGroup's initially selected option's onClick with a runCondition; it runs once when the group appears.
+- Give a mobile dateRange Calendar both defaultStartDate and defaultEndDate, or a span cannot be picked.
+- Remove a Card's seeded minWidth 360px when it sits in a row; it overflows the phone.
+- Keep a mobile Carousel indicator's label object present; unsetting it throws and unmounts the carousel.
+- Resolve disabled bindings to real booleans on mobile; a "false" string disables the block.
+- Keep hideOnClickOutside true on a bottom Drawer; otherwise a pulled-away sheet can't be reopened.
+- Set a mobile Drawer's position bottom explicitly, a phone-size width on side drawers, and no h-full on a bottom sheet.
+- Don't put a Button or other tappable inside a tap-to-flip FlippableCard; the card takes every tap.
+- Make a FloatingActionButton a direct child of the page root sized h-full; gate it by visibility, not disabled.
+- Make mobile customCSS JSON strict: no comments, no trailing commas, numbers not "16px" strings.
+- Wire a mobile Link to a navigate onClick for in-app paths; a /path url can't open on the phone.
+- Put a Scrollable in a mobile Modal's body when it holds a list; the dialog clips at 90% and does not scroll.
+- Give every BottomSheet snap point a non-zero value; an empty row is dropped and snapToIndex then throws.
+- Write PhotoBooth and Stories video durations in milliseconds; 30 leaves the recording uncapped.
+- Don't pair PhotoBooth showImagePreview with the photoCrop add-on; Save can't produce a usable photo.
+- Bind a mobile PinInput length to a number; null or text builds zero cells.
+- Store a Pressable's children in content.blockIds as an array, and set direction before alignItems or justifyContent.
+- Don't put a stateful input or Form inside a Pressable with interactions and a bound style; it remounts and loses state.
+- Keep a QRCode's encoded text short, an id or short URL; past about 2,300 bytes the block disappears.
+- Keep checkbox, radio and text input sizes to sm or md and input variants to outlined, solid or ghost on mobile.
+- Don't set bounces false on a list or Scrollable that wires onPullDown; iOS pull-to-refresh stops working.
+- Declare a page variable that seeds a list as array, not object; an object variable drops a JSON array.
+- Make a page-owning mobile Repeatable scroll with content.scrollable true and flex 1, never styles.overflow.
+- Resume a Scanner with pauseAfterScan and ignoreDuplicateCodes from a button, not only onScan, or it stays paused.
+- Give a Scrollable a bounded height (flex 1 in a sized parent) and size its children to content, never h-full or flex 1.
+- Use keyboardConfig type scroll on a Scrollable; keyboardAvoidingView and sticky do nothing there.
+- Give a Signature pad a height or minHeight; with none it renders nothing and takes no touch.
+- Give every mobile SingleSelect option a label and keep optionsType set in the exact case.
+- Point a mobile StepperV2 defaultStepValue at a real step value when replacing the seeded steps; the seed carries step1.
+- Keep mobile tab values unique and don't restrict the default tab with permissions.
+- Don't put a scrollable Repeatable in a pane of a Tabs strip that has a header slot; it is a second same-axis scroller.
+- Set showKeyboardOnFocus false on any TextInput whose value is picked from a sheet on focus.
+- Give a countUp Timer a real endValue and startValue 0; the seeded countdown values expire on the first tick.
+- Keep controls on a Video that must be heard; showControls false mutes it on the phone.
+- Give a Video a full https url and w-full width; protocol-less urls load nothing and the seeded 540px width overflows.
+- Replace the seeded h-full on a mobile Camera or Scanner inside a content-sized Stack with a custom height; it measures zero.
+- Don't ship an exportData button in a mobile app; the operation is silently dead there.
+- Return from a picker page with navigateBack and navigateToSpecificPage, resending every caller input with the result.
+- Make the mobile defaultPageId a tab page; otherwise the app opens with no tab bar.
+- Use the downloadFile action, not utils.downloadFile, on mobile; the helper does nothing there.
+- Give safe-area padding a numeric fallback on sign-in screens; deviceContext safeArea is missing there.
+- Run the location action before binding deviceContext location coordinates; nothing reads a position on its own.
+
+## P2
+
+- Make every tappable a Button, IconButton, Pressable, Card or StatCard; rows use a root Pressable, not `onSelectItem`.
+- Use `hitSlop` as an object, `{ "all": 8 }`, for small targets instead of a bigger box.
+- Write native custom styles as Style JSON, not CSS text.
+- Flag CSS text in `additional.customCSS` on a native page; replace it with a Style JSON body.
+- Don't put token ids inside per-side `{custom:{…}}` maps.
+- Bring small tappables to 44pt with an object `hitSlop`, never a bigger visual box.
+- Place every BottomSheet, Drawer and Modal at the top of the body, before content blocks.
+- Give a virtualized list's row template a numeric `height`, `minHeight` or `maxHeight` in `appearance.styles`.
+- Match a Stack's keyboard type to layout: `scroll` forms, `keyboardAvoidingView` fixed, `sticky` chat composer.
+- Match each input's `content.inputType` to its data.
+- Give the top safe-area inset exactly one owner, decided from the `root_id` read.
+- Make section bands marker rows inside one list, not a second list.
+- Open cross-headed pages as `adaptive_sheet` with `overridePageAnimation: true`; push back-arrow pages.
+- Set the native client interface style to the theme's real mode (light or dark), not automatic, when the app ships one theme mode.
+- Put the reset and navigation on the BottomSheet's own dismiss event, not only on a button inside it; a swipe-down skips the button.
+- Reset a form that lives in a BottomSheet when the sheet opens; a Reset form action aimed at a closed or unmounted sheet fails silently.
+- Set the status bar style per page to contrast with its background, including skeleton and no-internet states.
+- Turn autoCorrect off and autoCapitalize to none on search, location, code and id inputs, and do not write the value back on every keystroke.
+- Avoid the HTML type of Typography on mobile pages; native drops inline font size and colour, nested lists, links and tables.
+- Don't rely on page or app custom code, htmlAttributes or theme custom CSS on a mobile app; none of it is applied.
+- Set a mobile app's nav bar at SM only, never navigatorType Custom, and pick Drawer or Bottom tabs; None draws no module.
+- In one action chain put hide or close before the state change that advances; later actions see recomputed bindings.
+- Don't rely on TextArea onSubmit, or focusTextArea inside a BottomSheet, on mobile; neither fires.
+- Write borderWidth, borderStyle and borderColor together on native; a border with no colour paints black.
+- Keep native borders uniform; per-side rounded borders do not draw, and rounded corners need overflow hidden to clip.
+- No position: sticky in native styles; pin with the header or footer slot or KeyboardStickyView.
+- Use only gap tokens the native sheet lists; an unknown gap resolves to 0 and columns touch.
+- Put a Scrollable's padding and gap on an inner Stack; the scroll view's own padding and gap are dropped on the phone.
+- Give a native linearGradient two or more colours, ascending 0-1 locations and start/end points; there is no angle key.
+- Put linearGradient on a Stack, never on a Container (reads no Style JSON) or on a Stack with blurConfig.
+- Remove the web-seeded styles.maxWidth 50% from a mobile TextInput; keep width w-full.
+- Don't use Button variant soft on native; it renders as bare text.
+- Make press feedback visible: opacity or scale below 1, and a highlight as {custom: '#RRGGBBAA'}, never a bare hex.
+- Mark one BottomSheet snap point isInitial; with none flagged the sheet opens at its lowest detent, not the starred one.
+- Set splashScreen.imageWidth near 300; apps created before Oct 2026 store 1024 and draw the logo wider than the phone.
+- Don't use session storage actions in a mobile app; use an app variable, local storage or navigateBack inputs instead.
+- On a mobile Tabs step flow, keep the strip hidden or set swipeEnabled false so a swipe cannot skip a step.
+- Set swipeEnabled true on a mobile Tabs with a hidden strip that users must swipe; hidden strips stopped swiping in Oct 2026.
+- Set collapseHeaderToSafeArea on a mobile Tabs whose header slot starts under the status bar, or the strip pins under the notch.
+- List every Android signing key's SHA-256 fingerprint in App Build Config; a missing one makes app links open in the browser.
+- Mirror Form appearance.customStyles in additional.customCSS, or the mobile page transform deletes it.
+- Don't use a weekly Calendar with minDate, maxDate, events or disabledDates; the strip reads none of them.
+- Check a mobile Camera gallery pick's file type; videos also arrive through onPhotoCapture.
+- Bind a mobile Carousel's defaultSlideIndex to a number, not text, or next-page jumps to the last slide.
+- Give a mobile Divider an explicit orientation and w-full width (or a height when vertical), or it collapses.
+- Size a FlippableCard for its taller side; the back face is clipped to the front's box.
+- Use Image blocks for PNG or JPG; an Icon or link decorator pointed at a bitmap draws nothing on the phone.
+- Write mobile colours on IconButton, FileUpload and Avatar as {custom:"#RRGGBBAA"}; a bare hex paints nothing.
+- Write an Iframe that uses srcDoc with src set to empty; the seeded src wins otherwise.
+- Add storageAndCookies true whenever an Iframe has an attributes object, or the page loses localStorage.
+- Keep a base64 Image src's data:image prefix; the bare payload loads nothing.
+- Pre-format KeyValue NUMBER values as strings for display; iOS ignores decimalPlaces, notation and long unit names.
+- Don't nest a tappable inside a block-type Link; the inner block takes the tap.
+- Set autoPlay true explicitly on a hand-written mobile Lottie; absent sits still on the phone.
+- Don't set a Media block's maxUpfrontItems to 0 or singleItemPreview for documents; both draw or tap to nothing.
+- Give a BottomSheet backdrop colour an opacity or alpha token; a plain hex hides the page behind it.
+- Don't promise PDF download, rotate or custom actions on mobile; the phone PDFViewer toolbar has title and paging only.
+- Bind a style to the same condition when a Pressable is disabled; disabled only stops the tap and looks live.
+- Write absolute-position offsets in mobile customStyles as unitless numbers; "8px" pins the block top-left.
+- Write a Gauge's color and trackColor and its max explicitly; there is no fallback on the phone.
+- Give a QRCode matching width and height and padding on a light parent so a camera has a quiet zone.
+- Don't add or remove a Stack's first or last effect when its children hold state; it remounts and resets them.
+- Don't leave enableTrendColor on a STRING StatCard; the text turns red and stays red.
+- Hide a step on mobile rather than relying on allowNavigation false; the phone keeps it tappable.
+- Don't rely on SwipeableStack allowedSwipes or enableLoop false on mobile; every direction completes and it always loops.
+- Don't fill TextInput start or end slots while a prefixIcon or suffixIcon name is set; the icon hides both slots.
+- Write mobile text colours as tokens or hex, never {custom:"var(--...)"}; the phone doesn't resolve variables there.
+- Use a listed weight (not semibold, 600 or font-bold) on mobile Typography and Timer, or no theme face is chosen.
+- Use PLAIN_TEXT, not MARKDOWN, for mobile text needing a hex colour, line height, alignment or line cap.
+- Use adaptive_sheet or full_screen_modal, not modal, for pageTransitionBehavior, with overridePageAnimation true.
+- Use standalone inputs, not a Form, on mobile when errors must show on blur, per-field label styles or steps.
+- Set statusBar style dark on light pages and light on dark ones, and set navigationBar style too.
+- Match activeTab against a slug, not a page id; keep the tab bar height in one app variable.
+- Keep a floating tab bar's root free of overflow scroll tokens and background images, or it stops floating.
+
+## P3
+
+- Keep the page-padding Stack directly under `root_id`.
+- Don't put a Stack inside a Pressable for layout.
+- Use one press style app-wide: Android ripple off, one dim or highlight per control type, a light haptic on primary actions, toggles and tabs.
+- Use letter spacing only on PLAIN_TEXT Typography, as appearance.letterSpacing.
+- Draw native shadows with appearance.effects drop-shadow on a Stack; box-shadow does nothing.
+- Set a status bar style (properties.statusBar.style) on every mobile page.
+- Read deviceContext.permissions.location as isBgLocationAllowed, isWhenInUseAllowed or isNotAllowed, never the deprecated allowed.
+- Use full public https addresses for Media previewUrl; a /path preview never loads on the phone.
+- Keep borders on all four sides equal on a rounded Pressable; per-side values make the whole border vanish.
+- Give a Repeatable separator its own styles when enabled; without them no line shows.
+- Write StepIndicator ring colour as a border-* token or hex on mobile; ring-* tokens and the default draw nothing.

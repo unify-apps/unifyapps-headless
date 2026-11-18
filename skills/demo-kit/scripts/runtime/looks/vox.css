@@ -1,0 +1,22 @@
+/* Vox's explainer look: newsprint with grain, condensed black headlines, a yellow highlighter swept behind the key
+ * words, black label tags, hard cut-out shadows on screens and cards, yellow for the spoken word. Colours come only from
+ * the theme's tokens; the grain is a fixed noise picture, so every frame draws the same. */
+body.look-vox #stage { background: var(--paper); }
+body.look-vox #stage::after { content: ''; position: absolute; inset: 0; z-index: 7; pointer-events: none; opacity: .2; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .42 0 0 0 0 .38 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23n)'/%3E%3C/svg%3E"); }
+body.look-vox .kicker { display: inline-block; padding: 9px 13px 8px; background: var(--ink); color: var(--paper); font-weight: 600; }
+body.look-vox .gr-deep .kicker { background: var(--mark); color: var(--ink); }
+body.look-vox .h2 { font-weight: 600; font-size: 78px; line-height: 1.02; letter-spacing: -.005em; }
+body.look-vox .h2 em, body.look-vox .sc-title em, body.look-vox .sc-statement em { font-style: normal; color: var(--ink); padding: 0 .08em; margin: 0 -.08em;
+  background-image: linear-gradient(var(--mark), var(--mark)); background-repeat: no-repeat; background-position: 0 88%; background-size: 0% 62%; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+body.look-vox .gr-deep .h2 em, body.look-vox .sc-statement.gr-deep em, body.look-vox .sc-title.gr-deep em { color: var(--mark); background-image: none; }
+body.look-vox .sc-title .tt .t1 { font-weight: 600; font-size: 136px; line-height: .98; letter-spacing: -.01em; }
+body.look-vox .sc-title .pt .t1, body.look-vox .sc-title .q { font-weight: 600; line-height: 1; letter-spacing: -.005em; }
+body.look-vox .sc-title .qs .num { font-weight: 600; }
+body.look-vox .sc-stats.gr-deep .num, body.look-vox .sc-title.gr-deep .qs .num { color: var(--on-deep); }
+body.look-vox .sc-statement .big { font-weight: 600; font-size: 104px; line-height: 1.02; }
+body.look-vox .sc-screen .shot { border-radius: 3px; box-shadow: 10px 10px 0 var(--ink), 0 0 0 3px var(--ink); }
+body.look-vox .sc-stats .it .num, body.look-vox .sc-stats .num { font-weight: 600; }
+body.look-vox #cap { background: var(--ink); border-radius: 4px; font-weight: 700; }
+body.look-vox #cap span.now { color: var(--mark); }
+body.look-vox #bar { background: var(--mark); opacity: 1; }

@@ -1,0 +1,111 @@
+{
+  "name": "unifyapps-headless",
+  "version": "0.0.1",
+  "description": "Build UnifyApps solutions from your AI coding agent",
+  "mcpServers": {
+    "application-builder": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/application-builder"
+      ]
+    },
+    "object": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/object"
+      ]
+    },
+    "automation-code": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/automation-code"
+      ]
+    },
+    "agent-builder": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/agent-builder"
+      ]
+    },
+    "app-testing": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/app-testing"
+      ]
+    },
+    "connection": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/connection"
+      ]
+    },
+    "solution": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/solution"
+      ]
+    },
+    "evaluation": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/evaluation"
+      ]
+    },
+    "api-gateway": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/api-gateway"
+      ]
+    },
+    "connectors-sdk": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/connectors-sdk"
+      ]
+    },
+    "changeset": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/changeset"
+      ]
+    },
+    "code-builder": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/code-builder"
+      ]
+    },
+    "context-graph": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}${/}scripts${/}run-node.sh",
+        "${extensionPath}${/}scripts${/}mcp-bridge.mjs",
+        "/mcp/context-graph"
+      ]
+    }
+  }
+}

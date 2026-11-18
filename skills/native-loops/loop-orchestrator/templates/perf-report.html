@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep performance report</title>
+<!-- Filled by `loops.mjs perf render` from perf.json (schema loops.perf/1, MOBILE or WEB): the JSON block below is the only part that changes. -->
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --good: #0ca30c; --good-ink: #006300; --warn: #fab219; --warn-ink: #8a5a00; --bad: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --s1: #3987e5; --good-ink: #0ca30c; --warn-ink: #fab219;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --s1: #3987e5; --good-ink: #0ca30c; --warn-ink: #fab219;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 28px 16px 48px; }
+header h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--ink-2); }
+h2 { font-size: 16px; margin: 32px 0 10px; }
+h3 { font-size: 14px; margin: 14px 0 6px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; color: var(--ink-2); font-size: 13px; }
+.meta b { color: var(--ink); font-weight: 600; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 20px; }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; }
+.tile .label { color: var(--muted); font-size: 12px; }
+.tile .value { font-size: 24px; font-weight: 600; margin-top: 2px; }
+.tile .sub { color: var(--ink-2); font-size: 12px; overflow-wrap: anywhere; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 14px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.wrap { overflow-wrap: anywhere; min-width: 160px; }
+.empty { color: var(--muted); font-style: italic; margin: 4px 0; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--ring); white-space: nowrap; }
+.chip.pass { color: var(--good-ink); }
+.chip.warn { color: var(--warn-ink); }
+.chip.fail { color: var(--bad); }
+details { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 10px 14px; margin-top: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+.chart text.value { fill: var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--ink-2); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+ul.notes { margin: 0; padding-left: 18px; color: var(--ink-2); }
+footer { margin-top: 36px; color: var(--muted); font-size: 12px; }
+@media (max-width: 560px) { .tile .value { font-size: 20px; } th, td { padding: 6px; } }
+</style>
+</head>
+<body>
+<main id="app"><p class="empty">This report needs JavaScript to draw its data.</p></main>
+<script type="application/json" id="data">__LOOPS_DATA__</script>
+<script>
+(function () {
+  'use strict';
+  var data = JSON.parse(document.getElementById('data').textContent);
+  var SVG = 'http://www.w3.org/2000/svg';
+  var app = document.getElementById('app');
+  app.textContent = '';
+
+  function h(tag, attrs) {
+    var node = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (key) {
+      if (key === 'text') node.textContent = attrs[key];
+      else if (key === 'cls') node.className = attrs[key];
+      else node.setAttribute(key, attrs[key]);
+    });
+    for (var i = 2; i < arguments.length; i++) if (arguments[i] != null) node.appendChild(typeof arguments[i] === 'string' ? document.createTextNode(arguments[i]) : arguments[i]);
+    return node;
+  }
+  function svg(tag, attrs) {
+    var node = document.createElementNS(SVG, tag);
+    Object.keys(attrs || {}).forEach(function (key) { node.setAttribute(key, attrs[key]); });
+    return node;
+  }
+  function num(value, digits) { return value == null ? '—' : Number(value).toLocaleString('en-US', { maximumFractionDigits: digits == null ? 1 : digits }); }
+  function withUnit(value, unit) {
+    if (value == null) return '—';
+    if (unit === 'count') return num(value, 0);
+    if (unit === '%') return num(value) + '%';
+    if (unit === 'score') return num(value, 3);
+    return num(value, unit === 'ms' ? 0 : 1) + ' ' + unit;
+  }
+  function kb(bytes) { return bytes == null ? '—' : num(bytes / 1024, 0) + ' KB'; }
+  function when(iso) { return iso ? String(iso).replace('T', ' ').replace(/\.\d+Z$/, 'Z') : '—'; }
+  var VERDICT_TEXT = { pass: '✓ pass', warn: '! warn', fail: '✕ fail' };
+  var VERDICT_COLOR = { pass: 'var(--good)', warn: 'var(--warn)', fail: 'var(--bad)' };
+  function verdict(value) { return value ? h('span', { cls: 'chip ' + value, text: VERDICT_TEXT[value] || value }) : h('span', { cls: 'chip', text: '– none' }); }
+  function tile(label, value, sub) { return h('div', { cls: 'tile' }, h('div', { cls: 'label', text: label }), h('div', { cls: 'value', text: value }), sub ? h('div', { cls: 'sub', text: sub }) : null); }
+  function section(title, body) { app.appendChild(h('h2', { text: title })); app.appendChild(body); }
+  function empty(text) { return h('p', { cls: 'empty', text: text }); }
+  function card() { var node = h('div', { cls: 'card' }); for (var i = 0; i < arguments.length; i++) if (arguments[i]) node.appendChild(arguments[i]); return node; }
+  function tableOf(columns, rows, emptyText) {
+    if (!rows || !rows.length) return empty(emptyText);
+    var head = h('tr');
+    columns.forEach(function (column) { head.appendChild(h('th', { cls: column.num ? 'num' : '', text: column.title })); });
+    var body = h('tbody');
+    rows.forEach(function (row) {
+      var tr = h('tr');
+      columns.forEach(function (column) {
+        var value = column.render(row);
+        var td = h('td', { cls: column.num ? 'num' : column.cls || '' });
+        if (value instanceof Node) td.appendChild(value); else td.textContent = value == null || value === '' ? '—' : String(value);
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    return h('table', null, h('thead', null, head), body);
+  }
+
+  // One bullet row per metric, each on its own scale: the bar is the value, coloured by its
+  // verdict (with the verdict word beside it); the two rules are the pass and warn thresholds.
+  function bulletChart(metrics) {
+    if (!metrics.length) return empty('No metric was measured.');
+    var labelW = 210, chartW = 470, valueW = 130, rowH = 30, top = 6;
+    var height = top + metrics.length * rowH + 20;
+    var box = svg('svg', { class: 'chart', viewBox: '0 0 ' + (labelW + chartW + valueW) + ' ' + height, role: 'img', 'aria-label': 'Each metric against its pass and warn thresholds' });
+    metrics.forEach(function (m, index) {
+      var y = top + index * rowH;
+      var maxValue = Math.max(m.value || 0, m.warn || 0, m.pass || 0) * 1.15 || 1;
+      var scale = function (v) { return labelW + (Math.max(0, v) / maxValue) * chartW; };
+      var label = svg('text', { x: labelW - 10, y: y + 18, 'text-anchor': 'end' });
+      label.textContent = m.label.length > 34 ? m.label.slice(0, 33) + '…' : m.label;
+      box.appendChild(label);
+      box.appendChild(svg('rect', { x: labelW, y: y + 9, width: chartW, height: 12, rx: 2, fill: 'var(--grid)' }));
+      var width = Math.max(1, scale(m.value || 0) - labelW);
+      var rect = svg('rect', { x: labelW, y: y + 9, width: width.toFixed(1), height: 12, rx: 3, fill: VERDICT_COLOR[m.verdict] || 'var(--s1)' });
+      var title = svg('title', {});
+      title.textContent = m.label + ': ' + withUnit(m.value, m.unit) + ' (pass ≤ ' + withUnit(m.pass, m.unit) + ', warn ≤ ' + withUnit(m.warn, m.unit) + ')' + (m.step ? ' — worst step ' + m.step : '');
+      rect.appendChild(title);
+      box.appendChild(rect);
+      [['pass', 'var(--ink-2)', '0'], ['warn', 'var(--ink-2)', '4 3']].forEach(function (rule) {
+        if (m[rule[0]] == null) return;
+        var x = scale(m[rule[0]]);
+        box.appendChild(svg('line', { x1: x, x2: x, y1: y + 5, y2: y + 25, stroke: rule[1], 'stroke-width': 1.5, 'stroke-dasharray': rule[2] }));
+      });
+      var value = svg('text', { class: 'value', x: labelW + chartW + 10, y: y + 18 });
+      value.textContent = withUnit(m.value, m.unit) + '  ' + (VERDICT_TEXT[m.verdict] || '');
+      box.appendChild(value);
+    });
+    return box;
+  }
+
+  var run = data.run || {};
+  var appInfo = data.app || {};
+  var device = data.device || {};
+  var summary = data.summary || {};
+  // A WEB run (web-profile, in the UnifyApps Headless browser) has no frames, no CPU profile and no re-render counts;
+  // it has per-step LCP, long tasks, INP and resources instead.
+  var WEB = data.platform === 'web';
+  document.title = 'Deep performance report — ' + (appInfo.name || appInfo.id || run.id || 'run');
+
+  app.appendChild(h('header', null,
+    h('h1', { text: 'Deep performance report' }),
+    h('p', { text: [appInfo.name, appInfo.id].filter(Boolean).join(' · ') + ((data.pages || []).length ? ' — ' + data.pages.map(function (p) { return p.name || p.id; }).join(', ') : '') }),
+    h('div', { cls: 'meta' },
+      h('span', null, 'Run ', h('b', { text: run.id || '—' })),
+      h('span', null, 'Built ', h('b', { text: when(run.generatedAt) })),
+      h('span', null, 'Scope ', h('b', { text: run.scope || '—' })),
+      h('span', null, 'Mode ', h('b', { text: run.mode || '—' })),
+      WEB ? h('span', null, 'Browser ', h('b', { text: [device.name, device.model].filter(Boolean).join(' · ') || '—' }))
+        : h('span', null, 'Device ', h('b', { text: [device.name, device.model, device.runtime, device.platform].filter(Boolean).join(' · ') || '—' })),
+      WEB ? h('span', null, 'Route ', h('b', { text: device.route || '—' }))
+        : h('span', null, 'Build ', h('b', { text: [device.profile, device.buildKind].filter(Boolean).join(' · ') || '—' })))));
+
+  var worst = summary.worst || [];
+  app.appendChild(h('div', { cls: 'tiles' },
+    tile('Verdict', run.verdict ? (VERDICT_TEXT[run.verdict] || run.verdict) : '—', num(summary.metrics, 0) + ' metrics measured'),
+    tile('Fail · warn · pass', num(summary.fail, 0) + ' · ' + num(summary.warn, 0) + ' · ' + num(summary.pass, 0)),
+    tile('Worst', worst[0] ? withUnit(worst[0].value, worst[0].unit) : '—', worst[0] ? worst[0].label + (worst[0].step ? ' · ' + worst[0].step : '') : 'nothing over its threshold'),
+    tile(WEB ? 'Data sources' : 'Network', num((data.network || {}).calls, 0) + ' calls', kb((data.network || {}).bytes) + ' · ' + num(((data.network || {}).duplicates || []).length, 0) + ' duplicated'),
+    WEB ? tile('JS heap peak', withUnit((data.memory || {}).jsHeapPeakMB, 'MB'), 'growth per interaction: the jsHeapGrowthMB metric')
+      : tile('Memory', (data.memory || {}).leakSuspect ? '✕ leak suspected' : '✓ no leak seen', 'JS heap peak ' + withUnit((data.memory || {}).jsHeapPeakMB, 'MB')),
+    tile('Findings', num(summary.findings, 0), num(summary.unmeasured, 0) + ' metrics not measured')));
+
+  var legend = h('div', { cls: 'legend' });
+  [['pass', 'Pass'], ['warn', 'Warn'], ['fail', 'Fail']].forEach(function (item) { var i = h('i'); i.style.background = VERDICT_COLOR[item[0]]; legend.appendChild(h('span', null, i, item[1])); });
+  legend.appendChild(h('span', { text: 'Solid rule: pass threshold · dashed rule: warn threshold' }));
+  section('Metrics against their thresholds', card(bulletChart(data.metrics || []), legend));
+
+  section('Metrics', card(tableOf([
+    { title: 'Metric', render: function (m) { return m.label; } },
+    { title: 'Value', num: true, render: function (m) { return withUnit(m.value, m.unit); } },
+    { title: 'Pass ≤', num: true, render: function (m) { return withUnit(m.pass, m.unit); } },
+    { title: 'Warn ≤', num: true, render: function (m) { return withUnit(m.warn, m.unit); } },
+    { title: 'Verdict', render: function (m) { return verdict(m.verdict); } },
+    { title: 'Worst step', render: function (m) { return m.step; } },
+    { title: 'Samples', render: function (m) { return (m.samples || []).map(function (s) { return (s.step || '?') + ' ' + withUnit(s.value, m.unit); }).join(' · '); }, cls: 'wrap' },
+    { title: 'Evidence', render: function (m) { return m.evidence; }, cls: 'wrap' }
+  ], data.metrics, 'No metric was measured.')));
+
+  if ((data.unmeasured || []).length) {
+    section('Not measured', card(tableOf([
+      { title: 'Metric', render: function (u) { return u.metric; } },
+      { title: 'Why', render: function (u) { return u.reason; }, cls: 'wrap' }
+    ], data.unmeasured, '')));
+  }
+
+  var WEB_STEP_COLUMNS = [
+    { title: 'Step', render: function (s) { return s.name; } },
+    { title: 'Kind', render: function (s) { return (s.kind || '—') + ((s.cache || []).length ? ' · ' + s.cache.join(', ') + ' cache' : ''); } },
+    { title: 'Page', render: function (s) { return s.pageId; } },
+    { title: 'Runs', num: true, render: function (s) { return num(s.runs, 0); } },
+    { title: 'LCP', num: true, render: function (s) { return withUnit((s.times || {}).lcpMs, 'ms'); } },
+    { title: 'FCP', num: true, render: function (s) { return withUnit((s.times || {}).fcpMs, 'ms'); } },
+    { title: 'TTFB', num: true, render: function (s) { return withUnit((s.times || {}).ttfbMs, 'ms'); } },
+    { title: 'INP', num: true, render: function (s) { return withUnit((s.times || {}).inpMs, 'ms') + (s.inp && s.inp.approximate ? ' (approx.)' : ''); } },
+    { title: 'Longest task', num: true, render: function (s) { return withUnit((s.times || {}).longestTaskMs, 'ms'); } },
+    { title: 'TBT', num: true, render: function (s) { return withUnit((s.times || {}).totalBlockingTimeMs, 'ms'); } },
+    { title: 'CLS', num: true, render: function (s) { return withUnit((s.times || {}).cls, 'score'); } },
+    { title: 'Data sources (dup)', num: true, render: function (s) { return s.requests ? num(s.requests.calls, 0) + ' (' + num(s.requests.duplicateCalls, 0) + ')' : '—'; } },
+    { title: 'JS heap', num: true, render: function (s) { return s.heapBeforeMB == null ? withUnit(s.heapAfterMB, 'MB') : num(s.heapBeforeMB) + ' → ' + num(s.heapAfterMB) + ' MB'; } },
+    { title: 'Blocks', num: true, render: function (s) { return num(s.blocks, 0); } }
+  ];
+  section('Steps', card(tableOf(WEB ? WEB_STEP_COLUMNS : [
+    { title: 'Step', render: function (s) { return s.name; } },
+    { title: 'Kind', render: function (s) { return [s.kind, s.openKind].filter(Boolean).join(' · '); } },
+    { title: 'Page', render: function (s) { return s.pageId; } },
+    { title: 'Runs', num: true, render: function (s) { return num(s.runs, 0); } },
+    { title: 'TTR', num: true, render: function (s) { return withUnit((s.times || {}).ttrMs, 'ms'); } },
+    { title: 'TTI', num: true, render: function (s) { return withUnit((s.times || {}).ttiMs, 'ms'); } },
+    { title: 'Transition', num: true, render: function (s) { return withUnit((s.times || {}).transitionMs, 'ms'); } },
+    { title: 'Longest freeze', num: true, render: function (s) { return withUnit((s.times || {}).longestFreezeMs, 'ms'); } },
+    { title: 'Frames dropped', num: true, render: function (s) { return s.frames ? withUnit(s.frames.droppedPct, '%') : '—'; } },
+    { title: 'Calls (dup)', num: true, render: function (s) { return s.requests ? num(s.requests.calls, 0) + ' (' + num(s.requests.duplicateCalls, 0) + ')' : '—'; } },
+    { title: 'JS heap', num: true, render: function (s) { return s.heapBeforeMB == null ? '—' : num(s.heapBeforeMB) + ' → ' + num(s.heapAfterMB) + ' MB'; } },
+    { title: 'Blocks', num: true, render: function (s) { return num(s.blocks, 0); } }
+  ], data.steps, 'No steps.')));
+
+  var network = data.network || {};
+  function callOf(d) { return (WEB && d.name ? d.name + ' · ' : '') + (d.method || '') + ' ' + (d.url || ''); }
+  section(WEB ? 'Data-source calls' : 'Network', card(
+    h('p', { text: num(network.calls, 0) + (WEB ? ' data-source calls (browser.mjs calls) · ' : ' calls · ') + kb(network.bytes) + ' received · ' + num(network.failed, 0) + ' failed' }),
+    h('h3', { text: WEB ? 'Duplicate calls (the same source with the same body within 2 s)' : 'Duplicate calls (same method, path and body within 2 s)' }),
+    tableOf([
+      { title: 'Step', render: function (d) { return d.step; } },
+      { title: WEB ? 'Source' : 'Call', render: callOf, cls: 'wrap' },
+      { title: 'Times', num: true, render: function (d) { return num(d.count, 0); } },
+      { title: 'Body hash', render: function (d) { return d.bodyHash; } }
+    ], network.duplicates, 'No duplicate calls.'),
+    h('h3', { text: 'Slowest calls' }),
+    tableOf([
+      { title: 'Step', render: function (r) { return r.step; } },
+      { title: WEB ? 'Source' : 'Call', render: callOf, cls: 'wrap' },
+      { title: 'Time', num: true, render: function (r) { return withUnit(r.ms, 'ms'); } },
+      { title: 'Size', num: true, render: function (r) { return kb(r.bytes); } },
+      { title: 'Status', num: true, render: function (r) { return r.status; } }
+    ], network.slowest, 'No call timings.')));
+
+  var memory = data.memory || {};
+  var frames = data.frames;
+  if (WEB) section('Long tasks and memory', card(
+    h('p', { text: 'JS frames are not measured on WEB: long tasks (or long animation frames, where the browser reports no long task) stand in, per step.' }),
+    tableOf([
+      { title: 'Step', render: function (s) { return s.name; } },
+      { title: 'Read from', render: function (s) { return s.longTasks ? s.longTasks.source : null; } },
+      { title: 'Long tasks', num: true, render: function (s) { return s.longTasks ? num(s.longTasks.count, 0) : '—'; } },
+      { title: 'Longest', num: true, render: function (s) { return s.longTasks ? withUnit(s.longTasks.longestMs, 'ms') : '—'; } },
+      { title: 'Blocking', num: true, render: function (s) { return s.longTasks ? withUnit(s.longTasks.totalBlockingMs, 'ms') : '—'; } },
+      { title: 'Largest paint', render: function (s) { return s.lcp ? withUnit(s.lcp.ms, 'ms') + ' · ' + [s.lcp.tag, s.lcp.blockId].filter(Boolean).join(' ') : '—'; } }
+    ], data.steps, 'No steps.'),
+    h('p', { text: 'JS heap peak ' + withUnit(memory.jsHeapPeakMB, 'MB') + ' (performance.memory); no RSS and no repeat trend on WEB: heap growth per interaction is the jsHeapGrowthMB metric.' })));
+  else section('Frames and memory', card(
+    h('p', { text: frames ? 'JS frames: ' + num(frames.dropped, 0) + ' of ' + num(frames.total, 0) + ' dropped (' + withUnit(frames.droppedPct, '%') + '), worst gap ' + withUnit(frames.worstGapMs, 'ms') + ', ' + num(frames.longFrames, 0) + ' long frames' : 'JS frames: not measured' }),
+    h('p', { text: 'JS heap peak ' + withUnit(memory.jsHeapPeakMB, 'MB') + ' · RSS peak ' + withUnit(memory.rssPeakMB, 'MB') + ' · ' + num(memory.samples, 0) + ' memory samples' + (memory.appGone ? ' · ✕ the app process ended' : '') }),
+    tableOf([
+      { title: 'Route repeated', render: function (t) { return t.label; } },
+      { title: 'Measure', render: function (t) { return t.key; } },
+      { title: 'Samples', num: true, render: function (t) { return num(t.points, 0); } },
+      { title: 'First → last', num: true, render: function (t) { return num(t.first) + ' → ' + num(t.last); } },
+      { title: 'Peak', num: true, render: function (t) { return num(t.peak); } },
+      { title: 'Per repeat', num: true, render: function (t) { return num(t.slopePerSample, 2); } },
+      { title: 'Leak', render: function (t) { return t.leakSuspect ? h('span', { cls: 'chip fail', text: '✕ suspected' }) : h('span', { cls: 'chip pass', text: '✓ no' }); } }
+    ], memory.trends, 'No memory trend (repeat a route three times or more).')));
+
+  section('Images', card(tableOf([
+    { title: 'Image', render: function (a) { return a.uri; }, cls: 'wrap' },
+    { title: 'Shown by', render: function (a) { return a.component; } },
+    { title: 'Count', num: true, render: function (a) { return num(a.count, 0); } },
+    { title: 'Size', num: true, render: function (a) { return a.width && a.height ? a.width + '×' + a.height : '—'; } },
+    { title: 'Weight', num: true, render: function (a) { return a.kb == null ? '—' : num(a.kb, 0) + ' KB'; } },
+    { title: 'Format', render: function (a) { return a.format; } },
+    { title: 'Verdict', render: function (a) { return a.verdict ? verdict(a.verdict) : '—'; } },
+    { title: 'Why', render: function (a) { return a.why; }, cls: 'wrap' }
+  ], data.assets, 'No images measured.')));
+
+  if (WEB) section('Resources', card(tableOf([
+    { title: 'Step', render: function (s) { return s.name; } },
+    { title: 'Requests', num: true, render: function (s) { return s.resources ? num(s.resources.count, 0) : '—'; } },
+    { title: 'Transferred', num: true, render: function (s) { return s.resources ? withUnit(s.resources.transferKB, 'KB') : '—'; } },
+    { title: 'DOM elements', num: true, render: function (s) { return num(s.domNodes, 0); } },
+    { title: 'Largest', render: function (s) { return s.resources ? (s.resources.largest || []).map(function (r) { return (r.path || '?') + ' ' + withUnit(r.kb, 'KB'); }).join(' · ') : '—'; }, cls: 'wrap' }
+  ], (data.steps || []).filter(function (s) { return s.resources; }), 'No resource timing (an open step reads it).')));
+  else section('Re-renders and lists', card(
+    tableOf([
+      { title: 'Kind', render: function (r) { return r.kind; } },
+      { title: 'Block or component', render: function (r) { return r.id; }, cls: 'wrap' },
+      { title: 'Renders', num: true, render: function (r) { return num(r.renders, 0); } },
+      { title: 'Step', render: function (r) { return r.step; } }
+    ], (data.rerenders || []).slice(0, 15), 'No re-render counts (run a step with --render-counts).'),
+    h('h3', { text: 'Lists' }),
+    tableOf([
+      { title: 'List block', render: function (l) { return l.listBlockId; } },
+      { title: 'Rows mounted', num: true, render: function (l) { return num(l.rows, 0); } },
+      { title: 'Data rows', num: true, render: function (l) { return num(l.dataRows, 0); } },
+      { title: 'Blocks per row', num: true, render: function (l) { return num(l.blocksPerRow, 0); } },
+      { title: 'Verdict', render: function (l) { return l.verdict ? verdict(l.verdict) : '—'; } },
+      { title: 'Step', render: function (l) { return l.step; } }
+    ], data.lists, 'No lists.')));
+
+  var cpu = data.cpu || {};
+  if (WEB) section('CPU', card(h('p', { text: 'CPU profiles are not taken on WEB: tracing is refused in a signed-in browser, and long tasks stand in (Long tasks and memory, above).' })));
+  else section('CPU', card(
+    h('p', { text: num((cpu.profiles || []).length, 0) + ' CPU profiles' + (cpu.devOnlyPctMax != null ? ' · dev-only work up to ' + num(cpu.devOnlyPctMax) + '% (a release build does not pay it)' : '') }),
+    tableOf([
+      { title: 'Group', render: function (g) { return g.group; } },
+      { title: 'Share', num: true, render: function (g) { return num(g.pct) + '%'; } },
+      { title: 'Seconds', num: true, render: function (g) { return num(g.sec); } },
+      { title: 'Window', render: function (g) { return g.window; } }
+    ], cpu.topGroups, 'No CPU groups.')));
+
+  section('Findings (the fix loop\'s feed)', card(tableOf([
+    { title: '#', num: true, render: function (f) { return f.rank == null ? '—' : f.rank; } },
+    { title: 'Id', render: function (f) { return f.id; } },
+    { title: 'Severity', render: function (f) { return f.severity; } },
+    { title: 'Kind', render: function (f) { return f.kind; } },
+    { title: 'Page', render: function (f) { return f.page; }, cls: 'wrap' },
+    { title: 'What', render: function (f) { return f.what; }, cls: 'wrap' },
+    { title: 'Evidence', render: function (f) { return [f.metric, f.evidence].filter(Boolean).join(' · '); }, cls: 'wrap' },
+    { title: 'Fix', render: function (f) { return (f.fix || '—') + (f.needsCode ? ' (needs a code change)' : '') + (f.gain ? ' — ' + f.gain : ''); }, cls: 'wrap' }
+  ], data.findings, data.findingsSource ? 'findings.json was not found beside perf.json.' : 'No findings.')));
+
+  if ((data.notes || []).length) {
+    var list = h('ul', { cls: 'notes' });
+    data.notes.forEach(function (note) { list.appendChild(h('li', { text: note })); });
+    section('Notes', card(list));
+  }
+
+  app.appendChild(h('footer', { text: 'Rendered by loops.mjs perf render from perf.json (loops.perf/1). The same data always gives the same page.' }));
+})();
+</script>
+</body>
+</html>

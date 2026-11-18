@@ -1,0 +1,357 @@
+<meta charset="utf-8">
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* One page at a time: pick a page in the bar, its issues list as one-line rows by severity, a row opens to the fix and the config. */
+:root {
+  --bg: #ffffff; --ink: #111111; --soft: #4a4a4a; --muted: #767676; --line: #ebebeb; --line-strong: #d6d6d6; --wash: #f7f7f7; --hover: #f4f4f4;
+  --p0: #c4321f; --p0-bg: #fef3f2; --p1: #b54708; --p1-bg: #fff6e8; --p2: #6b6b6b; --p2-bg: #f2f2f2; --p3: #a3a3a3; --p3-bg: #f7f7f7;
+  --ok: #067647;
+  --sans: "Geist", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f0f0f; --ink: #ededed; --soft: #c2c2c2; --muted: #8f8f8f; --line: #232323; --line-strong: #333333; --wash: #161616; --hover: #1a1a1a;
+  --p0: #ff8a80; --p0-bg: #2c1412; --p1: #fbbf6a; --p1-bg: #2b1d0c; --p2: #a8a8a8; --p2-bg: #1f1f1f; --p3: #6e6e6e; --p3-bg: #1a1a1a;
+  --ok: #4ccf8a; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0f0f0f; --ink: #ededed; --soft: #c2c2c2; --muted: #8f8f8f; --line: #232323; --line-strong: #333333; --wash: #161616; --hover: #1a1a1a;
+  --p0: #ff8a80; --p0-bg: #2c1412; --p1: #fbbf6a; --p1-bg: #2b1d0c; --p2: #a8a8a8; --p2-bg: #1f1f1f; --p3: #6e6e6e; --p3-bg: #1a1a1a;
+  --ok: #4ccf8a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+.page { max-width: 840px; margin: 0 auto; padding: 48px 20px 96px; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 6px; }
+.P0 { --sev: var(--p0); --sev-bg: var(--p0-bg); } .P1 { --sev: var(--p1); --sev-bg: var(--p1-bg); }
+.P2 { --sev: var(--p2); --sev-bg: var(--p2-bg); } .P3 { --sev: var(--p3); --sev-bg: var(--p3-bg); }
+
+.eyebrow { font: 500 13px/1.4 var(--sans); color: var(--muted); }
+h1 { font: 600 clamp(30px, 5vw, 42px)/1.08 var(--sans); letter-spacing: -0.035em; margin: 12px 0 0; text-wrap: balance; }
+.lede { margin: 12px 0 0; font-size: 16.5px; line-height: 1.55; color: var(--soft); max-width: 60ch; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+header .tags { margin-top: 20px; }
+.tag { display: inline-flex; align-items: center; gap: 5px; font: 500 12.5px/1 var(--sans); padding: 5px 9px; border-radius: 999px; background: var(--sev-bg); color: var(--sev); white-space: nowrap; }
+.tag b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.facts { margin: 12px 0 0; font-size: 13.5px; color: var(--muted); }
+
+/* The bar: page picker, filters. Sticks while you read a page. */
+.bar { position: sticky; top: 0; z-index: 5; margin-top: 36px; padding: 12px 0; background: var(--bg); border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.picker { display: flex; align-items: center; gap: 6px; flex: 1 1 340px; min-width: 0; }
+.select { position: relative; flex: 1; min-width: 0; }
+.select select { appearance: none; width: 100%; font: 500 14px/1.3 var(--sans); color: var(--ink); background: var(--bg); border: 1px solid var(--line-strong); border-radius: 8px; padding: 9px 34px 9px 12px; cursor: pointer; text-overflow: ellipsis; }
+.select select:hover, .step:not(:disabled):hover { border-color: var(--muted); }
+.select svg { position: absolute; right: 11px; top: 50%; margin: 0; translate: 0 -50%; pointer-events: none; color: var(--muted); }
+.step { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--soft); }
+.step:disabled { opacity: .35; cursor: default; }
+.seg { display: inline-flex; padding: 3px; border-radius: 8px; background: var(--wash); border: 1px solid var(--line); font-size: 13.5px; }
+.seg button { padding: 5px 11px; border-radius: 6px; color: var(--muted); font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--bg); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .1); }
+.check { display: inline-flex; gap: 7px; align-items: center; font-size: 13.5px; color: var(--soft); cursor: pointer; }
+.check input { accent-color: var(--ink); width: 15px; height: 15px; margin: 0; }
+
+/* What is in view */
+#list { scroll-margin-top: 72px; }
+.scope { margin-top: 28px; }
+.scope-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h2 { font: 600 22px/1.25 var(--sans); letter-spacing: -0.02em; margin: 0; overflow-wrap: anywhere; }
+.scope .tags { margin-top: 10px; align-items: center; }
+.progress { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-left: 4px; }
+.note { margin: 10px 0 0; font-size: 14px; color: var(--muted); max-width: 70ch; }
+.link { font-size: 13.5px; font-weight: 500; color: var(--soft); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
+.link:hover { color: var(--ink); }
+
+.sev-group { margin-top: 28px; }
+.sev-head { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font: 600 13.5px/1.3 var(--sans); }
+.sev-head .count { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.built .note { margin: -4px 0 10px; }
+.rows { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.issue + .issue { border-top: 1px solid var(--line); }
+.issue summary { list-style: none; display: grid; grid-template-columns: 14px minmax(0, 1fr) 16px; gap: 12px; align-items: start; padding: 12px 14px; cursor: pointer; }
+.issue summary::-webkit-details-marker { display: none; }
+.issue summary:hover { background: var(--hover); }
+.issue[open] summary { background: var(--wash); }
+.mark { width: 14px; height: 14px; margin-top: 4px; display: grid; place-items: center; }
+.mark::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--sev); }
+.P2 .mark::before { background: transparent; box-shadow: inset 0 0 0 1.5px var(--sev); }
+.done .mark::before { display: none; }
+.done .mark { color: var(--ok); }
+.what { min-width: 0; }
+.what .t { display: block; font: 500 14.5px/1.5 var(--sans); overflow-wrap: anywhere; }
+.what .where { display: block; margin-top: 2px; font: 12.5px/1.5 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.done .what .t { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+.chev { margin-top: 4px; color: var(--muted); transition: rotate .15s ease; }
+.issue[open] .chev { rotate: 180deg; }
+.more { display: grid; gap: 12px; padding: 4px 16px 16px 40px; background: var(--wash); }
+.field { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; }
+.field > span { font: 500 12px/1.9 var(--sans); color: var(--muted); }
+.field p { margin: 0; font-size: 14.5px; color: var(--soft); overflow-wrap: anywhere; }
+.field pre { margin: 0; padding: 9px 11px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; font: 12.5px/1.6 var(--mono); color: var(--soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+.places { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
+.places li { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr); gap: 12px; color: var(--soft); }
+.places li > b { font-weight: 500; color: var(--soft); overflow-wrap: anywhere; }
+.places li > span { font: 12.5px/1.75 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.places li.here > b, .places li.here > span { color: var(--ink); }
+.places-more summary { cursor: pointer; font-size: 13.5px; white-space: nowrap; width: fit-content; margin-top: 2px; }
+.places-more[open] summary { margin-bottom: 6px; }
+.field p code { font: 12.5px/1.6 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; overflow-wrap: anywhere; }
+.foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.who { font-size: 12.5px; color: var(--muted); }
+.fix-btn { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; color: var(--soft); padding: 5px 10px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--bg); }
+.fix-btn:hover { border-color: var(--muted); }
+.fix-btn[aria-pressed="true"] { color: var(--ok); }
+.empty { margin-top: 28px; padding: 28px; text-align: center; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--muted); font-size: 14px; }
+
+/* How the review was done */
+.method { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); }
+h3.small { font: 600 15px/1.3 var(--sans); margin: 28px 0 0; }
+.read { margin-top: 10px; border-top: 1px solid var(--line); }
+.read div { display: grid; grid-template-columns: minmax(120px, 190px) 44px minmax(0, 1fr); gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.read b { font-weight: 500; overflow-wrap: anywhere; }
+.read .score { font: 500 13px var(--mono); color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.read-head { display: grid; grid-template-columns: minmax(120px, 190px) 44px minmax(0, 1fr); gap: 16px; padding: 8px 0; font-size: 12px; color: var(--muted); }
+.read span:last-child { color: var(--soft); }
+.gaps-box { margin-top: 10px; }
+.gaps-box summary { cursor: pointer; font-size: 14px; color: var(--soft); width: fit-content; }
+.gaps { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 8px; color: var(--soft); font-size: 14px; overflow-wrap: anywhere; }
+footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+
+@media (max-width: 600px) {
+  .page { padding-top: 32px; }
+  .picker { flex-basis: 100%; }
+  .more { padding-left: 16px; }
+  .field { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .read div { grid-template-columns: minmax(0, 1fr) auto; }
+  .read span:last-child { grid-column: 1 / -1; }
+  .places li { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .read-head { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+</style>
+
+<div class="page">
+  <header id="masthead"></header>
+  <div class="bar" id="bar"></div>
+  <main id="list"></main>
+  <section class="method" id="method"></section>
+  <footer id="about"></footer>
+</div>
+
+<script>
+(() => {
+const DATA = __DATA__;
+const SEVS = ['P0', 'P1', 'P2', 'P3'];
+const SEV = { P0: 'Blocks release', P1: 'Fix before release', P2: 'Has a workaround', P3: 'Tidy-up' };
+const SOURCE = { platform: "the platform's checks", script: 'the rule script', reviewer: 'the reviewer' };
+const ALL = '';
+const APP = DATA.appPage;
+const label = page => (page === APP ? 'Whole app' : page);
+const esc = text => String(text ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+// A fix quotes bindings; they read as code, not prose.
+const prose = text => esc(text).replace(/\{\{[\s\S]*?\}\}/g, code => `<code>${code}</code>`);
+const CHEV = '<svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHECK = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const arrow = back => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="${back ? 'M10 4L6 8l4 4' : 'M6 4l4 4-4 4'}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+const KEY = `app-config-review:${DATA.app.id}:${DATA.run}`;
+const load = () => { try { return new Set(JSON.parse(localStorage.getItem(KEY) || '[]')); } catch { return new Set(); } };
+const state = { page: ALL, mustOnly: false, hideDone: false, done: load(), open: new Set() };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...state.done])); } catch { /* kept for this visit only */ } };
+
+const isMust = item => item.sev === 'P0' || item.sev === 'P1';
+// A check found in many places shows on every page it touches, so a page's list is everything you would fix there.
+const pagesOf = item => (item.places ? [...new Set(item.places.map(place => place[0]))] : [item.page]);
+const inScope = item => state.page === ALL || pagesOf(item).includes(state.page);
+const countBy = items => SEVS.map(sev => items.filter(item => item.sev === sev).length);
+const READ = new Map(DATA.pages.map(page => [page.name, page]));
+const PAGES = [...new Set(DATA.findings.flatMap(pagesOf))]
+  .map(page => ({ page, counts: countBy(DATA.findings.filter(item => pagesOf(item).includes(page))) }))
+  .sort((left, right) => {
+    if ((left.page === APP) !== (right.page === APP)) return left.page === APP ? 1 : -1;
+    for (let at = 0; at < SEVS.length; at += 1) if (left.counts[at] !== right.counts[at]) return right.counts[at] - left.counts[at];
+    return left.page.localeCompare(right.page);
+  });
+
+function headline() {
+  const [P0, P1, P2, P3] = SEVS.map(sev => DATA.counts[sev]);
+  if (DATA.verdict === 'block-before-ship') return [`${plural(P0, 'issue')} ${P0 === 1 ? 'blocks' : 'block'} this release.`, `Fix ${P0 === 1 ? 'it' : 'those'} first. ${P1} more should be fixed before release, and ${P2 + P3} can wait.`];
+  if (DATA.verdict === 'polish-before-ship') return [`Nothing blocks release, but ${plural(P1, 'issue')} should be fixed first.`, `${P2 + P3} smaller issues can wait.`];
+  if (DATA.verdict === 'not-evaluable') return ['The review could not read everything it needed.', 'It cannot call this app ready until the gaps under "Not checked" are read. What it did find is below.'];
+  return ['Ready to ship.', P2 + P3 ? `${P2 + P3} small issues can wait.` : 'The review found nothing to fix.'];
+}
+
+const tags = counts => SEVS.map((sev, at) => (counts[at] ? `<span class="tag ${sev}"><b>${counts[at]}</b> ${sev}</span>` : '')).join('');
+
+function masthead() {
+  const [title, lede] = headline();
+  const date = new Date(`${DATA.run.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  document.getElementById('masthead').innerHTML = `
+    <div class="eyebrow">${esc(DATA.app.name)} · config review · ${esc(date)}</div>
+    <h1>${esc(title)}</h1>
+    <p class="lede">${esc(lede)}</p>
+    <div class="tags">${SEVS.map(sev => `<span class="tag ${sev}"><b>${DATA.counts[sev]}</b> ${sev} · ${SEV[sev].toLowerCase()}</span>`).join('')}</div>
+    <p class="facts">${plural(DATA.findings.length, 'issue')} across ${plural(DATA.pageCount, 'page')} of a ${esc(DATA.app.type.toLowerCase())} app${DATA.score === null ? '' : `. Average platform page score ${DATA.score} of 100`}.</p>`;
+}
+
+function bar() {
+  const options = PAGES.map(entry => {
+    const sum = entry.counts.reduce((count, next) => count + next, 0);
+    const urgent = entry.counts[0] ? ` · ${entry.counts[0]} P0` : '';
+    return `<option value="${esc(entry.page)}">${esc(label(entry.page))} · ${plural(sum, 'issue')}${urgent}</option>`;
+  });
+  document.getElementById('bar').innerHTML = `
+    <div class="picker">
+      <button class="step" data-step="-1" aria-label="Previous page">${arrow(true)}</button>
+      <div class="select"><select id="page" aria-label="Page"><option value="">All pages · ${plural(DATA.findings.length, 'issue')}</option>${options.join('')}</select>${CHEV}</div>
+      <button class="step" data-step="1" aria-label="Next page">${arrow(false)}</button>
+    </div>
+    <div class="seg" role="group" aria-label="Which issues to show"><button data-show="all">All</button><button data-show="must">Must fix</button></div>
+    <label class="check"><input type="checkbox" id="hide-done"> Hide fixed</label>`;
+}
+
+function syncBar() {
+  const at = PAGES.findIndex(entry => entry.page === state.page);
+  document.getElementById('page').value = state.page;
+  document.querySelector('[data-step="-1"]').disabled = at === -1;
+  document.querySelector('[data-step="1"]').disabled = at === PAGES.length - 1;
+  document.querySelectorAll('[data-show]').forEach(button => button.setAttribute('aria-pressed', String((button.dataset.show === 'must') === state.mustOnly)));
+  document.getElementById('hide-done').checked = state.hideDone;
+}
+
+function whereLine(item) {
+  if (item.places) {
+    const all = `${plural(item.places.length, 'place')} on ${plural(pagesOf(item).length, 'page')}`;
+    if (state.page === ALL) return all;
+    const here = item.places.filter(place => place[0] === state.page).map(place => place[1]).filter(Boolean);
+    return here.length ? `${here.slice(0, 3).join(', ')}${here.length > 3 ? ` +${here.length - 3} more` : ''} · ${all} in all` : all;
+  }
+  if (state.page === ALL) return item.target ? `${label(item.page)} / ${item.target}` : label(item.page);
+  return item.target ?? 'The page as a whole';
+}
+
+// Every place, one line per page with what is on it; the page in view comes first.
+function whereList(item) {
+  const byPage = new Map();
+  for (const [page, target] of item.places) {
+    if (!byPage.has(page)) byPage.set(page, []);
+    if (target && !byPage.get(page).includes(target)) byPage.get(page).push(target);
+  }
+  const lines = [...byPage].sort(([left], [right]) => Number(right === state.page) - Number(left === state.page))
+    .map(([page, targets]) => `<li${page === state.page ? ' class="here"' : ''}><b>${esc(label(page))}</b><span>${esc(targets.join(', ') || 'the page')}</span></li>`);
+  const SHOWN = 6;
+  if (lines.length <= SHOWN + 2) return `<ul class="places">${lines.join('')}</ul>`;
+  return `<ul class="places">${lines.slice(0, SHOWN).join('')}</ul><details class="places-more"><summary class="link">${plural(lines.length - SHOWN, 'more page')}</summary><ul class="places">${lines.slice(SHOWN).join('')}</ul></details>`;
+}
+
+function row(item) {
+  const done = state.done.has(item.ref);
+  // A row under "How it is built" has no severity heading over it, so it says its own.
+  const who = [item.built ? `${item.sev}, ${SEV[item.sev].toLowerCase()}` : null, `Found by ${SOURCE[item.source]}`, `${item.confidence} confidence`, item.source === 'reviewer' && item.checked ? 'checked by a second model' : null, item.isNew ? 'new since the last review' : null].filter(Boolean).join(' · ');
+  const places = item.places ? `<div class="field"><span>Where</span><div>${whereList(item)}</div></div>` : '';
+  return `<details class="issue ${item.sev}${done ? ' done' : ''}" id="${esc(item.ref)}"${state.open.has(item.ref) ? ' open' : ''}>
+    <summary><span class="mark" aria-hidden="true">${done ? CHECK : ''}</span><span class="what"><span class="t">${esc(item.title)}</span><span class="where">${esc(whereLine(item))}</span></span>${CHEV}</summary>
+    <div class="more">
+      ${item.why ? `<div class="field"><span>Why</span><p>${esc(item.why)}</p></div>` : ''}
+      ${item.fix ? `<div class="field"><span>Fix</span><p>${prose(item.fix)}</p></div>` : ''}
+      ${item.evidence ? `<div class="field"><span>Config</span><pre>${esc(item.evidence)}</pre></div>` : ''}
+      ${places}
+      <div class="foot"><span class="who">${esc(who)}</span><button class="fix-btn" data-ref="${esc(item.ref)}" aria-pressed="${done}">${CHECK}${done ? 'Fixed' : 'Mark fixed'}</button></div>
+    </div>
+  </details>`;
+}
+
+function about() {
+  if (state.page === ALL) return 'Pick a page above to see only what to fix there, or step through the pages with the arrows.';
+  if (state.page === APP) return 'App-level config that is not tied to one page.';
+  const read = READ.get(state.page);
+  if (!read) return 'Checked by the platform and the rule script. A reviewer did not read this page closely in this run.';
+  return `A reviewer read this page closely${read.score == null ? '' : ` (platform score ${read.score} of 100)`}.${read.intent ? ` What it is for: ${read.intent}` : ''}`;
+}
+
+function list() {
+  const scope = DATA.findings.filter(inScope);
+  const visible = scope.filter(item => (!state.mustOnly || isMust(item)) && !(state.hideDone && state.done.has(item.ref)));
+  const must = scope.filter(isMust);
+  const allOpen = visible.length > 0 && visible.every(item => state.open.has(item.ref));
+  // Signs the page was built the wrong way lead: each is a pattern to change, so it sits apart from the single fixes.
+  const built = visible.filter(item => item.built);
+  const builtGroup = built.length ? `<section class="sev-group built"><h3 class="sev-head">How it is built<span class="count">${built.length}</span></h3><p class="note">Signs this will break quietly or be hard to change, even where every setting is valid.</p><div class="rows">${built.map(row).join('')}</div></section>` : '';
+  const groups = builtGroup + SEVS.map(sev => {
+    const items = visible.filter(item => item.sev === sev && !item.built);
+    return items.length ? `<section class="sev-group ${sev}"><h3 class="sev-head"><span class="tag ${sev}">${sev}</span>${SEV[sev]}<span class="count">${items.length}</span></h3><div class="rows">${items.map(row).join('')}</div></section>` : '';
+  }).join('');
+  document.getElementById('list').innerHTML = `
+    <section class="scope">
+      <div class="scope-head"><h2>${state.page === ALL ? 'All pages' : esc(label(state.page))}</h2>${visible.length ? `<button class="link" data-expand>${allOpen ? 'Collapse all' : 'Expand all'}</button>` : ''}</div>
+      <div class="tags">${tags(countBy(scope))}${must.length ? `<span class="progress">${must.filter(item => state.done.has(item.ref)).length} of ${must.length} must-fix done</span>` : ''}</div>
+      <p class="note">${esc(about())}</p>
+    </section>
+    ${groups || `<p class="empty">${scope.length ? 'Nothing here matches these filters.' : 'No issues on this page.'}</p>`}`;
+}
+
+function method() {
+  const read = DATA.pages.length ? `<h3 class="small">Pages a reviewer read closely</h3>
+    <p class="note">The platform's checks and the rule script cover every page. A reviewer also read these, lowest platform score first.</p>
+    <div class="read-head" aria-hidden="true"><span>Page</span><span>Score</span><span>What it is for</span></div><div class="read">${DATA.pages.map(page => `<div><b>${esc(page.name)}</b><span class="score" title="Platform page score">${page.score ?? '–'}<span class="sr"> of 100</span></span><span>${esc(page.intent ?? '')}</span></div>`).join('')}</div>` : '';
+  const later = DATA.later.length ? `<p class="note">Not read closely in this run, so only the platform and the rule script checked them: ${esc(DATA.later.join(', '))}.</p>` : '';
+  const gapList = DATA.gaps.length ? `<h3 class="small">Not checked</h3>
+    <p class="note">What the review could not read, so could not judge. Issues that depend on these have lower confidence.</p>
+    <details class="gaps-box"><summary class="link">${plural(DATA.gaps.length, 'thing')} the review could not read</summary><ul class="gaps">${DATA.gaps.map(text => `<li>${esc(text)}</li>`).join('')}</ul></details>` : '';
+  document.getElementById('method').innerHTML = `<h2>How the review read this app</h2>${read}${later}${gapList}`;
+  document.getElementById('about').textContent = 'Made by /ua:app-config-review from the app’s stored config. Nothing in the app was changed. “Mark fixed” is saved in this browser only.';
+}
+
+function setPage(page) {
+  state.page = page;
+  syncBar();
+  list();
+  const top = document.getElementById('list');
+  if (top.getBoundingClientRect().top < 0) top.scrollIntoView({ block: 'start' });
+}
+
+document.addEventListener('click', event => {
+  const step = event.target.closest('[data-step]');
+  if (step) {
+    const at = PAGES.findIndex(entry => entry.page === state.page) + Number(step.dataset.step);
+    setPage(at < 0 ? ALL : PAGES[at].page);
+    return;
+  }
+  const show = event.target.closest('[data-show]');
+  if (show) { state.mustOnly = show.dataset.show === 'must'; syncBar(); list(); return; }
+  if (event.target.closest('[data-expand]')) {
+    const visible = [...document.querySelectorAll('#list .issue')].map(element => element.id);
+    const allOpen = visible.every(ref => state.open.has(ref));
+    visible.forEach(ref => (allOpen ? state.open.delete(ref) : state.open.add(ref)));
+    list();
+    return;
+  }
+  const fix = event.target.closest('.fix-btn');
+  if (fix) {
+    const ref = fix.dataset.ref;
+    if (state.done.has(ref)) state.done.delete(ref); else state.done.add(ref);
+    save();
+    list();
+    document.querySelector(`.fix-btn[data-ref="${ref}"]`)?.focus();
+  }
+});
+document.addEventListener('change', event => {
+  if (event.target.id === 'page') setPage(event.target.value);
+  if (event.target.id === 'hide-done') { state.hideDone = event.target.checked; list(); }
+});
+document.addEventListener('toggle', event => {
+  const element = event.target;
+  if (!element.classList?.contains('issue')) return;
+  if (element.open) state.open.add(element.id); else state.open.delete(element.id);
+  const button = document.querySelector('[data-expand]');
+  if (button) button.textContent = [...document.querySelectorAll('#list .issue')].every(issue => issue.open) ? 'Collapse all' : 'Expand all';
+}, true);
+
+masthead(); bar(); syncBar(); list(); method();
+})();
+</script>

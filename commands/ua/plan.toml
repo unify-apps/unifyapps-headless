@@ -1,0 +1,6 @@
+description = "Makes a plan for a change to a UnifyApps solution, only when the person asks for one or types /ua:plan — first asks Sonic (a quick plan) or Zen (an in-depth plan), then reads what the change touches, "
+prompt = """
+Run the UnifyApps Headless `plan` skill: read `skills/plan/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

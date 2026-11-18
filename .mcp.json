@@ -1,0 +1,102 @@
+{
+  "mcpServers": {
+    "application-builder": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/application-builder"
+      ]
+    },
+    "object": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/object"
+      ]
+    },
+    "automation-code": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/automation-code"
+      ]
+    },
+    "agent-builder": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/agent-builder"
+      ]
+    },
+    "app-testing": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/app-testing"
+      ]
+    },
+    "connection": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/connection"
+      ]
+    },
+    "solution": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/solution"
+      ]
+    },
+    "evaluation": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/evaluation"
+      ]
+    },
+    "api-gateway": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/api-gateway"
+      ]
+    },
+    "connectors-sdk": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/connectors-sdk"
+      ]
+    },
+    "changeset": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/changeset"
+      ]
+    },
+    "code-builder": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/code-builder"
+      ]
+    },
+    "context-graph": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/run-node.sh\" \"$root/scripts/mcp-bridge.mjs\" /mcp/context-graph"
+      ]
+    },
+    "playwright": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "root=\"$PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$CLAUDE_PLUGIN_ROOT\"; [ -n \"$root\" ] || root=\"$PWD\"; exec bash \"$root/scripts/playwright-mcp.sh\""
+      ]
+    }
+  }
+}

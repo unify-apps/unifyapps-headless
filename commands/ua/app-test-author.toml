@@ -1,0 +1,6 @@
+description = "Authors end-to-end UI test cases for a UnifyApps application — explores it in the Playwright MCP browser as a test user, proposes scenarios, then hands each approved scenario to its own test-author-ag"
+prompt = """
+Run the UnifyApps Headless `app-test-author` skill: read `skills/app-test-author/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

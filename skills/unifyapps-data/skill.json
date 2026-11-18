@@ -1,0 +1,7 @@
+{
+  "name": "unifyapps-data",
+  "description": "Load for UnifyApps Storage records, platform users or assets, Analytics, reports, exports, record triggers, platform events, notifications, or a realtime update that refreshes a running app, which briefs call a refresh, broadcast or live update. Use `data-transforms-and-code` for SQL over in-memory lists.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

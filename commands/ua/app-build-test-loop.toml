@@ -1,0 +1,6 @@
+description = "Builds the approved test cases of a UnifyApps WEB app into Test Studio UI tests through the Test Studio create loop."
+prompt = """
+Run the UnifyApps Headless `app-build-test-loop` skill: read `loops/app-build-test-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

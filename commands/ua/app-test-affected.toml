@@ -1,0 +1,6 @@
+description = "Finds the Test Studio UI tests a code app pull request can change and runs exactly those on the PR's Vercel preview link."
+prompt = """
+Run the UnifyApps Headless `app-test-affected` skill: read `skills/app-test-affected/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

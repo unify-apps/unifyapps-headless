@@ -1,0 +1,6 @@
+description = "Discovers and reviews the manual test cases of a UnifyApps WEB app from its PRD, and with --walk from a walk of the live app as well."
+prompt = """
+Run the UnifyApps Headless `app-discover-test-loop` skill: read `loops/app-discover-test-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

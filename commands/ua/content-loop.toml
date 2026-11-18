@@ -1,0 +1,6 @@
+description = "\"Makes UnifyApps content from a client's material, end to end, in the UnifyApps theme by default."
+prompt = """
+Run the UnifyApps Headless `content-loop` skill: read `loops/content-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

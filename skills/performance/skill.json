@@ -1,0 +1,7 @@
+{
+  "name": "performance",
+  "description": "Read when an automation may repeat work, process many items, or fetch a large result set. Covers caching, loop removal, batching, source-side filters and sorting, analytics, and pagination for Workflow Agent.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

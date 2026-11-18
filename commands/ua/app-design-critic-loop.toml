@@ -1,0 +1,6 @@
+description = "Critique a finished UnifyApps WEB app page by page as a demanding user and a senior designer, through whole-page screenshots, the accessibility tree and measured layout at the design width and at 375 "
+prompt = """
+Run the UnifyApps Headless `app-design-critic-loop` skill: read `loops/app-design-critic-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

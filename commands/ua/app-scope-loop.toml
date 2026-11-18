@@ -1,0 +1,6 @@
+description = "Stage one of a UnifyApps WEB app."
+prompt = """
+Run the UnifyApps Headless `app-scope-loop` skill: read `loops/app-scope-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

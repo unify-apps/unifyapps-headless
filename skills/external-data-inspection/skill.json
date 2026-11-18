@@ -1,0 +1,7 @@
+{
+  "name": "external-data-inspection",
+  "description": "MANDATORY load before configuring external connector-based workflow steps. Use to understand how to resolve values and when and what to ask the user.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

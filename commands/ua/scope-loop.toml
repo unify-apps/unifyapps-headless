@@ -1,0 +1,6 @@
+description = "Turns an idea, call notes, a draft PRD, Figma frames, a ticket or \"extend this\" into an approved PRD, a plan and tickets, in one command, by working out what the ask is about (a web app, a Code Builde"
+prompt = """
+Run the UnifyApps Headless `scope-loop` skill: read `loops/scope-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

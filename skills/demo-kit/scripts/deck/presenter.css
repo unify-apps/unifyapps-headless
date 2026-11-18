@@ -1,0 +1,56 @@
+/* The deck's controls: a dark glass bar that leaves while the deck is watched, speaker notes, all scenes, and keys. */
+body.deck { cursor: default; }
+body.deck.idle { cursor: none; }
+body.deck #frame { box-shadow: 0 0 0 1px rgba(255, 255, 255, .04); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#deck-bar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 30; display: flex; align-items: center; gap: 4px; padding: 6px; max-width: calc(100vw - 32px);
+  border-radius: 99px; background: color-mix(in srgb, var(--deep-edge) 80%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--on-deep-rule); box-shadow: 0 18px 50px rgba(0, 0, 0, .35); color: var(--on-deep); font: 500 13px/1 var(--sans); transition: opacity .35s, transform .35s; }
+body.idle #deck-bar { opacity: 0; transform: translate(-50%, 14px); pointer-events: none; }
+#deck-bar button { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 99px; background: transparent; color: inherit; cursor: pointer; transition: background .2s, color .2s; }
+#deck-bar button:hover { background: rgba(255, 255, 255, .08); }
+#deck-bar button:focus-visible, #deck-over button:focus-visible { outline: 2px solid var(--accent-on-deep); outline-offset: 2px; }
+#deck-bar button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent-on-deep) 22%, transparent); color: var(--accent-on-deep); }
+#deck-bar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#deck-bar [data-do="auto"] svg path { fill: currentColor; }
+#deck-bar .count { min-width: 54px; text-align: center; font-variant-numeric: tabular-nums; color: var(--on-deep-body); letter-spacing: .04em; }
+#deck-bar .ticks { display: flex; align-items: center; gap: 2px; padding: 0 6px; overflow: hidden; }
+#deck-bar .tick { width: 14px !important; height: 26px !important; border-radius: 6px !important; }
+#deck-bar .tick::before { content: ''; width: 6px; height: 6px; border-radius: 99px; background: var(--on-deep-rule); transition: width .3s, background .3s; }
+#deck-bar .tick.done::before { background: color-mix(in srgb, var(--accent-on-deep) 55%, transparent); }
+#deck-bar .tick.on { width: 30px !important; }
+#deck-bar .tick.on::before { width: 20px; background: var(--accent-on-deep); }
+#deck-bar .sep { width: 1px; height: 22px; background: var(--on-deep-rule); margin: 0 4px; }
+
+#deck-notes { position: fixed; left: 50%; bottom: 78px; transform: translateX(-50%); width: min(980px, calc(100vw - 32px)); max-height: 34vh; overflow: auto; z-index: 25;
+  padding: 18px 26px 10px; border-radius: 20px; background: color-mix(in srgb, var(--deep-edge) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--on-deep-rule); color: var(--on-deep-body); box-shadow: 0 18px 50px rgba(0, 0, 0, .35); }
+#deck-notes .nh { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 10px; font: 600 12px/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; }
+#deck-notes .nh b { color: var(--accent-on-deep); font-weight: 600; }
+#deck-notes ol { margin: 0; padding: 0 0 0 1.4em; font: 400 20px/1.5 var(--serif); }
+#deck-notes li { margin: 0 0 8px; transition: color .3s, opacity .3s; }
+#deck-notes li.now { color: var(--on-deep); }
+#deck-notes li.said { opacity: .45; }
+#deck-notes li.none { list-style: none; margin-left: -1.4em; font-style: italic; opacity: .7; }
+
+#deck-over { position: fixed; inset: 0; z-index: 40; overflow: auto; padding: 56px 40px 110px; background: color-mix(in srgb, var(--deep-edge) 94%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+#deck-over .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 26px; max-width: 1500px; margin: 0 auto; }
+#deck-over button { display: block; padding: 0; border: 0; background: none; color: var(--on-deep-body); text-align: left; cursor: pointer; font: 500 14px/1.35 var(--sans); }
+#deck-over .th { display: grid; place-items: center; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: var(--deep-bg2); box-shadow: 0 12px 30px rgba(0, 0, 0, .35), 0 0 0 1px var(--on-deep-rule); transition: transform .25s, box-shadow .25s; }
+#deck-over .th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#deck-over .th em { padding: 18px; font: italic 400 22px/1.3 var(--serif); color: var(--on-deep); text-align: center; }
+#deck-over button:hover .th { transform: translateY(-3px); }
+#deck-over button.on .th { box-shadow: 0 12px 30px rgba(0, 0, 0, .35), 0 0 0 2px var(--accent-on-deep); }
+#deck-over .cap { display: flex; gap: 10px; margin-top: 10px; }
+#deck-over .cap b { color: var(--accent-on-deep); font-variant-numeric: tabular-nums; }
+
+#deck-help { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; background: rgba(0, 0, 0, .45); }
+#deck-help[hidden], #deck-over[hidden], #deck-notes[hidden], #deck-black[hidden] { display: none; }
+#deck-help .card { min-width: 420px; padding: 28px 34px; border-radius: 22px; background: var(--deep-edge); border: 1px solid var(--on-deep-rule); color: var(--on-deep); box-shadow: 0 30px 80px rgba(0, 0, 0, .5); }
+#deck-help h3 { margin: 0 0 16px; font: 400 30px/1.1 var(--serif); }
+#deck-help dl { display: grid; grid-template-columns: auto 1fr; gap: 9px 26px; margin: 0; font: 400 15px/1.3 var(--sans); }
+#deck-help dt { color: var(--accent-on-deep); font-weight: 600; white-space: nowrap; }
+#deck-help dd { margin: 0; color: var(--on-deep-body); }
+#deck-black { position: fixed; inset: 0; z-index: 50; background: #000; }
+@media (max-width: 700px) { #deck-bar .ticks, #deck-bar .sep, #deck-bar [data-do="presenter"], #deck-bar [data-do="help"] { display: none; } }
+@media print { #deck-bar, #deck-notes, #deck-over, #deck-help, #deck-black { display: none !important; } }

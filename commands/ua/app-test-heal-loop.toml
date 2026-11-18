@@ -1,0 +1,6 @@
+description = "Heals and re-authors the Test Studio test cases of a UnifyApps app whose last run failed, without a person in the loop — one helper per red case replays it live as its test users and names the root ca"
+prompt = """
+Run the UnifyApps Headless `app-test-heal-loop` skill: read `loops/app-test-heal-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

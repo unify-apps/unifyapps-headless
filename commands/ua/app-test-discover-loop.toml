@@ -1,0 +1,6 @@
+description = "Walks one live UnifyApps app end to end and proposes the UI test scenarios that cover every journey through it — every surface, every transition, every behaviour a test could check, as each test user "
+prompt = """
+Run the UnifyApps Headless `app-test-discover-loop` skill: read `loops/app-test-discover-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

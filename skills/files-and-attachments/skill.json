@@ -1,0 +1,7 @@
+{
+  "name": "files-and-attachments",
+  "description": "Read when a workflow reads, creates, converts, downloads, uploads, stores, sends, or maps a file, attachment, or document. Covers file representations, producer and consumer contracts, access, and cardinality.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

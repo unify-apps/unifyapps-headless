@@ -1,0 +1,6 @@
+description = "Runs the evaluation experiment of a UnifyApps AI agent, waits for it to finish, writes one report with the scorecard, every case's scores and the judge's reasons, the cost and latency, and the history"
+prompt = """
+Run the UnifyApps Headless `ai-agent-run-test-loop` skill: read `loops/ai-agent-run-test-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

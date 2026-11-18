@@ -1,0 +1,7 @@
+{
+  "name": "data-fetching",
+  "description": "Read when fetching data from internal storage, internal analytics, external HTTP, GraphQL or SQL sources, or paginated connector actions.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

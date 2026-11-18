@@ -1,0 +1,6 @@
+description = "Fixes a UnifyApps WEB app in a browser - its pages against their design, the open issues an audit left (ui, interaction, performance, security, data, logic, a11y, responsive), or one issue described i"
+prompt = """
+Run the UnifyApps Headless `app-fix-loop` skill: read `loops/app-fix-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

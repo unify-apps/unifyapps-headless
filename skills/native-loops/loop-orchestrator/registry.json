@@ -1,0 +1,1132 @@
+{
+  "schema_version": 5,
+  "orchestrator": "loop-orchestrator",
+  "skill": "skills/native-loops/loop-orchestrator/SKILL.md",
+  "platforms": [
+    "MOBILE",
+    "WEB"
+  ],
+  "loops": [
+    {
+      "command": "native-scope-loop",
+      "goal": "scope",
+      "skill": "loops/native-scope-loop/SKILL.md",
+      "platforms": [
+        "MOBILE"
+      ],
+      "lifecycle": "Stage one of an app: an idea, a draft PRD, design frames or an ask to extend an app become an approved PRD written in rounds (a readiness check, a fresh reviewer, at most four questions a round) and versioned on the solution, a plan of the whole app (data model, roles, navigation, look, a job line per screen, automations, AI agents), and one ticket per buildable slice, a foundation ticket first; after one yes the PRD version is approved, a new app's empty MOBILE shell is made and the tickets are filed in build order; a re-run makes the next version and updates the tickets nobody started",
+      "waysIn": {
+        "idea": "a few sentences, call notes or a transcript: round 1 starts from an empty PRD",
+        "draft": "a draft PRD (a Google Doc, a Claude doc, Markdown or a PDF): read into the PRD's sections, its gaps become round 1's questions",
+        "design": "Figma frames or screenshots: each frame's name and size only, each one a screen with its link",
+        "extend": "an existing MOBILE app and what to add: its pages, objects, automations and routes from the cache fill Current state, and the PRD covers the change"
+      },
+      "mode": "look",
+      "limit": "look, with the PRD's draft saved on the solution; after the plan approval the PRD version approved, a new app's empty shell through one plan, and the tickets written out; never a page, object, automation, AI agent or publish",
+      "stages": [
+        "prd",
+        "app-plan",
+        "tickets"
+      ],
+      "blocks": {
+        "common": [
+          "loop-route-map"
+        ],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [
+        "ua:ua-change",
+        "ua:object-schema-designer",
+        "ua:app-page-planner"
+      ],
+      "agents": [
+        "ua:app-agent"
+      ],
+      "workflows": [],
+      "approvals": [
+        "settings",
+        "prd",
+        "plan",
+        "escalation"
+      ],
+      "uses": []
+    },
+    {
+      "command": "native-fix-loop",
+      "goal": "fix",
+      "skill": "loops/native-fix-loop/SKILL.md",
+      "platforms": [
+        "MOBILE"
+      ],
+      "lifecycle": "Fix an app or page against its design, the issues native-audit or native-triage left, or one issue the person reports in chat (reproduced first, the cause found layer by layer, its recorded steps replayed after every fix; an issue with no screen read from its automation's runs; a BEFORE | AFTER sheet of every fix that shows on a screen at the end); an issue an automation owns is an automation job, deployed once its test run passes; one an AI agent owns an AI agent job, published on the agent publish approval; one in an object's fields an object job, changed on the object approval",
+      "waysIn": {
+        "find-issues": "nothing specific named: the open issues of the last run, or a quick audit (audit-ui, audit-touch-feedback, audit-logic)",
+        "reproduce": "the person names one issue in chat: the reproduce stage turns it into steps, reproduces it on a device and writes one issue with an owner and its steps"
+      },
+      "mode": "look",
+      "limit": "draft; release only for an automation deploy once its test run passes (no approval on a tenant that said it is UAT at sign-in; a yes elsewhere), an AI agent publish on the release yes or its approval, an object change on its approval, and a ticket write-back; never platform code",
+      "stages": [
+        "audit-ui",
+        "audit-touch-feedback",
+        "audit-logic",
+        "reproduce",
+        "fix",
+        "test-and-fix"
+      ],
+      "blocks": {
+        "common": [
+          "loop-preflight",
+          "loop-route-map"
+        ],
+        "MOBILE": [
+          "native-device-pool",
+          "native-lint",
+          "native-measured-fix"
+        ],
+        "WEB": []
+      },
+      "skills": [
+        "ua:ua-change",
+        "ua:automation-run-debugging"
+      ],
+      "agents": [
+        "ua:app-agent",
+        "ua:automation-agent",
+        "ua:agent-builder",
+        "ua:fde-agent"
+      ],
+      "workflows": [],
+      "approvals": [
+        "settings",
+        "plan",
+        "agent-publish",
+        "object",
+        "manual",
+        "escalation",
+        "repro",
+        "write-back"
+      ],
+      "uses": [
+        "native-audit",
+        "native-setup",
+        "native-triage",
+        "native-report"
+      ]
+    },
+    {
+      "command": "native-build-loop",
+      "goal": "build",
+      "skill": "loops/native-build-loop/SKILL.md",
+      "platforms": [
+        "MOBILE"
+      ],
+      "lifecycle": "A new app, page or feature from a design, or a feature from the person's words with every object, automation, page and AI agent it needs, proven by acceptance and realtime checks, with a sheet of every page built at the end",
+      "waysIn": {
+        "design": "an approved design (Figma frames, a prototype, screenshots): design intake, then the build stage, proven by visual checks",
+        "description": "the person's words, no design: the feature stage plans every entity the feature needs (a recipe from loop-feature-recipes when one fits), builds it through one UnifyApps Headless plan, and proves each acceptance line with an acceptance or realtime check"
+      },
+      "mode": "look",
+      "limit": "draft; a deploy of an automation the plan named once its test runs pass; an AI agent publish only as the plan preview named it and the person said yes; never an app publish (the Preview app runs the drafts)",
+      "stages": [
+        "design-intake",
+        "feature",
+        "build",
+        "test-and-fix"
+      ],
+      "blocks": {
+        "common": [
+          "loop-preflight",
+          "loop-route-map",
+          "loop-feature-recipes"
+        ],
+        "MOBILE": [
+          "native-device-pool",
+          "native-lint",
+          "native-visual-check",
+          "native-design-spec",
+          "native-loading-states"
+        ],
+        "WEB": []
+      },
+      "skills": [
+        "ua:app-page-planner",
+        "ua:ua-change",
+        "ua:app-page-quality",
+        "ua:object-schema-designer"
+      ],
+      "agents": [
+        "ua:app-agent",
+        "ua:design-capture",
+        "ua:fde-agent",
+        "ua:automation-agent",
+        "ua:agent-builder",
+        "ua:page-reviewer"
+      ],
+      "workflows": [
+        "design-board",
+        "data-layer-check"
+      ],
+      "approvals": [
+        "settings",
+        "plan",
+        "visual-check",
+        "advisory",
+        "manual",
+        "escalation",
+        "agent-publish",
+        "prd-update"
+      ],
+      "uses": [
+        "native-setup",
+        "native-report"
+      ]
+    },
+    {
+      "command": "app-build-loop",
+      "goal": "build",
+      "skill": "loops/app-build-loop/SKILL.md",
+      "platforms": [
+        "WEB"
+      ],
+      "lifecycle": "A new page, a feature on existing pages or a set of pages of a WEB app, as drafts: from a design (Figma frames at their own width, a prototype, screenshots) through design intake, a UnifyApps Headless plan of parallel app-agent builders, then one visual check per page and state, measured at every width with a spec, and interaction, a11y and responsive checks per page at both widths in a browser until each page matches or is accepted; or from a description, through the feature stage with its interaction, a11y and responsive checks and its acceptance and realtime checks in browsers. Never publishes the app; deploys an automation once its test runs pass",
+      "waysIn": {
+        "design": "Figma frames, a prototype folder or screenshots: design intake, then one builder per page",
+        "description": "a feature in words: every object, automation, page and AI agent it needs, in one plan"
+      },
+      "mode": "look",
+      "limit": "draft; a deploy of an automation the plan named once its test runs pass (no approval on a tenant that said it is UAT at sign-in; a yes elsewhere); an AI agent publish only as the plan preview named it and the person said yes; never an app publish (the builder preview runs the drafts)",
+      "stages": [
+        "design-intake",
+        "build",
+        "feature",
+        "test-and-fix"
+      ],
+      "blocks": {
+        "common": [
+          "loop-preflight",
+          "loop-route-map",
+          "loop-feature-recipes"
+        ],
+        "MOBILE": [],
+        "WEB": [
+          "web-browser",
+          "web-visual-check",
+          "web-design-spec"
+        ]
+      },
+      "skills": [
+        "ua:app-page-planner",
+        "ua:ua-change",
+        "ua:app-page-quality",
+        "ua:object-schema-designer"
+      ],
+      "agents": [
+        "ua:app-agent",
+        "ua:design-capture",
+        "ua:fde-agent",
+        "ua:automation-agent",
+        "ua:agent-builder",
+        "ua:page-reviewer"
+      ],
+      "workflows": [
+        "design-board",
+        "data-layer-check"
+      ],
+      "approvals": [
+        "settings",
+        "plan",
+        "visual-check",
+        "advisory",
+        "manual",
+        "escalation",
+        "agent-publish",
+        "prd-update"
+      ],
+      "uses": []
+    },
+    {
+      "command": "app-fix-loop",
+      "goal": "fix",
+      "skill": "loops/app-fix-loop/SKILL.md",
+      "platforms": [
+        "WEB"
+      ],
+      "lifecycle": "Fix a WEB app or page against its design, the issues its audit checks found (ui, interaction, performance, security, data, logic, a11y, responsive), or one issue the person reports in chat (reproduced first in a browser, the cause found layer by layer, its recorded steps replayed after every fix; an issue with no screen read from its automation's runs; a BEFORE | AFTER sheet of every fix that shows on a page at the end); an issue an automation owns is an automation job, deployed once its test run passes; one an AI agent owns an AI agent job, published on the agent publish approval; one in an object's fields an object job, changed on the object approval",
+      "waysIn": {
+        "find-issues": "nothing specific named: the open issues of the last run, a list the person gives (a board, a CSV, a sheet, tickets) read through the triage stage, or a quick audit (audit-ui, audit-touch-feedback (interaction on WEB), audit-logic)",
+        "reproduce": "the person names one issue in chat: the reproduce stage turns it into steps, runs them in a browser until the issue shows, and writes one issue with an owner and its steps file as its test"
+      },
+      "mode": "look",
+      "limit": "draft; release only for an automation deploy once its test run passes (no approval on a tenant that said it is UAT at sign-in; a yes elsewhere), an AI agent publish on the release yes or its approval, an object change on its approval, and a ticket write-back; never platform code",
+      "stages": [
+        "audit-ui",
+        "audit-touch-feedback",
+        "audit-perf",
+        "audit-security",
+        "audit-data",
+        "audit-logic",
+        "audit-a11y",
+        "audit-responsive",
+        "triage",
+        "reproduce",
+        "fix",
+        "test-and-fix"
+      ],
+      "blocks": {
+        "common": [
+          "loop-preflight",
+          "loop-route-map"
+        ],
+        "MOBILE": [],
+        "WEB": [
+          "web-browser",
+          "web-visual-check",
+          "web-profile"
+        ]
+      },
+      "skills": [
+        "ua:ua-change",
+        "ua:automation-run-debugging"
+      ],
+      "agents": [
+        "ua:app-agent",
+        "ua:automation-agent",
+        "ua:agent-builder",
+        "ua:fde-agent"
+      ],
+      "workflows": [],
+      "approvals": [
+        "settings",
+        "plan",
+        "agent-publish",
+        "object",
+        "manual",
+        "escalation",
+        "repro",
+        "write-back"
+      ],
+      "uses": []
+    },
+    {
+      "command": "app-scope-loop",
+      "goal": "scope",
+      "skill": "loops/app-scope-loop/SKILL.md",
+      "platforms": [
+        "WEB"
+      ],
+      "lifecycle": "Stage one of an app: an idea, a draft PRD, design frames or an ask to extend an app become an approved PRD written in rounds (a readiness check, a fresh reviewer, at most four questions a round) and versioned on the solution, a plan of the whole app (data model, roles, navigation, look, the app's look at the design width, the navigation chrome, a job line per page, automations, AI agents), and one ticket per buildable slice, a foundation ticket first; after one yes the PRD version is approved, a new app's empty WEB shell is made (a Code Builder app, or no-code when the person asked for one) and the tickets are filed in build order; a re-run makes the next version and updates the tickets nobody started",
+      "waysIn": {
+        "idea": "a few sentences, call notes or a transcript: round 1 starts from an empty PRD",
+        "draft": "a draft PRD (a Google Doc, a Claude doc, Markdown or a PDF): read into the PRD's sections, its gaps become round 1's questions",
+        "design": "Figma frames or screenshots: each frame's name and size only, at the width it was drawn, each one a page with its link",
+        "extend": "an existing WEB app and what to add: its pages, objects, automations, menu and paths from the cache fill Current state, and the PRD covers the change"
+      },
+      "mode": "look",
+      "limit": "look, with the PRD's draft saved on the solution; after the plan approval the PRD version approved, a new app's empty shell through one plan, and the tickets written out; never a page, object, automation, AI agent or publish",
+      "stages": [
+        "prd",
+        "app-plan",
+        "tickets"
+      ],
+      "blocks": {
+        "common": [
+          "loop-route-map"
+        ],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [
+        "ua:ua-change",
+        "ua:object-schema-designer",
+        "ua:app-page-planner"
+      ],
+      "agents": [
+        "ua:app-agent",
+        "ua:code-app-agent"
+      ],
+      "workflows": [],
+      "approvals": [
+        "settings",
+        "prd",
+        "plan",
+        "escalation"
+      ],
+      "uses": []
+    },
+    {
+      "command": "app-discover-test-loop",
+      "goal": "test-author",
+      "skill": "loops/app-discover-test-loop/SKILL.md",
+      "platforms": [
+        "WEB"
+      ],
+      "stages": [
+        "test-author"
+      ],
+      "workflows": [],
+      "uses": [],
+      "lifecycle": "Read the PRD (and, with --walk, what a walk of the live app found), write PRD-cited manual cases into the app's tests folder, review them in one HTML page until every case is approved or rejected, then write the approved list the Test Studio create loop reads",
+      "mode": "look",
+      "limit": "Read the PRD, the app config, Test Studio case names and, with --walk, the live app through the discover loop; write only tests/<app slug>/ files",
+      "blocks": {
+        "common": [
+          "loop-route-map",
+          "loop-test-data"
+        ],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [],
+      "agents": [],
+      "approvals": [
+        "settings",
+        "review"
+      ]
+    },
+    {
+      "command": "app-build-test-loop",
+      "goal": "test-author",
+      "skill": "loops/app-build-test-loop/SKILL.md",
+      "platforms": [
+        "WEB"
+      ],
+      "stages": [
+        "test-author"
+      ],
+      "workflows": [],
+      "uses": [],
+      "lifecycle": "Hand the approved cases to the Test Studio create loop as its case source, let it author every one into Test Studio unattended, then record each case's Test Studio id or parked reason",
+      "mode": "draft",
+      "limit": "Test Studio cases through the create loop; tests/<app slug>/ files; never the app",
+      "blocks": {
+        "common": [],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [
+        "ua:app-test-create-loop",
+        "ua:app-test-author"
+      ],
+      "agents": [
+        "ua:test-author-agent",
+        "ua:test-create-loop-evaluator"
+      ],
+      "approvals": [
+        "settings"
+      ]
+    },
+    {
+      "command": "app-run-test-loop",
+      "goal": "test-author",
+      "skill": "loops/app-run-test-loop/SKILL.md",
+      "platforms": [
+        "WEB"
+      ],
+      "stages": [
+        "test-author"
+      ],
+      "workflows": [],
+      "uses": [],
+      "lifecycle": "Pick a Test Studio suite or plan, start the triage loop on it (it runs, polls and classifies the reds), then write one HTML report with the verdicts and the app's run trend from its loop ledger",
+      "mode": "look",
+      "limit": "Test Studio runs through the triage loop; tests/<app slug>/loops/<firing>/ files, the app's loop ledger and a copy of the report in Downloads; tickets only through the triage loop's write-back approval",
+      "blocks": {
+        "common": [],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [
+        "ua:app-test-triage-loop"
+      ],
+      "agents": [],
+      "approvals": [
+        "settings",
+        "write-back"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "command": "native-audit",
+      "goal": "audit",
+      "skill": "skills/native-loops/native-audit/SKILL.md",
+      "platforms": [
+        "MOBILE"
+      ],
+      "lifecycle": "Find everything wrong on a MOBILE app's pages, once",
+      "mode": "look",
+      "limit": "look",
+      "stages": [
+        "design-intake",
+        "audit-ui",
+        "audit-touch-feedback",
+        "audit-perf",
+        "audit-security",
+        "audit-data",
+        "audit-logic",
+        "test-and-fix"
+      ],
+      "blocks": {
+        "common": [
+          "loop-preflight",
+          "loop-route-map"
+        ],
+        "MOBILE": [
+          "native-device-pool",
+          "native-lint"
+        ],
+        "WEB": []
+      },
+      "skills": [
+        "ua:ua-safety"
+      ],
+      "agents": [],
+      "workflows": [],
+      "approvals": [
+        "settings",
+        "fix"
+      ],
+      "usedBy": [
+        "native-fix-loop"
+      ]
+    },
+    {
+      "command": "native-setup",
+      "goal": "setup",
+      "skill": "skills/native-loops/native-setup/SKILL.md",
+      "platforms": [
+        "MOBILE"
+      ],
+      "lifecycle": "First run on a laptop, or a repair, for a MOBILE app",
+      "mode": "look",
+      "limit": "installs on this laptop after the install approval; the solution profile; one memory line",
+      "stages": [],
+      "blocks": {
+        "common": [
+          "loop-preflight"
+        ],
+        "MOBILE": [
+          "native-device-pool"
+        ],
+        "WEB": []
+      },
+      "skills": [
+        "ua:setup"
+      ],
+      "agents": [],
+      "workflows": [
+        "setup-toolchain"
+      ],
+      "approvals": [
+        "install",
+        "settings"
+      ],
+      "usedBy": [
+        "native-fix-loop",
+        "native-build-loop"
+      ]
+    },
+    {
+      "command": "native-triage",
+      "goal": "triage",
+      "skill": "skills/native-loops/native-triage/SKILL.md",
+      "platforms": [
+        "MOBILE"
+      ],
+      "lifecycle": "Client lists, tickets and dry runs of a MOBILE app, once, with a read-only look at a moved copy",
+      "mode": "look",
+      "limit": "look, on every environment",
+      "stages": [
+        "triage",
+        "test-and-fix"
+      ],
+      "blocks": {
+        "common": [
+          "loop-route-map"
+        ],
+        "MOBILE": [
+          "native-device-pool"
+        ],
+        "WEB": []
+      },
+      "skills": [],
+      "agents": [],
+      "workflows": [],
+      "approvals": [
+        "settings",
+        "fix"
+      ],
+      "usedBy": [
+        "native-fix-loop"
+      ]
+    },
+    {
+      "command": "native-report",
+      "goal": "report",
+      "skill": "skills/native-loops/native-report/SKILL.md",
+      "platforms": [
+        "MOBILE"
+      ],
+      "lifecycle": "Run analytics of one run, only when the person asks",
+      "mode": "look",
+      "limit": "look; the shared bundle only on a yes",
+      "stages": [],
+      "blocks": {
+        "common": [
+          "loop-run-metrics"
+        ],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [
+        "ua:give-feedback"
+      ],
+      "agents": [],
+      "workflows": [],
+      "approvals": [],
+      "usedBy": [
+        "native-fix-loop",
+        "native-build-loop"
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "name": "design-intake",
+      "reference": "references/stages/design-intake.md",
+      "replaces": [
+        "native-app-design-board"
+      ],
+      "blocks": {
+        "common": [],
+        "MOBILE": [
+          "native-design-spec"
+        ],
+        "WEB": [
+          "web-design-spec"
+        ]
+      },
+      "skills": [
+        "ua:app-page-planner"
+      ],
+      "agents": [
+        "ua:design-capture"
+      ],
+      "queues": []
+    },
+    {
+      "name": "audit-ui",
+      "reference": "references/stages/audit-ui.md",
+      "replaces": [
+        "native-audit",
+        "native-app-pixel-pass compare"
+      ],
+      "blocks": {
+        "common": [],
+        "MOBILE": [
+          "native-visual-check",
+          "native-lint",
+          "native-design-spec"
+        ],
+        "WEB": [
+          "web-visual-check",
+          "web-browser"
+        ]
+      },
+      "skills": [
+        "ua:app-page-quality"
+      ],
+      "agents": [],
+      "queues": [
+        "visual-check"
+      ]
+    },
+    {
+      "name": "audit-touch-feedback",
+      "reference": "references/stages/audit-touch-feedback.md",
+      "replaces": [],
+      "blocks": {
+        "common": [],
+        "MOBILE": [
+          "native-device-pool"
+        ],
+        "WEB": [
+          "web-browser"
+        ]
+      },
+      "skills": [
+        "ua:app-page-quality"
+      ],
+      "agents": [],
+      "queues": [
+        "touch-feedback",
+        "interaction"
+      ]
+    },
+    {
+      "name": "audit-a11y",
+      "reference": "references/stages/audit-a11y.md",
+      "replaces": [],
+      "platforms": [
+        "WEB"
+      ],
+      "blocks": {
+        "common": [],
+        "MOBILE": [],
+        "WEB": [
+          "web-browser"
+        ]
+      },
+      "skills": [
+        "ua:app-page-quality"
+      ],
+      "agents": [],
+      "queues": [
+        "a11y"
+      ]
+    },
+    {
+      "name": "audit-responsive",
+      "reference": "references/stages/audit-responsive.md",
+      "replaces": [],
+      "platforms": [
+        "WEB"
+      ],
+      "blocks": {
+        "common": [],
+        "MOBILE": [],
+        "WEB": [
+          "web-browser"
+        ]
+      },
+      "skills": [
+        "ua:app-page-quality"
+      ],
+      "agents": [],
+      "queues": [
+        "responsive"
+      ]
+    },
+    {
+      "name": "audit-perf",
+      "reference": "references/stages/audit-perf.md",
+      "replaces": [],
+      "blocks": {
+        "common": [],
+        "MOBILE": [
+          "native-lint"
+        ],
+        "WEB": [
+          "web-profile",
+          "web-browser"
+        ]
+      },
+      "skills": [
+        "ua:app-page-quality",
+        "ua:performance"
+      ],
+      "agents": [
+        "ua:automation-agent"
+      ],
+      "queues": [
+        "performance"
+      ]
+    },
+    {
+      "name": "audit-security",
+      "reference": "references/stages/audit-security.md",
+      "replaces": [],
+      "blocks": {
+        "common": [],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [
+        "ua:ua-secure-by-default"
+      ],
+      "agents": [
+        "ua:automation-agent"
+      ],
+      "queues": []
+    },
+    {
+      "name": "audit-data",
+      "reference": "references/stages/audit-data.md",
+      "replaces": [
+        "data-layer-check workflow"
+      ],
+      "blocks": {
+        "common": [],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [
+        "ua:data-fetching",
+        "ua:resiliency",
+        "ua:node-inputs-and-pills"
+      ],
+      "agents": [
+        "ua:automation-agent"
+      ],
+      "queues": [
+        "performance"
+      ]
+    },
+    {
+      "name": "audit-logic",
+      "reference": "references/stages/audit-logic.md",
+      "replaces": [
+        "native-app-page-review"
+      ],
+      "blocks": {
+        "common": [],
+        "MOBILE": [
+          "native-lint",
+          "native-logic-review"
+        ],
+        "WEB": []
+      },
+      "skills": [
+        "ua:app-verify"
+      ],
+      "agents": [],
+      "queues": [
+        "retest"
+      ]
+    },
+    {
+      "name": "reproduce",
+      "reference": "references/stages/reproduce.md",
+      "replaces": [
+        "native-fix-bug reproduce"
+      ],
+      "blocks": {
+        "common": [
+          "loop-route-map"
+        ],
+        "MOBILE": [
+          "native-device-pool"
+        ],
+        "WEB": [
+          "web-browser"
+        ]
+      },
+      "skills": [
+        "ua:automation-run-debugging"
+      ],
+      "agents": [
+        "ua:automation-agent"
+      ],
+      "queues": []
+    },
+    {
+      "name": "fix",
+      "reference": "references/stages/fix.md",
+      "replaces": [
+        "native-fix-page",
+        "native-fix-bug",
+        "native-automation-change"
+      ],
+      "blocks": {
+        "common": [],
+        "MOBILE": [
+          "native-lint",
+          "native-device-pool",
+          "native-measured-fix"
+        ],
+        "WEB": [
+          "web-browser"
+        ]
+      },
+      "skills": [
+        "ua:ua-change",
+        "ua:app-native",
+        "ua:app-verify",
+        "ua:automation-testing",
+        "ua:automation-run-debugging",
+        "ua:automation-runtime",
+        "ua:resiliency",
+        "ua:data-fetching",
+        "ua:node-inputs-and-pills",
+        "ua:performance"
+      ],
+      "agents": [
+        "ua:app-agent",
+        "ua:automation-agent"
+      ],
+      "queues": [
+        "retest",
+        "replay",
+        "performance",
+        "capture"
+      ]
+    },
+    {
+      "name": "build",
+      "reference": "references/stages/build.md",
+      "replaces": [
+        "native-create-page",
+        "native-add-feature"
+      ],
+      "blocks": {
+        "common": [],
+        "MOBILE": [
+          "native-lint",
+          "native-visual-check",
+          "native-loading-states"
+        ],
+        "WEB": [
+          "web-browser",
+          "web-visual-check"
+        ]
+      },
+      "skills": [
+        "ua:app-page-planner",
+        "ua:ua-change",
+        "ua:app-native",
+        "ua:app-design",
+        "ua:app-craft",
+        "ua:app-theme",
+        "ua:app-page-quality"
+      ],
+      "agents": [
+        "ua:app-agent"
+      ],
+      "queues": [
+        "visual-check",
+        "touch-feedback",
+        "loading",
+        "capture"
+      ]
+    },
+    {
+      "name": "feature",
+      "reference": "references/stages/feature.md",
+      "replaces": [],
+      "blocks": {
+        "common": [
+          "loop-route-map",
+          "loop-feature-recipes"
+        ],
+        "MOBILE": [
+          "native-device-pool",
+          "native-lint",
+          "native-loading-states"
+        ],
+        "WEB": [
+          "web-browser"
+        ]
+      },
+      "skills": [
+        "ua:ua-change",
+        "ua:app-page-planner",
+        "ua:object-schema-designer",
+        "ua:app-page-quality"
+      ],
+      "agents": [
+        "ua:fde-agent",
+        "ua:automation-agent",
+        "ua:app-agent",
+        "ua:agent-builder",
+        "ua:page-reviewer"
+      ],
+      "queues": [
+        "acceptance",
+        "realtime",
+        "touch-feedback",
+        "loading",
+        "capture"
+      ]
+    },
+    {
+      "name": "test-and-fix",
+      "reference": "references/stages/test-and-fix.md",
+      "replaces": [
+        "native-verify-worker",
+        "native-test-and-fix"
+      ],
+      "blocks": {
+        "common": [],
+        "MOBILE": [
+          "native-device-pool",
+          "native-visual-check",
+          "native-loading-states"
+        ],
+        "WEB": [
+          "web-browser",
+          "web-visual-check"
+        ]
+      },
+      "skills": [],
+      "agents": [],
+      "queues": []
+    },
+    {
+      "name": "triage",
+      "reference": "references/stages/triage.md",
+      "replaces": [
+        "native-dry-run",
+        "native-app-loop-tickets intake"
+      ],
+      "blocks": {
+        "common": [
+          "loop-route-map"
+        ],
+        "MOBILE": [
+          "native-device-pool"
+        ],
+        "WEB": []
+      },
+      "skills": [],
+      "agents": [],
+      "queues": []
+    },
+    {
+      "name": "test-author",
+      "reference": "references/stages/test-author.md",
+      "replaces": [],
+      "platforms": [
+        "WEB"
+      ],
+      "blocks": {
+        "common": [
+          "loop-route-map",
+          "loop-test-data"
+        ],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [],
+      "agents": [],
+      "queues": []
+    },
+    {
+      "name": "retake",
+      "reference": "references/stages/retake.md",
+      "replaces": [
+        "native-report-retake"
+      ],
+      "blocks": {
+        "common": [
+          "loop-route-map"
+        ],
+        "MOBILE": [
+          "native-device-pool"
+        ],
+        "WEB": []
+      },
+      "skills": [],
+      "agents": [],
+      "queues": [],
+      "onRequestOnly": true
+    },
+    {
+      "name": "prd",
+      "reference": "references/stages/prd.md",
+      "replaces": [],
+      "blocks": {
+        "common": [
+          "loop-route-map"
+        ],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [],
+      "agents": [],
+      "queues": []
+    },
+    {
+      "name": "app-plan",
+      "reference": "references/stages/app-plan.md",
+      "replaces": [],
+      "blocks": {
+        "common": [],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [
+        "ua:object-schema-designer",
+        "ua:app-page-planner"
+      ],
+      "agents": [],
+      "queues": []
+    },
+    {
+      "name": "tickets",
+      "reference": "references/stages/tickets.md",
+      "replaces": [],
+      "blocks": {
+        "common": [],
+        "MOBILE": [],
+        "WEB": []
+      },
+      "skills": [
+        "ua:ua-change"
+      ],
+      "agents": [
+        "ua:app-agent"
+      ],
+      "queues": []
+    }
+  ],
+  "queueKinds": [
+    "retest",
+    "replay",
+    "visual-check",
+    "touch-feedback",
+    "interaction",
+    "performance",
+    "acceptance",
+    "realtime",
+    "capture",
+    "loading",
+    "a11y",
+    "responsive"
+  ],
+  "shared": [
+    "references/execution.md",
+    "references/formats.md",
+    "references/audit-checks.md",
+    "references/builder-brief.md",
+    "references/approvals.md",
+    "references/limits.md",
+    "references/device-traps.md",
+    "references/rules.md",
+    "references/design-store.md",
+    "references/run-log.md",
+    "references/ticket-sources.md",
+    "references/prd-use.md",
+    "references/which-loop.md",
+    "references/self-review.md"
+  ],
+  "workflows": {
+    "setup-toolchain": "workflows/setup-toolchain.js",
+    "design-board": "workflows/design-board.js",
+    "data-layer-check": "workflows/data-layer-check.js"
+  },
+  "blocks": {
+    "common": [
+      "loop-run-metrics",
+      "loop-route-map",
+      "loop-test-data",
+      "loop-preflight",
+      "loop-feature-recipes"
+    ],
+    "MOBILE": [
+      "native-device-pool",
+      "native-visual-check",
+      "native-lint",
+      "native-design-spec",
+      "native-logic-review",
+      "native-measured-fix",
+      "native-loading-states"
+    ],
+    "WEB": [
+      "web-browser",
+      "web-visual-check",
+      "web-profile",
+      "web-design-spec"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+description = "Makes a professional PowerPoint from a client's material, end to end, in the UnifyApps theme by default - editable slides in PowerPoint's own text, shapes and pictures with the story's fonts inside, e"
+prompt = """
+Run the UnifyApps Headless `demo-ppt-loop` skill: read `loops/demo-ppt-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

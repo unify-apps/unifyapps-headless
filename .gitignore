@@ -1,0 +1,32 @@
+.DS_Store
+*.log
+node_modules/
+
+# Secrets never belong in this repository.
+.env
+.env.*
+!.env.example
+
+# A solution folder written by a run in this directory, not plugin source.
+/.sessions/
+/docs/
+/entities/
+/entity-manifests/
+/plans/
+/records/
+/specs/
+/tests/
+/memory.md
+/.nebula/
+/.playwright-mcp/
+
+# Per-tool config generated into a solution folder by setup, never committed here.
+/.agents/
+/.codex/
+/opencode.json
+
+# Editor and agent scratch state.
+.idea/
+.vscode/
+.claude/
+dist/

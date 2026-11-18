@@ -1,0 +1,131 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/tool-guard.mjs\"",
+            "timeout": 10
+          }
+        ],
+        "matcher": "Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit|Read|Grep|Glob|Skill|Task|Agent|mcp__plugin_ua_.*|mcp__argent__.*"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT}\" ] || exit 0; bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks.mjs\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT}\" ] || exit 0; bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/skills/native-loops/native-device-pool/scripts/plugin-hook.mjs\" session-start",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"${CLAUDE_PLUGIN_ROOT}\" ] || exit 0; bash \"${extensionPath}/scripts/run-node.sh\" \"${extensionPath}/scripts/gemini-session.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks.mjs\"",
+            "timeout": 10
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks.mjs\"",
+            "timeout": 10
+          }
+        ],
+        "matcher": "AskUserQuestion"
+      },
+      {
+        "matcher": "mcp__argent__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/skills/native-loops/native-device-pool/scripts/plugin-hook.mjs\" post-tool",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT}\" ] || exit 0; bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.mjs\"",
+            "timeout": 10
+          }
+        ],
+        "matcher": "permission_prompt|idle_prompt|elicitation_dialog|elicitation_url_dialog"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/skills/native-loops/native-device-pool/scripts/plugin-hook.mjs\" stop",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT}\" ] || exit 0; bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks.mjs\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT}\" ] || exit 0; bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-node.sh\" \"${CLAUDE_PLUGIN_ROOT}/skills/native-loops/native-device-pool/scripts/plugin-hook.mjs\" session-end",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

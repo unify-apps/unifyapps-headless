@@ -1,0 +1,111 @@
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: smoke suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      # Every source file parses and loads, the hooks answer an empty event, the
+      # CLI prints its help, every manifest is valid, every MCP server and hook
+      # target exists, every skill has a valid SKILL.md, and a delete still waits
+      # for the person. See scripts/smoke-test.mjs.
+      - run: npm test
+
+  manifest:
+    name: plugin manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: claude plugin validate .
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # The whole history, not a shallow clone: a secret committed earlier
+          # and deleted later is still a secret anyone can recover.
+          fetch-depth: 0
+      # The gitleaks binary, not its GitHub Action: the action asks an
+      # organisation for a paid licence key and fails without one, which is how
+      # this job managed to never run.
+      - name: install gitleaks
+        run: |
+          version=8.21.2
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+      - name: scan the working tree
+        run: gitleaks dir . --redact --verbose
+      - name: scan every commit
+        run: gitleaks git . --redact --verbose
+      # gitleaks finds things shaped like credentials, not internal names
+      # (hostnames, repositories, tools). Those are listed in the repository
+      # secret INTERNAL_TERMS, one per line, so the list itself is never
+      # published; GitHub masks it in the log. Matching is case-insensitive
+      # and covers the tree and every commit. A fork or a repository without
+      # the secret skips the check.
+      - name: no internal references
+        if: always()
+        env:
+          INTERNAL_TERMS: ${{ secrets.INTERNAL_TERMS }}
+        run: |
+          if [ -z "$INTERNAL_TERMS" ]; then echo "INTERNAL_TERMS is not set; skipped."; exit 0; fi
+          status=0
+          while IFS= read -r term; do
+            [ -n "$term" ] || continue
+            if git grep -I -q -i -F -e "$term" $(git rev-list --all) -- 2>/dev/null; then
+              echo "::error::an internal term appears in this repository (tree or history)"
+              status=1
+            fi
+          done <<< "$INTERNAL_TERMS"
+          exit $status
+
+  dependencies:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      # The plugin declares no runtime dependencies and ships no lockfile, so
+      # one is written here just for the check. This is a guard against a
+      # dependency arriving unnoticed rather than a routine report, and it is
+      # why the job must not be allowed to pass by erroring.
+      - run: npm install --package-lock-only --ignore-scripts
+      - run: npm audit --audit-level=moderate
+
+  sbom:
+    name: software bill of materials
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      # What a security team asks for before approving an install. Produced on
+      # every run and kept with the run, so the inventory of a given commit can
+      # always be shown without rebuilding it.
+      - run: npm sbom --sbom-format cyclonedx > sbom.cyclonedx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.cyclonedx.json

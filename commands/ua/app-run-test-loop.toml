@@ -1,0 +1,6 @@
+description = "Runs a Test Studio suite or plan of a UnifyApps WEB app through the Test Studio triage loop, which starts the run, polls it to its end and classifies every red (with --heal it also heals the locator o"
+prompt = """
+Run the UnifyApps Headless `app-run-test-loop` skill: read `loops/app-run-test-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

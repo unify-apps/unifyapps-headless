@@ -1,0 +1,7 @@
+{
+  "name": "user-auth",
+  "description": "Load for private or public app callers, user authentication, role and resource authorization, multi-user workflows, or access policies in user customProperties.",
+  "source": "upstream",
+  "tools": 0,
+  "writeTools": 0
+}

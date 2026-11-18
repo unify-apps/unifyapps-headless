@@ -1,0 +1,6 @@
+description = "Zips and uploads this UnifyApps Headless session's transcript and saves one classified report record per issue to the active solution, which is how a person reports a UnifyApps Headless bug or asks fo"
+prompt = """
+Run the UnifyApps Headless `give-feedback` skill: read `skills/give-feedback/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
+
+{{args}}
+"""

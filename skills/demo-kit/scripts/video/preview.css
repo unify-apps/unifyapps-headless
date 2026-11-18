@@ -1,0 +1,5 @@
+#frame { top: calc(50% - 28px); }
+#ui { position: fixed; left: 0; right: 0; bottom: 0; height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 20px; background: var(--player); color: var(--player-ink); font: 500 14px/1 var(--sans); z-index: 10; }
+#ui button { font: inherit; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--player-line); background: var(--player-btn); color: inherit; cursor: pointer; min-width: 76px; }
+#ui input { flex: 1; accent-color: var(--accent-on-deep); }
+#ui span { font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; }
