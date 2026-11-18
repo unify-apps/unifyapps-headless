@@ -158,7 +158,7 @@ copilot plugin marketplace remove unifyapps-headless
 
 ### After installing
 
-`/ua:setup` signs you in to your tenant through your browser and picks the solution to work on. Then ask for the work in your own words. Full steps: [getting_started.md](./getting_started.md).
+`/ua:setup` signs you in to your tenant through your browser and picks the solution to work on. Then ask for the work in your own words. New here? Read the [guide](./guide.md): one folder per solution, setup, and the loops.
 
 ## What it builds
 
