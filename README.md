@@ -87,10 +87,10 @@ curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/
 
 ### OpenCode
 
-Install:
+Install (OpenCode 2 and later):
 
 ```bash
-opencode plugin -g github:unify-apps/unifyapps-headless
+opencode plugin add github:unify-apps/unifyapps-headless
 ```
 
 Start `opencode` in an empty folder and type `/ua:setup`.
@@ -98,10 +98,16 @@ Start `opencode` in an empty folder and type `/ua:setup`.
 Update:
 
 ```bash
-opencode plugin -g -f github:unify-apps/unifyapps-headless
+opencode plugin update github:unify-apps/unifyapps-headless
 ```
 
-Remove: delete the `"github:unify-apps/unifyapps-headless"` line from `"plugin"` in `~/.config/opencode/opencode.jsonc`.
+Remove:
+
+```bash
+opencode plugin remove github:unify-apps/unifyapps-headless
+```
+
+On an older OpenCode, install with `opencode plugin -g github:unify-apps/unifyapps-headless` and update with `opencode plugin -g -f github:unify-apps/unifyapps-headless`. To remove it there, delete the `"github:unify-apps/unifyapps-headless"` line from `"plugin"` in `~/.config/opencode/opencode.jsonc`.
 
 ### Gemini CLI
 
