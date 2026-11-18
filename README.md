@@ -44,7 +44,7 @@ UnifyApps Headless works in Claude Code, Codex, OpenCode, Gemini CLI and GitHub 
 
 ### Claude Code
 
-Add the repository as a plugin marketplace, then install the plugin from it:
+Install:
 
 ```bash
 claude plugin marketplace add unify-apps/unifyapps-headless
@@ -53,19 +53,25 @@ claude plugin install ua@unifyapps-headless
 
 Start `claude` in an empty folder and type `/ua:setup`.
 
+Update:
+
 ```bash
-# update
 claude plugin marketplace update unifyapps-headless
 claude plugin update ua@unifyapps-headless
+```
 
-# remove
+Remove:
+
+```bash
 claude plugin uninstall ua@unifyapps-headless
 claude plugin marketplace remove unifyapps-headless
 ```
 
 ### Codex
 
-Codex's own plugin command cannot start the plugin's tenant tools in your folder yet, so Codex uses the installer script. It downloads the plugin, installs Node 22 if it is missing, and registers the plugin and its builder agents with Codex:
+Codex's own plugin command cannot start the plugin's tenant tools in your folder yet, so Codex uses the installer script. It downloads the plugin, installs Node 22 if it is missing, and registers the plugin and its builder agents with Codex.
+
+Install (run the same command to update):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/install.sh | bash -s -- --agents codex
@@ -73,16 +79,15 @@ curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/
 
 Start `codex` in an empty folder and type `$ua:setup`.
 
-```bash
-# update: run the same command again
+Remove:
 
-# remove
+```bash
 curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/install.sh | bash -s -- --uninstall --agents codex
 ```
 
 ### OpenCode
 
-Install the repository as a global OpenCode plugin:
+Install:
 
 ```bash
 opencode plugin -g github:unify-apps/unifyapps-headless
@@ -90,17 +95,17 @@ opencode plugin -g github:unify-apps/unifyapps-headless
 
 Start `opencode` in an empty folder and type `/ua:setup`.
 
-```bash
-# update
-opencode plugin -g -f github:unify-apps/unifyapps-headless
+Update:
 
-# remove: delete the "github:unify-apps/unifyapps-headless" line
-# from "plugin" in ~/.config/opencode/opencode.jsonc
+```bash
+opencode plugin -g -f github:unify-apps/unifyapps-headless
 ```
+
+Remove: delete the `"github:unify-apps/unifyapps-headless"` line from `"plugin"` in `~/.config/opencode/opencode.jsonc`.
 
 ### Gemini CLI
 
-Install the repository as a Gemini extension:
+Install:
 
 ```bash
 gemini extensions install https://github.com/unify-apps/unifyapps-headless --consent
@@ -108,17 +113,21 @@ gemini extensions install https://github.com/unify-apps/unifyapps-headless --con
 
 Start `gemini` in an empty folder, trust the folder when Gemini asks (the tenant tools stay off otherwise), and type `/ua:setup`. Gemini has no builder agents, so the main session does their work.
 
-```bash
-# update
-gemini extensions update unifyapps-headless
+Update:
 
-# remove
+```bash
+gemini extensions update unifyapps-headless
+```
+
+Remove:
+
+```bash
 gemini extensions uninstall unifyapps-headless
 ```
 
 ### GitHub Copilot CLI
 
-Add the repository as a plugin marketplace, then install the plugin from it:
+Install:
 
 ```bash
 copilot plugin marketplace add unify-apps/unifyapps-headless
@@ -127,12 +136,16 @@ copilot plugin install ua@unifyapps-headless
 
 Start `copilot` in an empty folder. Copilot has no slash commands for plugins, so ask in words: "set up UnifyApps Headless here".
 
+Update:
+
 ```bash
-# update
 copilot plugin marketplace update unifyapps-headless
 copilot plugin update ua@unifyapps-headless
+```
 
-# remove
+Remove:
+
+```bash
 copilot plugin uninstall ua@unifyapps-headless
 copilot plugin marketplace remove unifyapps-headless
 ```
