@@ -271,6 +271,18 @@ function skillRoots() {
   return roots.filter((dir) => !roots.some((other) => other !== dir && dir.startsWith(`${other}${path.sep}`)));
 }
 
+/** A one-line frontmatter value as YAML reads it, with its quotes taken off. */
+function unquote(value) {
+  if (value.length > 1 && value.startsWith('"') && value.endsWith('"')) {
+    try { return JSON.parse(value); } catch { return value.slice(1, -1); }
+  }
+  if (value.length > 1 && value.startsWith("'") && value.endsWith("'")) return value.slice(1, -1).replaceAll("''", "'");
+  return value;
+}
+
+/** Reads one-line keys from a SKILL.md's frontmatter lines. */
+const frontmatterField = (frontmatter) => (key) => unquote(frontmatter.find((line) => line.startsWith(`${key}:`))?.slice(key.length + 1).trim() ?? '');
+
 /** The skills a person can type as a command on Claude Code (`/ua:<name>`):
  * every one not marked `user-invocable: false`. */
 export function typedSkills(skills = pluginSkills()) {
@@ -278,11 +290,37 @@ export function typedSkills(skills = pluginSkills()) {
   for (const skill of skills) {
     const split = splitSkill(fs.readFileSync(path.join(skill.dir, 'SKILL.md'), 'utf8'));
     if (!split) continue;
-    const field = (key) => split.frontmatter.find((line) => line.startsWith(`${key}:`))?.slice(key.length + 1).trim() ?? '';
+    const field = frontmatterField(split.frontmatter);
     if (field('user-invocable') === 'false') continue;
     typed.push({ name: field('name') || skill.name, description: field('description'), dir: skill.dir });
   }
   return typed;
+}
+
+/**
+ * Every skill as OpenCode 2 holds one (`Skill.Info` in `@opencode/schema/skill`):
+ * its folder's name as the id, the frontmatter name, the body as content and
+ * the SKILL.md's absolute path, from whose folder the skill tool lists the
+ * skill's other files. OpenCode 2 lets a plugin add skills only one by one,
+ * not as folders to scan, so they are read here the way its own scan reads a
+ * skills folder.
+ */
+export function opencodeSkills(skills = pluginSkills()) {
+  return skills.flatMap((skill) => {
+    const file = path.join(skill.dir, 'SKILL.md');
+    const split = splitSkill(fs.readFileSync(file, 'utf8'));
+    if (!split) return [];
+    const field = frontmatterField(split.frontmatter);
+    const description = field('description');
+    return [{
+      id: skill.name,
+      name: field('name') || skill.name,
+      ...(description ? { description } : {}),
+      ...(field('disable-model-invocation') === 'true' ? { autoinvoke: false } : {}),
+      path: file,
+      content: split.body,
+    }];
+  });
 }
 
 /** The first sentence of a skill's description, for OpenCode's command list. */
@@ -337,6 +375,7 @@ export function opencodeRegistration({ servers = pluginServers(), agents = plugi
     permission: opencodePermission(agents),
     command: opencodeCommands(typedSkills(skills)),
     skillPaths: skillRoots(),
+    skills: opencodeSkills(skills),
   };
 }
 

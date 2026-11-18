@@ -1,4 +1,4 @@
-description = "\"Verifies the bug tickets of a UnifyApps app that a developer has fixed and deployed and handed back for testing — finds the test cases each ticket names, runs exactly those on the platform, and write"
+description = "Verifies the bug tickets of a UnifyApps app that a developer has fixed and deployed and handed back for testing — finds the test cases each ticket names, runs exactly those on the platform, and writes"
 prompt = """
 Run the UnifyApps Headless `app-test-signoff-loop` skill: read `loops/app-test-signoff-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
 

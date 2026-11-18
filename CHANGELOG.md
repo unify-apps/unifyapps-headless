@@ -2,6 +2,18 @@
 
 Notable changes to UnifyApps Headless.
 
+## 0.0.4
+
+- OpenCode 2: `opencode plugin add github:unify-apps/unifyapps-headless` now
+  installs and loads. The plugin uses OpenCode 2's plugin API and gives it what
+  it gave OpenCode 1: the tenant MCP servers, the builder agents held to their
+  own servers, every skill, the `/ua:` commands, the plugin folder in every
+  shell command, and a "Yes" to a delete question approving that delete.
+  OpenCode 1 (1.18.29 and later) keeps working from the same package.
+- The installer's OpenCode loader works on OpenCode 1 and 2.
+- `/ua:` command descriptions in OpenCode and Gemini CLI no longer start with a
+  stray quote mark.
+
 ## 0.0.3
 
 - Sign-in opens one link, the tenant's sign-in page, which returns to the

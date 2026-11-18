@@ -286,33 +286,40 @@ try {
 // 10. The OpenCode plugin gives OpenCode what Claude Code reads from the
 // manifests: every tenant server, every builder, every skill folder, a
 // /ua:<name> command per typed skill, and the plugin root in every shell. The
-// person's own config wins on a name both define.
+// person's own config wins on a name both define. OpenCode 1 runs the package
+// entry's `server` and takes the hooks it returns.
+const opencodeEntry = pathToFileURL(path.join(root, JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).main)).href;
+const opencodeServers = Object.keys(JSON.parse(fs.readFileSync(path.join(root, '.mcp.json'), 'utf8')).mcpServers).filter((name) => name !== 'playwright');
+const opencodeBuilders = fs.readdirSync(path.join(root, 'agents')).filter((name) => name.endsWith('.md')).map((name) => name.slice(0, -3));
+/** OpenCode's wildcard match: `*` stands for any run of characters. */
+const wildcardMatch = (pattern, value) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/gu, '\\$&').replaceAll('*', '.*')}$`, 'u').test(value);
 try {
-  const { UnifyAppsHeadless } = await import(new URL('../opencode/plugin.mjs', import.meta.url));
-  const hooks = await UnifyAppsHeadless({ directory: root });
+  const plugin = (await import(opencodeEntry)).default;
+  const problems = [];
+  // OpenCode 2 refuses a module whose default export has no id and setup;
+  // OpenCode 1 takes a default export with server().
+  if (typeof plugin?.id !== 'string' || !plugin.id) problems.push('the package entry\'s default export has no id');
+  if (typeof plugin?.setup !== 'function') problems.push('the package entry\'s default export has no setup for OpenCode 2');
+  if (typeof plugin?.server !== 'function') problems.push('the package entry\'s default export has no server for OpenCode 1');
+  const exported = Object.keys(await import(opencodeEntry));
+  if (exported.join() !== 'default') problems.push(`the package entry exports ${exported.join(', ')}, not the default alone`);
+  const hooks = await plugin.server({ directory: root });
   const config = { mcp: { object: { type: 'local', command: ['mine'] } }, permission: { '*': 'allow', 'solution_*': 'ask' } };
   await hooks.config(config);
-  const servers = Object.keys(JSON.parse(fs.readFileSync(path.join(root, '.mcp.json'), 'utf8')).mcpServers).filter((name) => name !== 'playwright');
-  const agents = fs.readdirSync(path.join(root, 'agents')).filter((name) => name.endsWith('.md')).map((name) => name.slice(0, -3));
-  const problems = [];
-  // `opencode plugin <repo>` loads package.json's entry and calls every function it exports.
-  const entry = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).main;
-  const exported = Object.keys(await import(pathToFileURL(path.join(root, entry)).href));
-  if (exported.join() !== 'UnifyAppsHeadless') problems.push(`package entry ${entry} exports ${exported.join(', ') || 'nothing'}, not the plugin alone`);
-  for (const name of servers) if (!config.mcp[name]) problems.push(`server ${name} missing`);
+  for (const name of opencodeServers) if (!config.mcp[name]) problems.push(`server ${name} missing`);
   if (config.mcp.object.command[0] !== 'mine') problems.push('the person\'s own server was replaced');
   for (const [name, server] of Object.entries(config.mcp)) {
     if (name !== 'object' && !server.command.slice(1).every((part) => part.startsWith('/mcp/') || fs.existsSync(part))) problems.push(`server ${name} names a file that does not exist`);
   }
-  for (const name of agents) if (config.agent?.[name]?.mode !== 'subagent') problems.push(`builder ${name} missing`);
+  for (const name of opencodeBuilders) if (config.agent?.[name]?.mode !== 'subagent') problems.push(`builder ${name} missing`);
   if (!config.command?.['ua:setup']?.template?.includes('`setup` skill')) problems.push('no /ua:setup command');
   if (config.command?.['ua:loop-orchestrator']) problems.push('a skill marked user-invocable: false became a command');
+  if (Object.values(config.command ?? {}).some((command) => /^["']/u.test(command.description))) problems.push('a command description keeps its YAML quotes');
   if (!config.skills?.paths?.length || !config.skills.paths.every((dir) => fs.existsSync(dir))) problems.push('skill folders missing');
   // OpenCode applies the last rule whose key matches, the agent's after the config's.
   const allowed = (agent, tool) => {
     const rules = [...Object.entries(config.permission), ...Object.entries(config.agent?.[agent]?.permission ?? {})];
-    const matches = (key) => new RegExp(`^${key.replace(/[.+?^${}()|[\]\\]/gu, '\\$&').replaceAll('*', '.*')}$`, 'u').test(tool);
-    return rules.findLast(([key]) => matches(key))?.[1];
+    return rules.findLast(([key]) => wildcardMatch(key, tool))?.[1];
   };
   for (const [agent, tool, want] of [
     [null, 'object_get_objects', 'deny'], [null, 'application-builder_get_page', 'deny'], [null, 'solution_get_solution', 'ask'],
@@ -322,35 +329,170 @@ try {
   const env = { env: {} };
   await hooks['shell.env']({ cwd: root }, env);
   if (env.env.CLAUDE_PLUGIN_ROOT !== root) problems.push('CLAUDE_PLUGIN_ROOT is not set in the shell');
+  const system = { system: [] };
+  await hooks['experimental.chat.system.transform']({}, system);
+  if (!system.system.join('\n').includes('`task` tool')) problems.push('OpenCode 1 is not told the Claude tool names');
   record('the OpenCode plugin registers the servers, builders, skills and /ua: commands, and limits each server to its builders', problems.length === 0, problems.slice(0, 8).join('\n        '));
 } catch (error) {
   record('the OpenCode plugin registers the servers, builders, skills and /ua: commands, and limits each server to its builders', false, error.message);
 }
 
+/**
+ * A stand-in for the context OpenCode 2 hands a plugin's setup, shaped as
+ * `@opencode/plugin` 2.3 declares it: transform editors over state that starts
+ * as OpenCode's own (a built-in `build` agent, the person's own `object`
+ * server), hooks kept by domain and name, and the session calls a command
+ * makes. `ctx.agent.get` answers from the edited agents, as OpenCode's does.
+ */
+function fakeOpencode2(directory) {
+  const newAgent = (id) => ({ id, name: id, mode: 'primary', hidden: false, request: {}, permissions: [{ action: '*', resource: '*', effect: 'allow' }] });
+  const state = {
+    mcp: new Map([['object', { type: 'local', command: ['mine'] }]]),
+    agents: new Map([['build', newAgent('build')]]),
+    skills: new Map(), commands: new Map(), hooks: new Map(), prompts: [],
+  };
+  const hook = (domain) => async (name, callback) => { state.hooks.set(`${domain}:${name}`, callback); return { dispose: async () => {} }; };
+  const transform = (editor) => async (callback) => { callback(editor); return { dispose: async () => {} }; };
+  const ctx = {
+    location: { directory },
+    options: {},
+    mcp: { transform: transform({
+      list: () => [...state.mcp], get: (name) => state.mcp.get(name), set: (name, config) => state.mcp.set(name, config),
+      update: (name, fn) => fn(state.mcp.get(name)), remove: (name) => state.mcp.delete(name),
+    }) },
+    agent: {
+      transform: transform({
+        list: () => [...state.agents.values()], get: (id) => state.agents.get(id), default: () => {}, remove: (id) => state.agents.delete(id),
+        update: (id, fn) => {
+          if (!state.agents.has(id)) state.agents.set(id, newAgent(id));
+          fn(state.agents.get(id));
+        },
+      }),
+      get: async ({ agentID }) => ({ data: state.agents.get(agentID) }),
+    },
+    skill: { transform: transform({
+      list: () => [...state.skills.values()], get: (id) => state.skills.get(id), add: (skill) => state.skills.set(skill.id, skill),
+      update: () => {}, remove: (id) => state.skills.delete(id),
+    }) },
+    command: { transform: transform({ add: (definition) => state.commands.set(definition.name, definition) }) },
+    session: { hook: hook('session'), prompt: async (input) => { state.prompts.push(input); } },
+    permission: { hook: hook('permission') },
+    shell: { hook: hook('shell') },
+    tool: { hook: hook('tool') },
+  };
+  /** What OpenCode 2 decides for an agent's call: its last matching rule, then
+   * the evaluate hooks, which run only when no rule denies. */
+  const decide = async (agent, action) => {
+    const rule = state.agents.get(agent)?.permissions.findLast((item) => wildcardMatch(item.action, action));
+    if (rule?.effect === 'deny') return 'deny';
+    const event = { sessionID: 's', agent, action, resources: ['*'], effect: rule?.effect ?? 'ask' };
+    await state.hooks.get('permission:evaluate')?.(event);
+    return event.effect;
+  };
+  return { ctx, state, decide };
+}
+
+// 10b. On OpenCode 2 the package entry's setup gives OpenCode the same: every
+// server (the person's own kept), every builder held to its own servers, every
+// skill, the /ua: commands, the plugin root in every shell and the Claude tool
+// names. A builder's servers stay out of the main session even when the
+// person's own rules allow everything, and a rule naming a server is kept.
+try {
+  const plugin = (await import(opencodeEntry)).default;
+  const { ctx, state, decide } = fakeOpencode2(root);
+  await plugin.setup(ctx);
+  const problems = [];
+  for (const name of opencodeServers) if (!state.mcp.get(name)) problems.push(`server ${name} missing`);
+  if (state.mcp.get('object').command[0] !== 'mine') problems.push('the person\'s own server was replaced');
+  for (const name of opencodeBuilders) {
+    const agent = state.agents.get(name);
+    if (agent?.mode !== 'subagent' || !agent.system || !agent.description) problems.push(`builder ${name} missing or without its prompt`);
+  }
+  const skillFiles = ['skills', 'loops'].flatMap((dir) => fs.readdirSync(path.join(root, dir), { recursive: true })).filter((file) => path.basename(String(file)) === 'SKILL.md').length;
+  if (state.skills.size !== skillFiles) problems.push(`${skillFiles} SKILL.md files but ${state.skills.size} skills added`);
+  if (!state.skills.get('setup')?.content) problems.push('the setup skill has no content');
+  for (const skill of state.skills.values()) if (!fs.existsSync(skill.path) || /^["']/u.test(skill.description ?? '')) problems.push(`skill ${skill.id} has no SKILL.md at ${skill.path}, or a quoted description`);
+  if (!state.commands.has('ua:setup')) problems.push('no /ua:setup command');
+  if (state.commands.has('ua:loop-orchestrator')) problems.push('a skill marked user-invocable: false became a command');
+  await state.commands.get('ua:setup')?.execute({ sessionID: 's1', prompt: { text: 'switch solution' }, delivery: 'steer' });
+  const sent = state.prompts[0];
+  if (sent?.sessionID !== 's1' || sent.delivery !== 'steer' || !sent.text.includes('`setup` skill') || !sent.text.endsWith('switch solution')) problems.push(`/ua:setup sent ${JSON.stringify(sent)}`);
+  for (const [agent, tool, want] of [
+    ['build', 'object_get_objects', 'deny'], ['build', 'application-builder_get_page', 'deny'], ['build', 'solution_get_solution', 'allow'],
+    ['app-agent', 'application-builder_get_page', 'allow'], ['app-agent', 'object_get_objects', 'allow'], ['app-agent', 'api-gateway_get_api', 'deny'],
+    ['fde-agent', 'application-builder_get_user_details', 'allow'], ['fde-agent', 'application-builder_get_page', 'deny'],
+  ]) {
+    const got = await decide(agent, tool);
+    if (got !== want) problems.push(`${agent} gets ${got} for ${tool}, not ${want}`);
+  }
+  // OpenCode 2 applies the person's own rules after a plugin's: a catch-all
+  // does not hand the main session a builder's tools; naming a server does.
+  state.agents.get('build').permissions.push({ action: '*', resource: '*', effect: 'allow' });
+  if (await decide('build', 'object_get_objects') !== 'deny') problems.push('the person\'s catch-all "*" hands the main session a builder\'s tools');
+  state.agents.get('build').permissions.push({ action: 'evaluation_*', resource: '*', effect: 'allow' });
+  if (await decide('build', 'evaluation_get_metrics') !== 'allow') problems.push('the person\'s own rule for a server is overridden');
+  const shell = { command: 'true', cwd: root, timeout: 0, shell: 'bash', env: {} };
+  await state.hooks.get('shell:create.before')?.(shell);
+  if (shell.env.CLAUDE_PLUGIN_ROOT !== root) problems.push('CLAUDE_PLUGIN_ROOT is not set in the shell');
+  const context = { sessionID: 's1', agent: 'build', system: [], messages: [], tools: {} };
+  await state.hooks.get('session:context')?.(context);
+  if (!context.system.some((part) => part.type === 'text' && part.text.includes('`subagent` tool'))) problems.push('OpenCode 2 is not told the Claude tool names');
+  record('on OpenCode 2 the plugin adds the servers, builders, skills and /ua: commands, and limits each server to its builders', problems.length === 0, problems.slice(0, 8).join('\n        '));
+} catch (error) {
+  record('on OpenCode 2 the plugin adds the servers, builders, skills and /ua: commands, and limits each server to its builders', false, error.message);
+}
+
 // 11. In OpenCode, a "Yes" to the `question` tool approves a refused delete the
-// way an AskUserQuestion answer does in Claude Code, and a "No" does not. Run
+// way an AskUserQuestion answer does in Claude Code, and a "No" does not, on
+// OpenCode 1's hook and on OpenCode 2's (its question tool's real result shape:
+// the answers in `output` and `metadata`, the same as text in `content`). Run
 // in a child with its own UA_HOME, so no real pending delete is touched.
 {
   const home = fs.mkdtempSync(path.join((await import('node:os')).tmpdir(), 'ua-smoke-'));
   const child = `
     const yes = await import(${JSON.stringify(new URL('./workspace/delete-yes.mjs', import.meta.url).href)});
-    const { UnifyAppsHeadless } = await import(${JSON.stringify(new URL('../opencode/plugin.mjs', import.meta.url).href)});
-    const hooks = await UnifyAppsHeadless({ directory: process.cwd() });
-    const answer = async (key, choice) => {
+    const plugin = (await import(${JSON.stringify(opencodeEntry)})).default;
+    const v1 = await plugin.server({ directory: process.cwd() });
+    let v2 = null;
+    const on = async () => ({ dispose: async () => {} });
+    await plugin.setup({
+      location: { directory: process.cwd() },
+      mcp: { transform: on }, agent: { transform: on }, skill: { transform: on }, command: { transform: on },
+      permission: { hook: on }, shell: { hook: on }, session: { hook: on },
+      tool: { hook: async (name, callback) => { if (name === 'execute.after') v2 = callback; return { dispose: async () => {} }; } },
+    });
+    const ask = (key) => {
       const summary = 'Delete the object Throwaway (' + key + ')';
       const id = yes.addPendingDelete({ key, tool: 'delete_object', summary });
-      const question = summary + '? (' + id + ')';
-      await hooks['tool.execute.after']({ tool: 'question', sessionID: 's', callID: 'c', args: { questions: [{ question, header: 'Delete', options: [] }] } },
-        { title: '', output: 'User has answered your questions: "' + question + '"="' + choice + '".', metadata: { answers: [[choice]] } });
+      return summary + '? (' + id + ')';
+    };
+    const said = (question, choice) => 'User has answered your questions: "' + question + '"="' + choice + '". You can now continue with the user\\'s answers in mind.';
+    const answerV1 = async (key, choice) => {
+      const question = ask(key);
+      await v1['tool.execute.after']({ tool: 'question', sessionID: 's', callID: 'c', args: { questions: [{ question, header: 'Delete', options: [] }] } },
+        { title: '', output: said(question, choice), metadata: { answers: [[choice]] } });
       return yes.takeDeleteYes(key);
     };
-    process.stdout.write(JSON.stringify({ yes: await answer('k-yes', 'Yes'), no: await answer('k-no', 'No') }));`;
+    const answerV2 = async (key, choice, result) => {
+      const question = ask(key);
+      await v2({ tool: 'question', sessionID: 's', agent: 'build', messageID: 'm', id: 'c', status: 'completed',
+        input: { questions: [{ question, header: 'Delete', options: [] }] }, result: result(question) });
+      return yes.takeDeleteYes(key);
+    };
+    const full = (choice) => (question) => ({ output: { answers: [[choice]] }, content: [{ type: 'text', text: said(question, choice) }], metadata: { answers: [[choice]] } });
+    const textOnly = (choice) => (question) => ({ content: said(question, choice) });
+    process.stdout.write(JSON.stringify({
+      yes: await answerV1('k-yes', 'Yes'), no: await answerV1('k-no', 'No'),
+      yes2: await answerV2('k2-yes', 'Yes', full('Yes')), no2: await answerV2('k2-no', 'No', full('No')),
+      yes2text: await answerV2('k2-text', 'Yes', textOnly('Yes')),
+    }));`;
   const result = spawnSync(process.execPath, ['--input-type=module', '-e', child], { cwd: root, encoding: 'utf8', env: { ...process.env, UA_HOME: home }, timeout: 60_000 });
   let outcome = null;
   try { outcome = JSON.parse(result.stdout); } catch { /* reported below */ }
   fs.rmSync(home, { recursive: true, force: true });
-  record('in OpenCode a Yes to the question approves a refused delete, and a No does not',
-    outcome?.yes === true && outcome?.no === false, outcome ? JSON.stringify(outcome) : (result.stderr ?? '').split('\n').slice(0, 3).join(' '));
+  record('in OpenCode 1 and 2 a Yes to the question approves a refused delete, and a No does not',
+    outcome?.yes === true && outcome?.no === false && outcome?.yes2 === true && outcome?.no2 === false && outcome?.yes2text === true,
+    outcome ? JSON.stringify(outcome) : (result.stderr ?? '').split('\n').slice(0, 3).join(' '));
 }
 
 // 12. The installer: every target has the shape the registry promises, choices

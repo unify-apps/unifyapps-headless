@@ -1,7 +1,9 @@
 // OpenCode: one loader file in OpenCode's global plugins folder, which OpenCode
-// loads at every start. It re-exports `opencode/plugin.mjs` from the staged
-// copy, whose hooks add the MCP servers, the builders, the skills and a
-// `/ua:<name>` command per typed skill to OpenCode's config.
+// loads at every start. OpenCode 1 and 2 both load a `.js` file placed directly
+// in that folder. It re-exports the package entry, `opencode/index.mjs`, from
+// the staged copy: one default export that OpenCode 2 runs as `setup` and
+// OpenCode 1 as `server`, adding the MCP servers, the builders, the skills and
+// a `/ua:<name>` command per typed skill.
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -13,9 +15,9 @@ export const loaderPath = () => path.join(configDir(), 'plugins', LOADER);
 const opencode = () => which('opencode', [path.join(home(), '.opencode', 'bin')]);
 
 export function loaderText(pluginRoot, version) {
-  const entry = pathToFileURL(path.join(pluginRoot, 'opencode', 'plugin.mjs')).href;
+  const entry = pathToFileURL(path.join(pluginRoot, 'opencode', 'index.mjs')).href;
   return `// UnifyApps Headless ${version}. Written by its installer; run the installer again to update it.\n`
-    + `export { UnifyAppsHeadless } from ${JSON.stringify(entry)};\n`;
+    + `export { default } from ${JSON.stringify(entry)};\n`;
 }
 
 export default {

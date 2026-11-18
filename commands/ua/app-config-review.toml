@@ -1,4 +1,4 @@
-description = "\"Reviews a no-code app's stored config, not the live app, and writes a report in the solution folder: a verdict (ready, polish-before-ship, block-before-ship or not-evaluable), a scorecard by area and"
+description = "Reviews a no-code app's stored config, not the live app, and writes a report in the solution folder: a verdict (ready, polish-before-ship, block-before-ship or not-evaluable), a scorecard by area and "
 prompt = """
 Run the UnifyApps Headless `app-config-review` skill: read `skills/app-config-review/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
 

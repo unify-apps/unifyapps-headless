@@ -1,4 +1,4 @@
-description = "\"Analyses the failed test cases of one Test Studio run for a UnifyApps app — classifies every red by rule from its stored evidence, groups the ones that share a cause, tags each case against its own h"
+description = "Analyses the failed test cases of one Test Studio run for a UnifyApps app — classifies every red by rule from its stored evidence, groups the ones that share a cause, tags each case against its own hi"
 prompt = """
 Run the UnifyApps Headless `app-test-triage-loop` skill: read `loops/app-test-triage-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
 

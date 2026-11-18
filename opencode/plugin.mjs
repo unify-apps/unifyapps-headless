@@ -1,5 +1,5 @@
-// UnifyApps Headless for OpenCode. `setup.sh --opencode` writes a one-line
-// loader into OpenCode's plugins folder that re-exports this module.
+// UnifyApps Headless for OpenCode 1. OpenCode 2 runs `v2.mjs` instead; the
+// package entry, `index.mjs`, hands each version its own.
 //
 // Claude Code reads the plugin from its manifests and runs its hooks; OpenCode
 // does neither, so this module does the same work through OpenCode's own hooks:
@@ -17,17 +17,25 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { opencodeRegistration } from '../scripts/workspace/agent-targets.mjs';
 
-const PLUGIN_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+export const PLUGIN_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 
-const TOOL_NAMES = [
-  'UnifyApps Headless skills were written for Claude Code. In this session:',
-  '- AskUserQuestion means the `question` tool. When a tool refuses a delete with a confirm id such as (d_1a2b3c), ask with `question`, copy the question text the refusal gives word for word, and offer "Yes" and "No".',
-  '- The Agent or Task tool, and `subagent_type`, mean the `task` tool with the builder agent of that name.',
-  '- The Skill tool means the `skill` tool. A skill named `ua:<name>` is the skill `<name>`.',
-  '- `mcp__plugin_ua_<server>__<tool>` is the tool `<server>_<tool>`.',
-  '- The tenant tools a builder owns are given only to that builder. When a skill says to call one in the main session, brief the builder that owns it with the `task` tool instead.',
-  '- ${CLAUDE_PLUGIN_ROOT} is set in every bash command; leave it as it is.',
-].join('\n');
+/** The Claude tool names the skills use, in OpenCode's terms. OpenCode 1 calls
+ * its sub-agent tool `task` and its shell `bash`; OpenCode 2 calls them
+ * `subagent` and `shell`, and serves MCP tools through Code Mode. */
+export function toolNames({ subagent = 'task', shell = 'bash', codeMode = false } = {}) {
+  return [
+    'UnifyApps Headless skills were written for Claude Code. In this session:',
+    '- AskUserQuestion means the `question` tool. When a tool refuses a delete with a confirm id such as (d_1a2b3c), ask with `question`, copy the question text the refusal gives word for word, and offer "Yes" and "No".',
+    `- The Agent or Task tool, and \`subagent_type\`, mean the \`${subagent}\` tool with the builder agent of that name.`,
+    '- The Skill tool means the `skill` tool. A skill named `ua:<name>` is the skill `<name>`.',
+    codeMode
+      ? '- `mcp__plugin_ua_<server>__<tool>` is the tool `<tool>` of the `<server>` MCP server: `<server>_<tool>`, or `<server>.<tool>` inside Code Mode\'s `execute`.'
+      : '- `mcp__plugin_ua_<server>__<tool>` is the tool `<server>_<tool>`.',
+    `- The tenant tools a builder owns are given only to that builder. When a skill says to call one in the main session, brief the builder that owns it with the \`${subagent}\` tool instead.`,
+    `- \${CLAUDE_PLUGIN_ROOT} is set in every ${shell} command; leave it as it is.`,
+  ].join('\n');
+}
+const TOOL_NAMES = toolNames();
 
 /** The person's answers as Claude Code's AskUserQuestion reports them:
  * { "<question text>": "<answer>" }. OpenCode's question tool returns one list
@@ -48,7 +56,7 @@ export function questionAnswers(args, output) {
   return Object.keys(result).length ? result : null;
 }
 
-function runClaudeHook(event) {
+export function runClaudeHook(event) {
   spawnSync('bash', [path.join(PLUGIN_ROOT, 'scripts/run-node.sh'), path.join(PLUGIN_ROOT, 'scripts/hooks.mjs')], {
     input: JSON.stringify(event), stdio: ['pipe', 'ignore', 'ignore'], timeout: 10_000,
   });

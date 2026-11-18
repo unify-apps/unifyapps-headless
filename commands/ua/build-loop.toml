@@ -1,4 +1,4 @@
-description = "\"Builds a ticket or a feature on whatever it is about, in one command."
+description = "Builds a ticket or a feature on whatever it is about, in one command."
 prompt = """
 Run the UnifyApps Headless `build-loop` skill: read `loops/build-loop/SKILL.md` in the UnifyApps Headless folder that this session's start note names, and follow it.
 
