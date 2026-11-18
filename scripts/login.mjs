@@ -235,8 +235,9 @@ const handoffEnabled = () => process.env.UA_HANDOFF_LOGIN !== "0";
 const HANDOFF_PATH = "/api/session/ide-handoff";
 // How long the handoff gets before the sign-in page follows it. A browser that
 // holds a session is redirected in well under a second; this only has to outlast
-// a slow first paint, and a person who is signed in never sees the second tab.
-const SIGN_IN_AFTER_MS = 8_000;
+// a browser that was not running yet. A person who is not signed in sees the
+// tenant's bare 401 for this long, so it is kept short.
+const SIGN_IN_AFTER_MS = 4_000;
 
 /**
  * Trades the session the person's own browser already holds for this tenant's
@@ -327,6 +328,7 @@ async function handoffLogin(tenant, { timeoutS: deadlineS }) {
     openInBrowser(handoff.href);
     signInTimer = setTimeout(() => {
       log(`Not signed in to ${tenant} in that browser. Opening its sign-in page.`);
+      log(`SIGN_IN_LINK ${signIn.href}`);
       openInBrowser(signIn.href);
     }, SIGN_IN_AFTER_MS);
     signInTimer.unref();
@@ -335,6 +337,10 @@ async function handoffLogin(tenant, { timeoutS: deadlineS }) {
       `to do and this finishes by itself; if you are not, the sign-in page follows. ` +
       `UnifyApps Headless waits up to ${Math.round(deadlineS / 60)} minutes, and you can paste ` +
       `the tenant cookie (_at) in this chat instead.`);
+    // The two links the person can paste themselves when no tab opens: the first
+    // finishes at once in a browser that is signed in, the second signs in first.
+    log(`HANDOFF_LINK ${handoff.href}`);
+    log(`SIGN_IN_LINK ${signIn.href}`);
   });
 
   clearTimeout(signInTimer);
