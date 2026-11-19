@@ -1,0 +1,172 @@
+{
+  "name": "ua",
+  "version": "0.0.4",
+  "description": "Build UnifyApps solutions from chat: apps, pages, objects, automations and AI agents, each one read back from the platform before it is called done.",
+  "author": {
+    "name": "UnifyApps Frontend"
+  },
+  "homepage": "https://github.com/unify-apps/unifyapps-headless",
+  "repository": "https://github.com/unify-apps/unifyapps-headless",
+  "license": "MIT",
+  "skills": [
+    "./skills/",
+    "./skills/native-loops/",
+    "./skills/web-loops/",
+    "./loops/"
+  ],
+  "mcpServers": {
+    "application-builder": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/application-builder\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "object": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/object\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "automation-code": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/automation-code\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "agent-builder": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/agent-builder\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "app-testing": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/app-testing\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "connection": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/connection\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "solution": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/solution\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "evaluation": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/evaluation\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "api-gateway": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/api-gateway\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "connectors-sdk": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/connectors-sdk\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "changeset": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/changeset\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "code-builder": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/code-builder\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "context-graph": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/context-graph\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    },
+    "playwright": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.4\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/playwright-mcp.sh\""
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    }
+  },
+  "interface": {
+    "displayName": "UnifyApps Headless",
+    "shortDescription": "Build UnifyApps solutions from Codex.",
+    "longDescription": "Build UnifyApps solutions from chat: apps, pages, objects, automations and AI agents, each one read back from the platform before it is called done.",
+    "developerName": "UnifyApps",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write",
+      "MCP"
+    ]
+  }
+}

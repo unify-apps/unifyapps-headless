@@ -1,13 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { setCatalogueSource } from './versions.mjs';
 
 // Only product files belong in a release. Never copy a working tree wholesale.
 const entries = [
-  '.claude-plugin', '.mcp.json', 'agents',
+  '.claude-plugin', '.codex-plugin', '.mcp.json', 'agents',
   'hooks', 'skills', 'loops', 'scripts', 'opencode', 'commands', 'gemini-extension.json',
   'README.md', 'LICENSE', 'getting_started.md', 'CHANGELOG.md', 'SECURITY.md', 'package.json', 'setup.sh', 'install.sh',
 ];
-const excluded = new Set(['.git', '.claude', '.codex', '.agents', '.unify', '.nebula', 'UnifyApps Headless', 'node_modules', '.DS_Store', 'dist', '.codex-plugin', 'codex-skills']);
+const excluded = new Set(['.git', '.claude', '.codex', '.agents', '.unify', '.nebula', 'UnifyApps Headless', 'node_modules', '.DS_Store', 'dist', 'codex-skills']);
 
 export function copyDistribution(source, destination) {
   fs.mkdirSync(destination, { recursive: true });
@@ -25,4 +26,6 @@ export function copyDistribution(source, destination) {
       },
     });
   }
+  // A copy installs from itself: its catalogue names its own folder, not a GitHub tag.
+  setCatalogueSource(destination, null);
 }

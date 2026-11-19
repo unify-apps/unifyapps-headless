@@ -2,6 +2,23 @@
 
 Notable changes to UnifyApps Headless.
 
+## Unreleased
+
+- Releases: a merge to `main` publishes nothing. A person publishes a version
+  from the publish workflow; every agent installs the newest release, never
+  work in progress. See RELEASING.md.
+- Required updates: a release can require every older copy to update. Until
+  it does, the session start says how, and tenant tools refuse every call.
+  A newer optional release is mentioned once.
+- Betas: published as pre-releases, installed only by naming their tag.
+- Codex installs with its own plugin commands
+  (`codex plugin marketplace add unify-apps/unifyapps-headless`), with no
+  installer script.
+- OpenCode installs the newest release with
+  `opencode plugin add 'github:unify-apps/unifyapps-headless#semver:*'`.
+- The installer script installs the Latest release, not `main`, and no longer
+  keeps every version it ever staged.
+
 ## 0.0.4
 
 - OpenCode 2: `opencode plugin add github:unify-apps/unifyapps-headless` now

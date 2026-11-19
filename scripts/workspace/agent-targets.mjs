@@ -220,8 +220,8 @@ const tomlString = (value) => `"""\n${String(value).replace(/\\/gu, '\\\\').repl
 const yamlString = (value) => `'${String(value).replaceAll("'", "''")}'`;
 
 /** Codex: one TOML file per agent, in `.codex/agents/`. */
-export function codexAgent(agent, { skillsDir = SHARED_SKILLS_DIR } = {}) {
-  const skills = agent.skills.map((skill) => `\n[[skills.config]]\npath = "${skillsDir}/${skill}"\nenabled = true\n`).join('');
+export function codexAgent(agent, { skillsDir = SHARED_SKILLS_DIR, skillPath = (skill) => `${skillsDir}/${skill}` } = {}) {
+  const skills = agent.skills.map((skill) => `\n[[skills.config]]\npath = "${skillPath(skill)}"\nenabled = true\n`).join('');
   return `# UnifyApps Headless. Written by /ua:setup; edits are replaced on the next run.\n`
     + `name = "${agent.name.replace(/-/gu, '_')}"\n`
     + `description = ${tomlString(agent.description)}\n`

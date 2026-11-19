@@ -22,6 +22,9 @@ if (process.argv.length > 2) {
   process.exit(2);
 }
 
+// No check here downloads release.json; the ones about updates name their own file.
+process.env.UA_NO_UPDATE_CHECK ??= '1';
+
 const results = [];
 const record = (name, ok, detail = '') => {
   results.push({ name, ok, detail });
@@ -501,7 +504,7 @@ try {
 try {
   const { TARGETS } = await import(new URL('./install/targets.mjs', import.meta.url));
   const { parseChoice } = await import(new URL('./install/index.mjs', import.meta.url));
-  const { codexManifest } = await import(new URL('./install/targets/codex.mjs', import.meta.url));
+  const { codexManifest, codexManifestIsCurrent } = await import(new URL('./release/codex-manifest.mjs', import.meta.url));
   const problems = [];
   for (const target of TARGETS) {
     for (const key of ['id', 'label']) if (typeof target[key] !== 'string') problems.push(`${target.id ?? '?'}: no ${key}`);
@@ -515,10 +518,13 @@ try {
   if (!refused) problems.push('an agent that is not installed could be chosen');
   if (parseChoice('all', rows, []).some((target) => target === TARGETS[1])) problems.push('"all" chose an agent that is not installed');
   if (TARGETS.some((target) => 'installAgent' in target)) problems.push('the installer can install an agent; it must only add the plugin');
+  if (!codexManifestIsCurrent(root)) problems.push('.codex-plugin/plugin.json is out of date: run node scripts/release/codex-manifest.mjs');
   const manifest = codexManifest(root);
-  if (manifest.skills?.[0] !== './codex-skills/') problems.push('the Codex manifest does not use the resolved skill copy');
+  const claudeSkills = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin', 'plugin.json'), 'utf8')).skills;
+  if (JSON.stringify(manifest.skills) !== JSON.stringify(claudeSkills)) problems.push('the Codex manifest does not serve the same skill folders as the Claude one');
   for (const [name, server] of Object.entries(manifest.mcpServers ?? {})) {
-    if (!server.args.every((part) => part.startsWith('/mcp/') || fs.existsSync(part))) problems.push(`Codex server ${name} names a file that does not exist`);
+    const files = [...server.args[1].matchAll(/"\$r\/([^"]+)"/gu)].map((match) => match[1]);
+    if (!files.length || !files.every((file) => fs.existsSync(path.join(root, file)))) problems.push(`Codex server ${name} names a file that does not exist`);
   }
   record(`the installer knows ${TARGETS.map((target) => target.label).join(', ')}`, problems.length === 0, problems.slice(0, 8).join('\n        '));
 } catch (error) {
@@ -560,6 +566,57 @@ try {
   try { answer = JSON.parse(run.stdout); } catch { /* checked below */ }
   fs.rmSync(home, { recursive: true, force: true });
   record('login.mjs --logout with nothing saved is a no-op', run.status === 0 && answer.loggedOut === true && answer.had === false, run.stderr || run.stdout);
+}
+
+// Releases: every manifest carries one version, and the catalogue names this
+// folder or the tag of that version, never another.
+try {
+  const { readVersions, catalogueSource } = await import(new URL('./release/versions.mjs', import.meta.url));
+  const versions = readVersions(root);
+  const distinct = [...new Set(Object.values(versions))];
+  const source = catalogueSource(root);
+  const problems = [];
+  if (Object.keys(versions).length < 4) problems.push(`only ${Object.keys(versions).join(', ')} carry a version`);
+  if (distinct.length !== 1) problems.push(`the manifests disagree: ${JSON.stringify(versions)}`);
+  if (source !== './' && !(source?.source === 'url' && source.ref === `v${distinct[0]}`)) problems.push(`the catalogue names ${JSON.stringify(source)}, not this folder or v${distinct[0]}`);
+  record(`every manifest says ${distinct.join(' / ')} and the catalogue agrees`, problems.length === 0, problems.join('\n        '));
+} catch (error) {
+  record('every manifest carries one version', false, error.message);
+}
+
+// Updates: below the published minimum, a tool call is refused before it is
+// sent and says how to update; at or above it, the call goes on as before.
+// Under Codex the solution server, and only it, tells the model where the
+// plugin is. Each runs in a child with a home of its own.
+{
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ua-update-'));
+  const child = `
+    import fs from 'node:fs';
+    const { createBridge } = await import(${JSON.stringify(pathToFileURL(path.join(root, 'scripts', 'mcp-bridge.mjs')).href)});
+    const write = (min) => fs.writeFileSync(process.env.UA_RELEASE_URL, JSON.stringify({ version: '999.0.0', minRequiredVersion: min, message: 'Smoke.' }));
+    const call = async (min) => {
+      write(min); fs.rmSync(process.env.UA_HOME + '/update-check.json', { force: true });
+      const bridge = createBridge('/mcp/object', { context: () => null });
+      const [reply] = await bridge({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'get_objects', arguments: {} } }).catch((error) => [{ error: error.message }]);
+      return JSON.stringify(reply);
+    };
+    const init = async (target) => (await createBridge(target, { context: () => null, updates: async () => ({ state: 'current' }) })({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }))[0].result.instructions ?? null;
+    process.env.UA_AGENT = 'codex';
+    console.log(JSON.stringify({ blocked: await call('999.0.0'), allowed: await call('0.0.0'), solution: await init('/mcp/solution'), object: await init('/mcp/object'),
+      agents: fs.readdirSync(process.env.CODEX_HOME + '/agents').filter((file) => file.startsWith('ua-')).length }));`;
+  const env = { ...process.env, UA_HOME: home, CODEX_HOME: path.join(home, 'codex'), UA_RELEASE_URL: path.join(home, 'release.json') };
+  delete env.UA_NO_UPDATE_CHECK;
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', child], { cwd: root, encoding: 'utf8', env, timeout: 60_000 });
+  let out = {};
+  try { out = JSON.parse(run.stdout.trim().split('\n').pop()); } catch { /* reported below */ }
+  fs.rmSync(home, { recursive: true, force: true });
+  const problems = [];
+  if (!String(out.blocked).includes('UPDATE_REQUIRED') || !String(out.blocked).includes('Update with')) problems.push(`below the minimum: ${out.blocked}`);
+  if (String(out.allowed).includes('UPDATE_REQUIRED')) problems.push(`at the minimum: ${out.allowed}`);
+  if (!String(out.solution).includes(root)) problems.push('the Codex solution server does not name the plugin folder');
+  if (out.object !== null) problems.push('a Codex server other than solution sends instructions');
+  if (!(out.agents > 0)) problems.push('no builder was written to ~/.codex/agents');
+  record('an out-of-date copy refuses tool calls; Codex learns the plugin folder', run.status === 0 && problems.length === 0, problems.join('\n        ') || run.stderr.slice(0, 400));
 }
 
 const failed = results.filter((result) => !result.ok);
