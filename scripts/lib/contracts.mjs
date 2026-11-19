@@ -350,14 +350,14 @@ export function errorMessage(code, details = {}) {
     const [urlHost, tenant] = detail(details, "urlHost", "tenant");
     return `That ${detail(details, "what")[0] || "solution"} is on ${urlHost}, not ${tenant}. Pick the tenant again or paste a URL on ${tenant}.`;
   }
-  if (code === "WORKSPACE_SOLUTION_MISMATCH") {
+  if (code === "FOLDER_SOLUTION_MISMATCH") {
     return "This folder is already associated with a solution. Please create a new folder somewhere else and start a Claude session in that. If you want to proceed, this will override everything about the previous folder.";
   }
   if (code === "NO_SOLUTION") return "No solution is open in this folder. Open or create one first.";
   if (code === "TENANT_BINDING_CONFLICT") {
     return `This folder is connected to ${detail(details, "tenant")[0]}. Use that tenant here, or use another folder.`;
   }
-  if (code === "WORKSPACE_CONTENT_CONFLICT") {
+  if (code === "FOLDER_CONTENT_CONFLICT") {
     return "This folder already contains files UnifyApps Headless would need to manage. Please use a new folder so those files are not overwritten.";
   }
   if (code === "PLAN_INTERRUPTED") {

@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openTools, forEachItem } from '../../../scripts/tool-calls.mjs';
-import { homeForCwd } from '../../../scripts/workspace/session-registry.mjs';
+import { homeForCwd } from '../../../scripts/folder/session-registry.mjs';
 import { readApp } from '../../app-best-practices/scripts/config-read.mjs';
 import { blockTarget, dataSourceTarget } from '../../app-best-practices/scripts/checks/shared.mjs';
 import { appliesTo, checkApp, loadRulebook } from '../../app-best-practices/scripts/rule-check.mjs';

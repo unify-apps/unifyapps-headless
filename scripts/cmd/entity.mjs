@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { UaError } from '../lib/contracts.mjs';
 import { assertLocalPath, atomicFile } from '../lib/session-paths.mjs';
-import { sessionHome } from '../workspace/local.mjs';
+import { sessionHome } from '../folder/local.mjs';
 import {
   checkpointEntityRef,
   checkpointEntityRefs,
@@ -12,8 +12,8 @@ import {
   readCachedPageContext,
   readCachedSolutionContext,
   cachedIdFor,
-} from '../workspace/entity-cache.mjs';
-import { readInterfaceManifest } from '../workspace/interface-cache.mjs';
+} from '../folder/entity-cache.mjs';
+import { readInterfaceManifest } from '../folder/interface-cache.mjs';
 import { entityUrl, previewUrl, rowsTable } from '../lib/entity-links.mjs';
 
 function required(value, label) {

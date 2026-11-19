@@ -11,12 +11,12 @@ import { DEFAULT_MODE, UaError, SPEC_FORMATS, askPolicy, isRelease, normalizeMod
 import { parseFrontmatter } from '../lib/formats.mjs';
 import { buildPlanPreview, askingSteps } from '../lib/plan-preview.mjs';
 import { atomicFile } from '../lib/session-paths.mjs';
-import { executionActor, readState, writeState } from '../workspace/local.mjs';
-import { draftsFolder, openPreview, readWiringFile, writePreview } from '../workspace/plan-preview.mjs';
+import { executionActor, readState, writeState } from '../folder/local.mjs';
+import { draftsFolder, openPreview, readWiringFile, writePreview } from '../folder/plan-preview.mjs';
 import { formatAge, lastActivityAt, maybeStopped } from '../lib/progress-table.mjs';
-import { readSyncStatus, refreshCurrentIfStale } from '../workspace/solution-sync.mjs';
-import { listCachedEntities, readCachedAppContext, readCachedPageContext } from '../workspace/entity-cache.mjs';
-import { planRows, readLiveSessions, readPlans } from '../workspace/solution-work.mjs';
+import { readSyncStatus, refreshCurrentIfStale } from '../folder/solution-sync.mjs';
+import { listCachedEntities, readCachedAppContext, readCachedPageContext } from '../folder/entity-cache.mjs';
+import { planRows, readLiveSessions, readPlans } from '../folder/solution-work.mjs';
 import { run as specRun } from './spec.mjs';
 
 const bad = (message) => { throw new UaError('INVALID_PLAN', message); };

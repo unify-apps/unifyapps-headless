@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { classificationLines, INITIAL_RESOLUTION, issueClassification, UaError } from '../lib/contracts.mjs';
-import { executionActor, canonicalCwd, readRecord, sessionHome } from '../workspace/local.mjs';
+import { executionActor, canonicalCwd, readRecord, sessionHome } from '../folder/local.mjs';
 import { packTranscript, uploadedFileField, uploadFile as uploadToTenant } from '../transcript/transcript-archive.mjs';
 import { transcriptStats } from '../transcript/transcript-stats.mjs';
 import { fetchUserIdentity } from '../platform/user-context.mjs';

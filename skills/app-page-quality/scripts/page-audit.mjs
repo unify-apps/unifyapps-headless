@@ -17,10 +17,10 @@ import { runRules, structureFindings } from './rules-structure.mjs';
 import { sourceFacts, dataFindings, candidateLists } from './rules-data.mjs';
 import { collectImageAddresses, probeImages, imageFindings, isUnprobedFinding, REFUSALS } from './images.mjs';
 import { buildReport, renderReport } from './report.mjs';
-import { readCachedPageContext } from '../../../scripts/workspace/entity-cache.mjs';
-import { homeForCwd } from '../../../scripts/workspace/session-registry.mjs';
-import { readState, sessionHome } from '../../../scripts/workspace/local.mjs';
-import { approveWorkspace } from '../../../scripts/lib/session-paths.mjs';
+import { readCachedPageContext } from '../../../scripts/folder/entity-cache.mjs';
+import { homeForCwd } from '../../../scripts/folder/session-registry.mjs';
+import { readState, sessionHome } from '../../../scripts/folder/local.mjs';
+import { approveFolder } from '../../../scripts/lib/session-paths.mjs';
 
 /** The Global Constraints values, quoted in references/rulebook.md's Thresholds table. */
 export const THRESHOLDS = Object.freeze({
@@ -132,7 +132,7 @@ function parseArgs(argv) {
  * `local` image cache and reports no tenant, rather than guessing at one or throwing.
  */
 function resolveWorkspace(args) {
-  const home = args.home ? approveWorkspace(args.home) : homeForCwd(process.cwd())?.home ?? null;
+  const home = args.home ? approveFolder(args.home) : homeForCwd(process.cwd())?.home ?? null;
   if (!home) return { home: null, tenant: null, cacheFile: null };
   const sessionId = process.env.CLAUDE_CODE_SESSION_ID;
   if (!sessionId) return { home, tenant: null, cacheFile: path.join(home, '.sessions', 'local', 'audits', 'images.json') };

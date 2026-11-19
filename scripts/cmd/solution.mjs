@@ -7,20 +7,20 @@ import { isPrd, prdIndex } from '../lib/prd.mjs';
 import { serviceFor } from '../platform/service.mjs';
 import { fetchUserIdentity, knownEnvironment } from '../platform/user-context.mjs';
 import { withRetry } from '../lib/retry.mjs';
-import { paths, solutionKey, canonicalCwd, readConfig, registerSession, registerSignIn, solutionsForTenant, sessionsForSolution, readState, writeState, resetSessionState, reconcileRecords, readRecord, readRecords, validatedSessionId, assertStarted, writeConfig, ensureWorkspaceSelection } from '../workspace/local.mjs';
-import { assertTenantBindingFree, connectTenantBinding, moveSessionHere, sessionForFolder } from '../workspace/session-registry.mjs';
-import { fetchSolution, readSyncStatus, refreshCurrent, refreshCurrentIfStale, writeSyncStatus } from '../workspace/solution-sync.mjs';
+import { paths, solutionKey, canonicalCwd, readConfig, registerSession, registerSignIn, solutionsForTenant, sessionsForSolution, readState, writeState, resetSessionState, reconcileRecords, readRecord, readRecords, validatedSessionId, assertStarted, writeConfig, ensureFolderSelection } from '../folder/local.mjs';
+import { assertTenantBindingFree, connectTenantBinding, moveSessionHere, sessionForFolder } from '../folder/session-registry.mjs';
+import { fetchSolution, readSyncStatus, refreshCurrent, refreshCurrentIfStale, writeSyncStatus } from '../folder/solution-sync.mjs';
 import { setupTenantMcp } from '../platform/tenant-mcp.mjs';
-import { linkedAssetRefs, listCachedEntities, refreshLinkedEntities, solutionLinks } from '../workspace/entity-cache.mjs';
-import { syncSolutionSkills } from '../workspace/skill-sync.mjs';
-import { readInterfaceManifest } from '../workspace/interface-cache.mjs';
+import { linkedAssetRefs, listCachedEntities, refreshLinkedEntities, solutionLinks } from '../folder/entity-cache.mjs';
+import { syncSolutionSkills } from '../folder/skill-sync.mjs';
+import { readInterfaceManifest } from '../folder/interface-cache.mjs';
 import { checkTenantStorage, isLocalId } from '../platform/storage-check.mjs';
 import { bunPresence, pdfToolsPresence } from '../platform/local-tools.mjs';
 import { entityUrl, rowsTable } from '../lib/entity-links.mjs';
 import { liveSessionIds, maybeStopped } from '../lib/progress-table.mjs';
 import { parseEntityInput, extractLinks } from '../lib/entity-target.mjs';
 import { callSolutionTool } from '../platform/solution-mcp.mjs';
-import { claimHandoff, claimedHandoffIdentity, claudeApp, consumeHandoff, handoffFolder, handoffIdentity, folderHoldsSolution, HANDOFF_REQUEST_MAX, pinHandoff, readHandoff, releaseHandoff, validHandoffEntity, writeHandoff } from '../workspace/handoff.mjs';
+import { claimHandoff, claimedHandoffIdentity, claudeApp, consumeHandoff, handoffFolder, handoffIdentity, folderHoldsSolution, HANDOFF_REQUEST_MAX, pinHandoff, readHandoff, releaseHandoff, validHandoffEntity, writeHandoff } from '../folder/handoff.mjs';
 
 const required = (value, label) => {
   if (typeof value !== 'string' || !value.trim()) throw new UaError('USAGE', `${label} is required.`);
@@ -89,7 +89,7 @@ async function solutionsNamed(host, name, sessionId) {
   }
   return { matches: rows.map((row) => ({ ...row, folders: foldersFor(host, row.id) })), warnings };
 }
-const workspaceService = (host, storage, cwd, sessionId, solutionId) => serviceFor(host, { retry: withRetry, storage, home: canonicalCwd(cwd), sessionId, solutionId });
+const folderService = (host, storage, cwd, sessionId, solutionId) => serviceFor(host, { retry: withRetry, storage, home: canonicalCwd(cwd), sessionId, solutionId });
 // What the person typed after `/ua:setup`, kept on the session so a compaction,
 // a resume or a saved session still knows what they came to do. Text only: it is
 // never a command. Kept word for word, with the same cap and flag as a handoff's request.
@@ -106,7 +106,7 @@ function handoffToConsume(ctx) {
 }
 async function open(host, id, ctx, { overrideFolder = false, storage = 'platform', created = false, request = null, requestTruncated = false } = {}) {
   const sessionId = validatedSessionId(ctx.sessionId ?? process.env.CLAUDE_CODE_SESSION_ID);
-  const service = ctx.service ?? workspaceService(host, storage, ctx.cwd, sessionId, id);
+  const service = ctx.service ?? folderService(host, storage, ctx.cwd, sessionId, id);
   const logHeaders = { sessionId };
   let records;
   try { records = await fetchSolution(service, id, logHeaders); }
@@ -121,7 +121,7 @@ async function open(host, id, ctx, { overrideFolder = false, storage = 'platform
   if (created) pinHandoff(ctx.cwd, id);
   const name = records.solution.properties.name;
   const key = solutionKey(name, host, id);
-  ensureWorkspaceSelection(ctx.cwd, { tenant: host, solutionId: id, override: overrideFolder });
+  ensureFolderSelection(ctx.cwd, { tenant: host, solutionId: id, override: overrideFolder });
   // The `create_solution` tool adds the `UnifyApps Headless` tag itself, as the
   // CLI create does. A tenant whose platform predates that leaves it off, so the
   // one missing tag is added here, once the folder is settled, so the write and
@@ -460,7 +460,7 @@ export async function run(command, args, flags, ctx) {
     assertTenantBindingFree({ sessionId: ctx.sessionId, cwd: ctx.cwd, tenant });
     const handoff = handoffToConsume(ctx);
     const sameName = solutionsForTenant(tenant).filter((s) => norm(s.name) === norm(name)).map(({ key, id }) => ({ key, id }));
-    ensureWorkspaceSelection(ctx.cwd, { tenant, override: !!flags['override-folder'] });
+    ensureFolderSelection(ctx.cwd, { tenant, override: !!flags['override-folder'] });
     const storage = storageFor(tenant, null, flags);
     // `--prepare`: the checks above and nothing else. Setup runs it before it calls
     // the `create_solution` tool, so a folder that cannot take a solution is refused
@@ -475,7 +475,7 @@ export async function run(command, args, flags, ctx) {
         ...(throughTool ? { tool: { server: 'solution', name: 'create_solution', arguments: { name } } } : {}) },
       message: throughTool ? `Ready to create "${name}" on ${tenant} through create_solution.` : `Ready to create "${name}" in this folder.` };
     }
-    const service = workspaceService(tenant, storage, ctx.cwd, ctx.sessionId);
+    const service = folderService(tenant, storage, ctx.cwd, ctx.sessionId);
     let record;
     // Through the entity API itself: this create is the fallback for a tenant without `create_solution`, and the local store's own.
     try { record = await service.create('e_solution', { name, description: '', memory: renderMemory({}) }, { tags: [SOLUTION_TAG], direct: true }); }

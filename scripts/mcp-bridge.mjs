@@ -23,7 +23,7 @@
 // code-builder a downloaded codebase is written to a local checkout, a push may
 // send that checkout's own diff, and the files new dataSources answer (Storage
 // bindings, an automation's binding) are written into it (`localPath`; see
-// `workspace/code-checkout.mjs`).
+// `folder/code-checkout.mjs`).
 // A tool's refusal for the AGENT_LLM_TOOLS permission is answered as what it means
 // (see `isPermissionRefusal`). Some calls are refused before they leave: a delete
 // without the person's yes (`destructiveCall`), a page built by hand at a
@@ -33,10 +33,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { UA_HOME, canonicalCwd, readRecords, readRegistry, readState, sessionForFolder, signInForFolder, tenantMcp, writeState } from './workspace/local.mjs';
-import { claudeProcessSession } from './workspace/claude-process.mjs';
+import { UA_HOME, canonicalCwd, readRecords, readRegistry, readState, sessionForFolder, signInForFolder, tenantMcp, writeState } from './folder/local.mjs';
+import { claudeProcessSession } from './folder/claude-process.mjs';
 import { parsePlan } from './lib/formats.mjs';
-import { approveWorkspace } from './lib/session-paths.mjs';
+import { approveFolder } from './lib/session-paths.mjs';
 import { confirmRequiredText, isTenantOnlyRead, normalizeTenant, UaError, SOLUTION_TAG } from './lib/contracts.mjs';
 import { handBuiltAuthPage } from './lib/auth-pages.mjs';
 import { missingVersionProblem } from './lib/expected-version.mjs';
@@ -50,16 +50,16 @@ import { screenCodeSkillAnswer } from './lib/skill-scan.mjs';
 import { readCookie } from './platform/auth.mjs';
 import { tenantFetch } from './platform/tenant-fetch.mjs';
 import { fetchUserContext, fetchUserIdentity, verifyCookie } from './platform/user-context.mjs';
-import { addPendingDelete, failedYesFor, takeDeleteYes } from './workspace/delete-yes.mjs';
-import { linkEntityRefs, markCachedEntityDirty, markCachedInterfaceDirty, markCachedPageDirty } from './workspace/entity-cache.mjs';
+import { addPendingDelete, failedYesFor, takeDeleteYes } from './folder/delete-yes.mjs';
+import { linkEntityRefs, markCachedEntityDirty, markCachedInterfaceDirty, markCachedPageDirty } from './folder/entity-cache.mjs';
 import { createdEntityRefs } from './lib/mcp-entity-changes.mjs';
 import { agentContext } from './lib/agent-context.mjs';
 import { checkForUpdate, updateNotice, updateRequiredMessage } from './lib/update-check.mjs';
-import { writeCodexAgents } from './workspace/codex-agents.mjs';
+import { writeCodexAgents } from './folder/codex-agents.mjs';
 import {
   boundCallable, checkoutFolder, localPatch, markCommitted, provisionedBindings, pullBase, pullChanges, readCheckout, unpackCodebase,
   writeBindings, writeCallable,
-} from './workspace/code-checkout.mjs';
+} from './folder/code-checkout.mjs';
 
 /** The plugin version that made the call. llm-tools governs a call that carries it
  * (the AGENT_LLM_TOOLS permission check, see `isPermissionRefusal`). */
@@ -795,7 +795,7 @@ function changesetStates(ctx) {
   // harness, so approve this home before reading or writing its state, the
   // way `homeForCwd` does for the CLI.
   try {
-    approveWorkspace(ctx.home);
+    approveFolder(ctx.home);
     const named = [ctx.identity.sessionId, readState(ctx.home, ctx.identity.sessionId) ?? {}];
     const own = process.env.CLAUDE_CODE_SESSION_ID;
     if (!own || own === ctx.identity.sessionId) return [named];
@@ -1469,7 +1469,7 @@ async function linkToSolution(ctx, refs) {
   const { serviceFor } = await import('./platform/service.mjs');
   // The bridge approves only its own folder; a solution opened after a `cd` is
   // another one, and the rows are mirrored into it (see `changesetStates`).
-  approveWorkspace(ctx.home);
+  approveFolder(ctx.home);
   const solutionId = ctx.identity.solutionId;
   const service = serviceFor(ctx.tenant, { storage: ctx.storage, home: ctx.home, sessionId: ctx.identity.sessionId, solutionId });
   return linkEntityRefs({ home: ctx.home, service, state: { solutionId } }, refs);

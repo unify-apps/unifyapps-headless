@@ -53,7 +53,7 @@ function main() {
 
   let title = "UnifyApps Headless";
   let where = cwd;
-  return import("./workspace/local.mjs").then(({ homeForCwd, readRecord }) => {
+  return import("./folder/local.mjs").then(({ homeForCwd, readRecord }) => {
     const sessionId = typeof hook.session_id === "string" ? hook.session_id : undefined;
     const binding = sessionId ? homeForCwd(cwd, sessionId) : null;
     const p = binding ? { home: binding.home, name: readRecord(binding.home, "solution")?.properties?.name } : null;

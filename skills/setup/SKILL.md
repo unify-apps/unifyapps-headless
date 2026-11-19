@@ -109,8 +109,8 @@ Open with `solution open --tenant <host> --id <id> [--request "<opening request>
 
 Errors from open or create:
 
-- `WORKSPACE_SOLUTION_MISMATCH` (from open, `solution create --prepare` or create): show its message as it comes back. Ask `Use a new folder` (recommended) or `Override this folder`. Only `Override this folder` reruns the same command with `--override-folder` (for a create, `--prepare` carries it and so does the `solution open --created` that follows).
-- `WORKSPACE_CONTENT_CONFLICT`: not overridable. Show the message and ask the person to start Claude in a new, empty folder.
+- `FOLDER_SOLUTION_MISMATCH` (from open, `solution create --prepare` or create): show its message as it comes back. Ask `Use a new folder` (recommended) or `Override this folder`. Only `Override this folder` reruns the same command with `--override-folder` (for a create, `--prepare` carries it and so does the `solution open --created` that follows).
+- `FOLDER_CONTENT_CONFLICT`: not overridable. Show the message and ask the person to start Claude in a new, empty folder.
 - `PLATFORM_UNREACHABLE` with `localFallback: true`: the tenant could not create the solution record. Offer `Continue locally` (recommended), `Retry` or `Stop`. Only `Continue locally` reruns the create with `--storage local`.
 
 ### Entity first
@@ -127,7 +127,7 @@ Run `solution resolve "<name>" --tenant <host> --json`. One exact match: ask whe
 
 Every create is these steps with the chosen `<name>`. Call `create_solution` at most once per name: a call that times out may still have landed a record. Carry `--override-folder` into every command below only when the person chose `Override this folder`.
 
-1. **Check first.** Run `solution create --tenant <host> --name "<name>" --prepare --json`. It runs the folder and name checks and posts nothing. `WORKSPACE_SOLUTION_MISMATCH` and `WORKSPACE_CONTENT_CONFLICT` follow the errors above. It answers `via`: `"cli"` sends you to step 4; `"tool"` gives the exact `tool.arguments` for step 3.
+1. **Check first.** Run `solution create --tenant <host> --name "<name>" --prepare --json`. It runs the folder and name checks and posts nothing. `FOLDER_SOLUTION_MISMATCH` and `FOLDER_CONTENT_CONFLICT` follow the errors above. It answers `via`: `"cli"` sends you to step 4; `"tool"` gives the exact `tool.arguments` for step 3.
 2. **Find the tool.** Run ToolSearch with `select:mcp__plugin_ua_solution__create_solution`. Not found: the tenant does not serve it yet. Tell the person in one line, in your own words, that UnifyApps Headless creates the record another way, and go to step 4.
 3. **Create.** Call `create_solution {name}` with exactly `tool.arguments` from step 1, nothing added; the tool adds the `UnifyApps Headless` tag itself. Then, by its answer:
    - `ok: true`: run `solution open --tenant <host> --id <id> --created [--request "<opening request>"] --json`. Done.

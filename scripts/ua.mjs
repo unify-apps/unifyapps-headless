@@ -6,8 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { UaError } from './lib/contracts.mjs';
 import { withRetry } from './lib/retry.mjs';
 import { serviceFor } from './platform/service.mjs';
-import { homeForCwd, readState, readRegistry, canonicalCwd, executionActor, assertStarted, validatedSessionId, sessionForFolder } from './workspace/local.mjs';
-import { tenantBindingFor, tenantOnlyHome } from './workspace/session-registry.mjs';
+import { homeForCwd, readState, readRegistry, canonicalCwd, executionActor, assertStarted, validatedSessionId, sessionForFolder } from './folder/local.mjs';
+import { tenantBindingFor, tenantOnlyHome } from './folder/session-registry.mjs';
 import { COMMANDS, FLAGS, BOOLEAN, helpFor } from './lib/usage.mjs';
 import { installedCopy, RELOAD_STEP } from './release/installed-copy.mjs';
 
@@ -17,7 +17,7 @@ const setup = new Set(['state next', 'state resolve','solution resolve', 'soluti
 // What a folder connected to a tenant with no solution open may still run. The
 // `task` area answers questions about the tenant, so it runs there too.
 const tenantOnly = new Set(['solution mcp-setup']);
-const exitCodes = { USAGE: 2, WORKSPACE_SOLUTION_MISMATCH: 2, WORKSPACE_CONTENT_CONFLICT: 2, TENANT_BINDING_CONFLICT: 2, AUTH_EXPIRED: 3, PERMISSION_REQUIRED: 3, PLAN_INTERRUPTED: 5, PLATFORM_UNREACHABLE: 6, MCP_SETUP_FAILED: 6 };
+const exitCodes = { USAGE: 2, FOLDER_SOLUTION_MISMATCH: 2, FOLDER_CONTENT_CONFLICT: 2, TENANT_BINDING_CONFLICT: 2, AUTH_EXPIRED: 3, PERMISSION_REQUIRED: 3, PLAN_INTERRUPTED: 5, PLATFORM_UNREACHABLE: 6, MCP_SETUP_FAILED: 6 };
 
 /**
  * Claude Code keeps the plugin folder a session started with, while a copy

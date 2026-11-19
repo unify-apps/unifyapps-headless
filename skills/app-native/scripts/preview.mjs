@@ -29,7 +29,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { UaError, normalizeTenant } from '../../../scripts/lib/contracts.mjs';
 import { callTenantTool } from '../../../scripts/platform/tenant-mcp.mjs';
-import { readRegistry, sessionForFolder } from '../../../scripts/workspace/session-registry.mjs';
+import { readRegistry, sessionForFolder } from '../../../scripts/folder/session-registry.mjs';
 
 /** The UnifyApps Preview app's ids on iOS and Android, store build first. */
 export const PREVIEW_APP_IDS = Object.freeze([

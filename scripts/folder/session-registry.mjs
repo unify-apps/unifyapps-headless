@@ -4,7 +4,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { UaError, normalizeTenant, STORAGES, TENANT_BINDING_HOLD_MS } from '../lib/contracts.mjs';
 import {
-  UA_HOME, approveWorkspace, assertHome, assertLocalPath, atomicFile, canonicalCwd,
+  UA_HOME, approveFolder, assertHome, assertLocalPath, atomicFile, canonicalCwd,
   deriveSolutionHome, readJsonFile, solutionSlug, validatedSessionId, validatedSolutionKey,
 } from '../lib/session-paths.mjs';
 
@@ -34,7 +34,7 @@ export function solutionKey(name, host, id) {
 }
 
 export function paths(cwd, key, sessionId = process.env.CLAUDE_CODE_SESSION_ID) {
-  const workspace = approveWorkspace(cwd);
+  const workspace = approveFolder(cwd);
   const home = assertHome(deriveSolutionHome(workspace, validatedSolutionKey(key)));
   const id = sessionId ? validatedSessionId(sessionId) : null;
   const sessionHome = id ? path.join(home, '.sessions', id) : null;
@@ -318,7 +318,7 @@ export function registerSession({ sessionId, cwd, tenant, solutionId, solutionNa
 export function registerSignIn({ sessionId, cwd, tenant }) {
   const validSessionId = validatedSessionId(sessionId);
   const host = validatedTenant(tenant);
-  const folder = canonicalCwd(approveWorkspace(cwd));
+  const folder = canonicalCwd(approveFolder(cwd));
   return mutateRegistry(current => {
     const signIn = { cwd: folder, tenant: host, at: new Date().toISOString() };
     // Expired entries are dropped on read; this write is where they leave the file.
@@ -351,11 +351,11 @@ export function signInForFolder(cwd = process.cwd()) {
  */
 export function moveSessionHere(sessionId, cwd, { tenant, solutionId }) {
   const id = validatedSessionId(sessionId);
-  const workspace = approveWorkspace(cwd);
+  const workspace = approveFolder(cwd);
   const entry = readStoredRegistry().sessions[id];
   if (!entry || entry.cwd === workspace) return null;
   if (entry.tenant !== validatedTenant(tenant) || entry.solutionId !== solutionId) return entry.cwd;
-  approveWorkspace(entry.cwd);
+  approveFolder(entry.cwd);
   const from = path.join(entry.path, '.sessions', id), to = path.join(workspace, '.sessions', id);
   if (!fs.existsSync(from) || fs.existsSync(to)) return entry.cwd;
   fs.mkdirSync(path.dirname(to), { recursive: true, mode: 0o700 });
@@ -385,7 +385,7 @@ export function homeForCwd(cwd = process.cwd(), sessionId = process.env.CLAUDE_C
   let id;
   try { id = validatedSessionId(sessionId); } catch { return null; }
   let workspace;
-  try { workspace = approveWorkspace(cwd); } catch { return null; }
+  try { workspace = approveFolder(cwd); } catch { return null; }
   const registry = readRegistry();
   const entry = registry.sessions[id];
   if (!entry || entry.cwd !== workspace || entry.path !== deriveSolutionHome(workspace, entry.key) || !available(id, entry)) return null;
@@ -444,7 +444,7 @@ export function tenantOnlyHome(cwd = process.cwd(), sessionId = process.env.CLAU
   try { id = validatedSessionId(sessionId); } catch { return null; }
   const binding = tenantBindingFor(cwd);
   if (!binding) return null;
-  const home = assertHome(approveWorkspace(binding.folder));
+  const home = assertHome(approveFolder(binding.folder));
   return { home, sessionHome: path.join(home, '.sessions', id), tenant: binding.tenant };
 }
 
@@ -457,7 +457,7 @@ export function tenantOnlyHome(cwd = process.cwd(), sessionId = process.env.CLAU
 export function connectTenantBinding({ sessionId, cwd, tenant, now = Date.now() }) {
   const id = validatedSessionId(sessionId);
   const host = validatedTenant(tenant);
-  const folder = approveWorkspace(cwd);
+  const folder = approveFolder(cwd);
   return mutateRegistry(current => {
     current.tenantBindings ??= {};
     const solution = Object.values(current.sessions).filter(entry => entry.cwd === folder)

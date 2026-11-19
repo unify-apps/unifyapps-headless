@@ -259,7 +259,7 @@ try {
 // name, its description and the rule that holds it to its own tools. A builder
 // that lost any of those would still load and would then work outside its job.
 try {
-  const targets = await import(new URL('./workspace/agent-targets.mjs', import.meta.url));
+  const targets = await import(new URL('./folder/agent-targets.mjs', import.meta.url));
   const dir = path.join(root, 'agents');
   const problems = [];
   let count = 0;
@@ -453,7 +453,7 @@ try {
 {
   const home = fs.mkdtempSync(path.join((await import('node:os')).tmpdir(), 'ua-smoke-'));
   const child = `
-    const yes = await import(${JSON.stringify(new URL('./workspace/delete-yes.mjs', import.meta.url).href)});
+    const yes = await import(${JSON.stringify(new URL('./folder/delete-yes.mjs', import.meta.url).href)});
     const plugin = (await import(${JSON.stringify(opencodeEntry)})).default;
     const v1 = await plugin.server({ directory: process.cwd() });
     let v2 = null;

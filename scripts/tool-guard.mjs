@@ -14,10 +14,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readRegistry } from './workspace/session-registry.mjs';
-import { DELETE_YES_DIR } from './workspace/delete-yes.mjs';
+import { readRegistry } from './folder/session-registry.mjs';
+import { DELETE_YES_DIR } from './folder/delete-yes.mjs';
 import { UA_HOME } from './lib/session-paths.mjs';
-import { checkoutContaining } from './workspace/code-checkout.mjs';
+import { checkoutContaining } from './folder/code-checkout.mjs';
 
 // Files that run code or steer Claude in a later session. Blocked at any depth.
 const PROTECTED = new Set([
@@ -65,7 +65,7 @@ function sessionWorkspace(sessionId) {
 }
 
 // A code app's own manifest inside a checkout UnifyApps Headless downloaded
-// (workspace/code-checkout.mjs) is the app's source: it is pushed to Code Builder's
+// (folder/code-checkout.mjs) is the app's source: it is pushed to Code Builder's
 // engine and built there in its jail, not left here for a person to run later. Only
 // package.json, only there, and never under another protected name such as
 // node_modules.

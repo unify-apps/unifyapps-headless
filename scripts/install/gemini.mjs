@@ -13,7 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { firstSentence, pluginServers, resolvedCommand, typedSkills } from '../workspace/agent-targets.mjs';
+import { firstSentence, pluginServers, resolvedCommand, typedSkills } from '../folder/agent-targets.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
 export const GEMINI_MANIFEST = 'gemini-extension.json';

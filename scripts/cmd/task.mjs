@@ -2,7 +2,7 @@
 // a resume knows what is being done, what is done and what the person approved.
 import crypto from 'node:crypto';
 import { UaError } from '../lib/contracts.mjs';
-import { makeWorkFolder, writeState } from '../workspace/local.mjs';
+import { makeWorkFolder, writeState } from '../folder/local.mjs';
 import { withDecision, withQuestion, withEntity } from '../lib/ledger.mjs';
 
 export const TASK_HISTORY_MAX = 20;

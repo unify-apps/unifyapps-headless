@@ -157,6 +157,6 @@ The session context holds the current work table: what is in progress, to do and
 | `NOT_STARTED` where `.nebula/solution-chart.md` names a solution | Run `solution open` with its tenant and id, then go on. |
 | `no-solution-here`, `NOT_STARTED`, `NO_SOLUTION` otherwise | Not set up. Load the `setup` skill yourself with what the person asked, then go on. |
 | `PLATFORM_UNREACHABLE` | The tenant is down. Say so; try again later. |
-| `TENANT_BINDING_CONFLICT`, `WORKSPACE_CONTENT_CONFLICT` | This folder belongs to other work. Offer a new folder. |
+| `TENANT_BINDING_CONFLICT`, `FOLDER_CONTENT_CONFLICT` | This folder belongs to other work. Offer a new folder. |
 
 Never ask the person to type a command you can run yourself.

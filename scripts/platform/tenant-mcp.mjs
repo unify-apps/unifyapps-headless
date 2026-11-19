@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { normalizeTenant, UaError } from '../lib/contracts.mjs';
 import { defaultTenantMcpUrl, validatedMcpBaseUrl } from '../lib/mcp-url.mjs';
 import { readCookie as readSavedCookie } from './auth.mjs';
-import { writeConfig as writeSavedConfig } from '../workspace/session-registry.mjs';
+import { writeConfig as writeSavedConfig } from '../folder/session-registry.mjs';
 import { tenantToolContext, createBridge } from '../mcp-bridge.mjs';
 
 const unreachable = (host, message) => new UaError('PLATFORM_UNREACHABLE', message, { host });
