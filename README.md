@@ -67,6 +67,8 @@ claude plugin uninstall ua@unifyapps-headless
 claude plugin marketplace remove unifyapps-headless
 ```
 
+---
+
 ### Codex
 
 Install:
@@ -91,6 +93,8 @@ Remove:
 codex plugin remove ua@unifyapps-headless
 codex plugin marketplace remove unifyapps-headless
 ```
+
+---
 
 ### OpenCode
 
@@ -118,6 +122,8 @@ opencode plugin remove 'github:unify-apps/unifyapps-headless#semver:*'
 
 On an older OpenCode, install with `opencode plugin -g 'github:unify-apps/unifyapps-headless#semver:*'`. To remove it there, delete that line from `"plugin"` in `~/.config/opencode/opencode.jsonc`.
 
+---
+
 ### Gemini CLI
 
 Install:
@@ -139,6 +145,8 @@ Remove:
 ```bash
 gemini extensions uninstall unifyapps-headless
 ```
+
+---
 
 ### GitHub Copilot CLI
 
@@ -164,6 +172,8 @@ Remove:
 copilot plugin uninstall ua@unifyapps-headless
 copilot plugin marketplace remove unifyapps-headless
 ```
+
+---
 
 ### Versions and updates
 

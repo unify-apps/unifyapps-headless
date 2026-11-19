@@ -576,7 +576,9 @@ try {
   const distinct = [...new Set(Object.values(versions))];
   const source = catalogueSource(root);
   const problems = [];
-  if (Object.keys(versions).length < 4) problems.push(`only ${Object.keys(versions).join(', ')} carry a version`);
+  if (Object.keys(versions).length < 5) problems.push(`only ${Object.keys(versions).join(', ')} carry a version`);
+  const { copilotDrift } = await import(new URL('./release/copilot-manifest.mjs', import.meta.url));
+  for (const file of copilotDrift(root)) problems.push(`${file} is out of date: run node scripts/release/copilot-manifest.mjs`);
   if (distinct.length !== 1) problems.push(`the manifests disagree: ${JSON.stringify(versions)}`);
   if (source !== './' && !(source?.source === 'url' && source.ref === `v${distinct[0]}`)) problems.push(`the catalogue names ${JSON.stringify(source)}, not this folder or v${distinct[0]}`);
   record(`every manifest says ${distinct.join(' / ')} and the catalogue agrees`, problems.length === 0, problems.join('\n        '));

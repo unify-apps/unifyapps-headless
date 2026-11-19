@@ -6,6 +6,10 @@ Notable changes to UnifyApps Headless.
 
 - A required update takes effect within an hour of its release: the release
   check is cached for one hour, not six.
+- GitHub Copilot CLI reads its own catalogue and manifest
+  (`.github/plugin/marketplace.json`, `.github/plugin/plugin.json`) instead of
+  falling back to the Claude Code ones. Each release writes both from the
+  Claude files, so they always name the same version and tag.
 
 ## 0.0.7
 
