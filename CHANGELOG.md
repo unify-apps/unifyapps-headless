@@ -2,6 +2,10 @@
 
 Notable changes to UnifyApps Headless.
 
+## 0.0.6
+
+Maintenance release.
+
 ## 0.0.5
 
 - Releases: a merge to `main` publishes nothing. A person publishes a version
