@@ -471,7 +471,10 @@ export async function run(command, args, flags, ctx) {
     const verifiedAt = new Date().toISOString();
     // Notify already-running bridges that the tool base may have changed.
     registerSession({ sessionId: ctx.sessionId, cwd: ctx.cwd, tenant: host, solutionId: ctx.state.solutionId,
-      solutionName: ctx.state.solutionName ?? readRecord(ctx.home, 'solution').properties.name });
+      solutionName: ctx.state.solutionName ?? readRecord(ctx.home, 'solution').properties.name,
+      // This rewrite exists to tell running bridges the tool base moved; it must
+      // not drop the workspace they read from the same row.
+      workspaceId: ctx.state.workspaceId, workspaceName: ctx.state.workspaceName });
     return { data: { ...result, verified: true, verifiedAt }, message: `Tools ready for ${host}.` };
   }
   if (command === 'open') {
