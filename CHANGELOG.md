@@ -2,7 +2,7 @@
 
 Notable changes to UnifyApps Headless.
 
-## Unreleased
+## 0.0.7
 
 - OpenCode update: OpenCode keeps the downloaded copy of a GitHub plugin and
   its `plugin update` refreshes only npm packages, so the update command now
