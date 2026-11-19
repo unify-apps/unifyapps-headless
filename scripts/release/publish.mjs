@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { compareVersions, parseVersion, readVersions, setCatalogueSource, setVersion } from './versions.mjs';
 import { writeCodexManifest } from './codex-manifest.mjs';
 import { writeCopilotFiles } from './copilot-manifest.mjs';
+import { writeAntigravityFiles } from './antigravity-manifest.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
 
@@ -70,6 +71,12 @@ export function prepare(root, options, tags = execFileSync('git', ['tag', '-l', 
     setCatalogueSource(root, tag);
     writeCodexManifest(root);
     writeCopilotFiles(root);
+    writeAntigravityFiles(root);
+    // Antigravity installs a tag by URL, so the README names the newest one.
+    if (!prerelease) {
+      const readme = path.join(root, 'README.md');
+      fs.writeFileSync(readme, fs.readFileSync(readme, 'utf8').replace(/(unifyapps-headless\/tree\/)v\d+\.\d+\.\d+(?![-\w.])/gu, `$1${tag}`));
+    }
     if (!prerelease) {
       const changelog = path.join(root, 'CHANGELOG.md');
       const named = nameUnreleased(fs.readFileSync(changelog, 'utf8'), version);

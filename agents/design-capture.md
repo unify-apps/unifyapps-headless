@@ -2,8 +2,8 @@
 name: design-capture
 description: Captures one Figma frame for the native-design-spec block of the UnifyApps Headless loops — screenshot, frame metadata, design context at most once, assets on request — into the shared Figma cache and, when asked, into the solution's design store, and returns only paths, sizes, the frame's name and size, and what was rate-limited or oversized. Started by the native-design-spec board step, never to read a design into the main session.
 skills: [ua-safety]
-tools: Bash, Read, Write, ReadMcpResourceTool, Skill, mcp__claude_ai_Figma__get_screenshot, mcp__claude_ai_Figma__get_metadata, mcp__claude_ai_Figma__get_design_context, mcp__claude_ai_Figma__download_assets, mcp__claude_ai_Figma__whoami
-disallowedTools: Artifact, Agent, Edit
+tools: [Bash, Read, Write, ReadMcpResourceTool, Skill, mcp__claude_ai_Figma__get_screenshot, mcp__claude_ai_Figma__get_metadata, mcp__claude_ai_Figma__get_design_context, mcp__claude_ai_Figma__download_assets, mcp__claude_ai_Figma__whoami]
+disallowedTools: [Artifact, Agent, Edit]
 ---
 
 # Design capture

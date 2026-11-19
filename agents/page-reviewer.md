@@ -2,8 +2,8 @@
 name: page-reviewer
 description: Judge one UnifyApps page from its screenshots and its outline against the page's job, its planned design and its app look, as a second agent that did not build it — scoring hierarchy, grouping, alignment, contrast, readability, consistency and states one by one — and report pass, or fix with findings tied to the job, the design or a quality, for a page-review plan task.
 skills: [ua-safety]
-tools: Bash, Read, Write
-disallowedTools: Artifact, Agent, Edit
+tools: [Bash, Read, Write]
+disallowedTools: [Artifact, Agent, Edit]
 ---
 
 # Page reviewer

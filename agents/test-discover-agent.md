@@ -3,8 +3,8 @@ name: test-discover-agent
 description: Walk one page of a live UnifyApps app for the app-test-discover-loop skill, in a browser of its own — every state the page can show and every control on it, as each test user of the run — and write that page's part of the journey graph, its fragment and its survey files, recording a control that lands on another page as an exit and leaving that page to its own helper; or walk once the controls the frame around every page repeats. The discover loop dispatches several at once, one per page, and joins their parts by script. It authors and submits nothing.
 skills: [ua-safety]
 model: sonnet
-tools: Bash, Read, Write
-disallowedTools: Artifact, Agent
+tools: [Bash, Read, Write]
+disallowedTools: [Artifact, Agent]
 ---
 
 # Page walker, one page

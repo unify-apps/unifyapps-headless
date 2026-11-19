@@ -5,7 +5,7 @@ import { writeCopilotFiles } from './copilot-manifest.mjs';
 
 // Only product files belong in a release. Never copy a working tree wholesale.
 const entries = [
-  '.claude-plugin', '.codex-plugin', '.github/plugin', '.mcp.json', 'agents',
+  '.claude-plugin', '.codex-plugin', '.github/plugin', '.antigravity-plugin', '.mcp.json', 'mcp_config.json', 'agents',
   'hooks', 'skills', 'loops', 'scripts', 'opencode', 'commands', 'gemini-extension.json',
   'README.md', 'LICENSE', 'getting_started.md', 'CHANGELOG.md', 'SECURITY.md', 'package.json', 'setup.sh', 'install.sh',
 ];

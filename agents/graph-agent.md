@@ -2,8 +2,8 @@
 name: graph-agent
 description: Build or change a UnifyApps context graph — its sources, object scope, Discover & Enrich configuration, mappings, relationships, ingestion and golden records — for a list of plan tasks or a piece of work from chat, then report exact read-back evidence for each.
 skills: [context-graph-sources, ua-safety, ua-secure-by-default]
-tools: Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_context-graph
-disallowedTools: Artifact, Agent
+tools: [Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_context-graph]
+disallowedTools: [Artifact, Agent]
 ---
 
 # Context graph builder

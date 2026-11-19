@@ -40,7 +40,7 @@ No platform UI and no hand-built task list. Ask in chat, in your own words. Unif
 
 ## Install
 
-UnifyApps Headless works in Claude Code, Codex, OpenCode, Gemini CLI and GitHub Copilot CLI. Install it in the agent you use, then sign in to your UnifyApps tenant with `/ua:setup`.
+UnifyApps Headless works in Claude Code, Codex, OpenCode, Gemini CLI, Antigravity and GitHub Copilot CLI. Install it in the agent you use, then sign in to your UnifyApps tenant with `/ua:setup`.
 
 ### Claude Code
 
@@ -148,6 +148,30 @@ gemini extensions uninstall unifyapps-headless
 
 ---
 
+### Antigravity
+
+Install:
+
+```bash
+agy plugin install https://github.com/unify-apps/unifyapps-headless/tree/v0.0.8
+```
+
+Start `agy` in an empty folder, sign in to Antigravity, and ask: "set up UnifyApps Headless here". The link names the newest release; each release updates it here.
+
+Update (the same command with the newest release, which UnifyApps Headless names when an update is out):
+
+```bash
+agy plugin install https://github.com/unify-apps/unifyapps-headless/tree/v0.0.8
+```
+
+Remove:
+
+```bash
+agy plugin uninstall unifyapps-headless
+```
+
+---
+
 ### GitHub Copilot CLI
 
 Install:
@@ -177,7 +201,7 @@ copilot plugin marketplace remove unifyapps-headless
 
 ### Versions and updates
 
-Every install gets the newest release, never unreleased work. When a release is required, UnifyApps Headless says so when a session starts, and its tenant tools stop until you run the update command above. To try a beta, install its tag: `claude plugin marketplace add unify-apps/unifyapps-headless#v0.0.6-beta.1`, `codex plugin marketplace add unify-apps/unifyapps-headless --ref v0.0.6-beta.1`, `opencode plugin add 'github:unify-apps/unifyapps-headless#v0.0.6-beta.1'` or `gemini extensions install https://github.com/unify-apps/unifyapps-headless --pre-release`. [RELEASING.md](./RELEASING.md) explains how releases are made.
+Every install gets the newest release, never unreleased work. When a release is required, UnifyApps Headless says so when a session starts, and its tenant tools stop until you run the update command above. To try a beta, install its tag: `claude plugin marketplace add unify-apps/unifyapps-headless#v0.0.6-beta.1`, `codex plugin marketplace add unify-apps/unifyapps-headless --ref v0.0.6-beta.1`, `opencode plugin add 'github:unify-apps/unifyapps-headless#v0.0.6-beta.1'`, `agy plugin install https://github.com/unify-apps/unifyapps-headless/tree/v0.0.6-beta.1` or `gemini extensions install https://github.com/unify-apps/unifyapps-headless --pre-release`. [RELEASING.md](./RELEASING.md) explains how releases are made.
 
 ### After installing
 

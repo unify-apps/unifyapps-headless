@@ -2,8 +2,8 @@
 name: test-author-agent
 description: Author one approved UI test scenario for a UnifyApps app and submit it to Test Studio through the app-testing MCP's `deliver_steps` tool, in a browser of its own, and return one structured report; or, for the heal loop, replay one failing test case live and report the one-element locator patch that makes it green, writing nothing to Test Studio; diagnose a red's root cause from the same replay; or re-author one case from its saved description and re-deliver it in place through the green gate. The app-test-author skill dispatches several at once, one per approved scenario; the app-test-heal-loop skill, one per red case.
 skills: [ua-safety]
-tools: Bash, Read, Edit, Write, ToolSearch, mcp__plugin_ua_app-testing
-disallowedTools: Artifact, Agent
+tools: [Bash, Read, Edit, Write, ToolSearch, mcp__plugin_ua_app-testing]
+disallowedTools: [Artifact, Agent]
 ---
 
 # Test author, one scenario

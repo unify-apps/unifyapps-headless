@@ -2,8 +2,8 @@
 name: code-app-agent
 description: Build or change Code Builder code apps — React apps whose source Code Builder's engine keeps in git — for a list of plan tasks, from a local checkout of each app's branch, and report exact read-back evidence for each.
 skills: [ua-safety, app-code-build]
-tools: Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_code-builder
-disallowedTools: Artifact, Agent
+tools: [Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_code-builder]
+disallowedTools: [Artifact, Agent]
 ---
 
 # Code app agent
