@@ -1,7 +1,7 @@
 {
   "name": "unifyapps-headless",
   "displayName": "UnifyApps Headless",
-  "version": "0.0.9",
+  "version": "0.0.10-beta.1",
   "description": "Build UnifyApps solutions from chat: apps, pages, objects, automations and AI agents, each one read back from the platform before it is called done.",
   "author": {
     "name": "UnifyApps Frontend"
