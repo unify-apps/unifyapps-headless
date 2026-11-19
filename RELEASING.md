@@ -39,7 +39,7 @@ Claude Code and Copilot update only when the version changes; the version and th
 
 ## Required updates
 
-Every copy reads `release.json` from the Latest release (`https://github.com/unify-apps/unifyapps-headless/releases/latest/download/release.json`) when a session starts and before tool calls, at most every six hours (`scripts/lib/update-check.mjs`). Below `minRequiredVersion`, the session start says to update, with the command for that agent, and every tenant tool call is refused with `UPDATE_REQUIRED` before anything is sent. Below `version` only, the session start mentions the update once. When GitHub cannot be reached, nothing is blocked.
+Every copy reads `release.json` from the Latest release (`https://github.com/unify-apps/unifyapps-headless/releases/latest/download/release.json`) when a session starts and before tool calls, at most once an hour (`scripts/lib/update-check.mjs`). Below `minRequiredVersion`, the session start says to update, with the command for that agent, and every tenant tool call is refused with `UPDATE_REQUIRED` before anything is sent. Below `version` only, the session start mentions the update once. When GitHub cannot be reached, nothing is blocked.
 
 A normal release keeps the minimum the previous release set, so it never lifts a forced update.
 

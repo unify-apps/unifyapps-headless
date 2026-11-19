@@ -17,7 +17,7 @@ import { UA_HOME } from './session-paths.mjs';
 import { compareVersions, parseVersion, REPO } from '../release/versions.mjs';
 
 export const RELEASE_URL = `https://github.com/${REPO}/releases/latest/download/release.json`;
-export const CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
+export const CHECK_EVERY_MS = 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 3000;
 const PLUGIN_ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const cacheFile = () => path.join(UA_HOME, 'update-check.json');
