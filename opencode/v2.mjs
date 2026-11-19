@@ -22,6 +22,7 @@
 // alone here, and the rest of their config lands on top of what this adds.
 import { opencodeRegistration } from '../scripts/workspace/agent-targets.mjs';
 import { PLUGIN_ROOT, questionAnswers, runClaudeHook, toolNames } from './plugin.mjs';
+import { checkForUpdate, updateNotice } from '../scripts/lib/update-check.mjs';
 
 const TOOL_NAMES = toolNames({ subagent: 'subagent', shell: 'shell', codeMode: true });
 
@@ -111,8 +112,11 @@ export async function setup(ctx) {
     } catch { /* asked again on the next refusal */ }
   });
 
+  // Asked once, without holding up the start; the first turns after it lands carry it.
+  let notice = null;
+  checkForUpdate({ agent: 'opencode' }).then((result) => { notice = updateNotice(result); }, () => {});
   await ctx.session.hook('context', (event) => {
-    event.system.push({ type: 'text', text: TOOL_NAMES });
+    event.system.push({ type: 'text', text: notice ? `${TOOL_NAMES}\n${notice}` : TOOL_NAMES });
   });
 }
 

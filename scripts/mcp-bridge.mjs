@@ -53,6 +53,9 @@ import { fetchUserContext, fetchUserIdentity, verifyCookie } from './platform/us
 import { addPendingDelete, failedYesFor, takeDeleteYes } from './workspace/delete-yes.mjs';
 import { linkEntityRefs, markCachedEntityDirty, markCachedInterfaceDirty, markCachedPageDirty } from './workspace/entity-cache.mjs';
 import { createdEntityRefs } from './lib/mcp-entity-changes.mjs';
+import { agentContext } from './lib/agent-context.mjs';
+import { checkForUpdate, updateNotice, updateRequiredMessage } from './lib/update-check.mjs';
+import { writeCodexAgents } from './workspace/codex-agents.mjs';
 import {
   boundCallable, checkoutFolder, localPatch, markCommitted, provisionedBindings, pullBase, pullChanges, readCheckout, unpackCodebase,
   writeBindings, writeCallable,
@@ -969,7 +972,20 @@ function checkoutNote(localPath, unpacked) {
   return `Checked out in ${localPath}. Read, edit and build the app there. To commit: hold_code_branch; when the head it answers is not this checkout's, pull — get_branch_codebase naming the appId and the branch, which brings only what changed — then push_code_patch with localPath "${localPath}" and the holdId the hold answered.`;
 }
 
-export function createBridge(target, { context = bridgeContext, request = fetch, tempFolders = TEMP_FOLDERS, onListFailed = () => {}, elicit = null, verifySignIn = verifyCookie, identify = fetchUserContext, linkCreated = linkToSolution } = {}) {
+const PLUGIN_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+
+/** Under Codex, the solution server's instructions: where the plugin is and
+ * what the Claude Code names in its skills mean there, since Codex's shell has
+ * no plugin-root variable. Codex shows a server's instructions to the model.
+ * It also writes the builders to ~/.codex/agents, which a plugin cannot carry. */
+async function codexInstructions(server, updates) {
+  if (process.env.UA_AGENT !== 'codex' || server !== 'solution') return null;
+  try { writeCodexAgents(PLUGIN_ROOT); } catch { /* the builders are a convenience; the skills still work */ }
+  const notice = updateNotice(await updates().catch(() => null));
+  return agentContext('codex', PLUGIN_ROOT, { notice });
+}
+
+export function createBridge(target, { context = bridgeContext, request = fetch, tempFolders = TEMP_FOLDERS, onListFailed = () => {}, elicit = null, verifySignIn = verifyCookie, identify = fetchUserContext, linkCreated = linkToSolution, updates = () => checkForUpdate() } = {}) {
   if (!/^\/mcp\/[a-z-]+$/.test(target ?? '')) throw new Error('Use a tenant MCP path such as /mcp/application-builder.');
   // The headers a call carries are always the ones `clientHeaders` makes from
   // the context's identity, never whatever else a context's `client` holds.
@@ -1321,14 +1337,23 @@ export function createBridge(target, { context = bridgeContext, request = fetch,
     return replies;
   };
   const forward = async function forward(msg) {
-    if (msg.method === 'initialize') return [{ jsonrpc: '2.0', id: msg.id, result: {
-      protocolVersion: msg.params?.protocolVersion ?? '2025-03-26',
-      capabilities: { tools: { listChanged: true } }, serverInfo: { name: 'ua-tenant-bridge', version: '3.0.0' },
-    } }];
+    if (msg.method === 'initialize') {
+      const instructions = await codexInstructions(server, updates);
+      return [{ jsonrpc: '2.0', id: msg.id, result: {
+        protocolVersion: msg.params?.protocolVersion ?? '2025-03-26',
+        capabilities: { tools: { listChanged: true } }, serverInfo: { name: 'ua-tenant-bridge', version: '3.0.0' },
+        ...(instructions ? { instructions } : {}),
+      } }];
+    }
     if (msg.method === 'ping') return [{ jsonrpc: '2.0', id: msg.id, result: {} }];
     if (msg.id === undefined) return [];
     if (msg.method === 'tools/list') return listTools(msg);
     const isTool = msg.method === 'tools/call';
+    // A copy below the published minimum sends nothing (update-check.mjs).
+    if (isTool) {
+      const update = await updates().catch(() => null);
+      if (update?.state === 'required') return refused(msg.id, updateRequiredMessage(update));
+    }
     let ctx, replies, refusal, mayInvalidateCache = false;
     const refuse = (text) => (replies = refused(msg.id, text));
     try {

@@ -14,6 +14,7 @@
 // code, so the paths each agent is given are the staged ones, not those of the
 // folder the installer was unpacked into, which may be deleted afterwards.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -116,6 +117,30 @@ function stage(version) {
   return staged;
 }
 
+/** The files that name a staged copy when an agent uses it in place. */
+const REGISTRIES = () => [
+  ['.claude', 'plugins', 'known_marketplaces.json'], ['.claude', 'plugins', 'installed_plugins.json'],
+  ['.copilot', 'config.json'], ['.copilot', 'settings.json'], ['.codex', 'config.toml'],
+  ['.config', 'opencode', 'opencode.json'], ['.config', 'opencode', 'opencode.jsonc'],
+].map((parts) => path.join(os.homedir(), ...parts));
+
+/** Removes staged versions no agent names any more, so they do not pile up.
+ * A copy an agent still reads in place stays. Returns the removed versions. */
+export function pruneStaged(keep, registries = REGISTRIES()) {
+  const dir = path.join(UA_HOME, 'plugin');
+  if (!fs.existsSync(dir)) return [];
+  const named = registries.map((file) => { try { return fs.readFileSync(file, 'utf8'); } catch { return ''; } }).join('\n');
+  const removed = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name === keep || !/^\d+\.\d+\.\d+/u.test(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (named.includes(full) || named.includes(fs.realpathSync(full))) continue;
+    fs.rmSync(full, { recursive: true, force: true });
+    removed.push(entry.name);
+  }
+  return removed;
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) { console.log(USAGE); return 0; }
@@ -166,6 +191,8 @@ async function main() {
       for (const note of result.notes ?? []) console.log(`    Note: ${note}`);
     }
     console.log('\nIf an agent was already open, exit it first so it loads the plugin.');
+    const removed = pruneStaged(version);
+    if (removed.length) console.log(`\nRemoved ${removed.length} older staged ${removed.length === 1 ? 'copy' : 'copies'} no agent uses.`);
   }
   return failed ? 1 : 0;
 }

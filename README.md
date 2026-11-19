@@ -40,7 +40,7 @@ No platform UI and no hand-built task list. Ask in chat, in your own words. Unif
 
 ## Install
 
-UnifyApps Headless works in Claude Code, Codex, OpenCode, Gemini CLI and GitHub Copilot CLI. Install it in the agent you use, then sign in to your UnifyApps tenant with `/ua:setup`. Updates are manual: run the update command when you want a newer version.
+UnifyApps Headless works in Claude Code, Codex, OpenCode, Gemini CLI and GitHub Copilot CLI. Install it in the agent you use, then sign in to your UnifyApps tenant with `/ua:setup`.
 
 ### Claude Code
 
@@ -69,20 +69,27 @@ claude plugin marketplace remove unifyapps-headless
 
 ### Codex
 
-Codex's own plugin command cannot start the plugin's tenant tools in your folder yet, so Codex uses the installer script. It downloads the plugin, installs Node 22 if it is missing, and registers the plugin and its builder agents with Codex.
-
-Install (run the same command to update):
+Install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/install.sh | bash -s -- --agents codex
+codex plugin marketplace add unify-apps/unifyapps-headless
+codex plugin add ua@unifyapps-headless
 ```
 
-Start `codex` in an empty folder and type `$ua:setup`.
+Start a new `codex` session in an empty folder and type `$ua:setup`.
+
+Update:
+
+```bash
+codex plugin marketplace upgrade unifyapps-headless
+codex plugin add ua@unifyapps-headless
+```
 
 Remove:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/install.sh | bash -s -- --uninstall --agents codex
+codex plugin remove ua@unifyapps-headless
+codex plugin marketplace remove unifyapps-headless
 ```
 
 ### OpenCode
@@ -90,24 +97,25 @@ curl -fsSL https://raw.githubusercontent.com/unify-apps/unifyapps-headless/main/
 Install (OpenCode 2 and later):
 
 ```bash
-opencode plugin add github:unify-apps/unifyapps-headless
+opencode plugin add 'github:unify-apps/unifyapps-headless#semver:*'
 ```
 
-Start `opencode` in an empty folder and type `/ua:setup`.
+Start `opencode` in an empty folder and type `/ua:setup`. `#semver:*` installs the newest release rather than work in progress.
 
 Update:
 
 ```bash
-opencode plugin update github:unify-apps/unifyapps-headless
+opencode plugin remove 'github:unify-apps/unifyapps-headless#semver:*'
+opencode plugin add 'github:unify-apps/unifyapps-headless#semver:*'
 ```
 
 Remove:
 
 ```bash
-opencode plugin remove github:unify-apps/unifyapps-headless
+opencode plugin remove 'github:unify-apps/unifyapps-headless#semver:*'
 ```
 
-On an older OpenCode, install with `opencode plugin -g github:unify-apps/unifyapps-headless` and update with `opencode plugin -g -f github:unify-apps/unifyapps-headless`. To remove it there, delete the `"github:unify-apps/unifyapps-headless"` line from `"plugin"` in `~/.config/opencode/opencode.jsonc`.
+On an older OpenCode, install with `opencode plugin -g 'github:unify-apps/unifyapps-headless#semver:*'`. To remove it there, delete that line from `"plugin"` in `~/.config/opencode/opencode.jsonc`.
 
 ### Gemini CLI
 
@@ -155,6 +163,10 @@ Remove:
 copilot plugin uninstall ua@unifyapps-headless
 copilot plugin marketplace remove unifyapps-headless
 ```
+
+### Versions and updates
+
+Every install gets the newest release, never unreleased work. When a release is required, UnifyApps Headless says so when a session starts, and its tenant tools stop until you run the update command above. To try a beta, install its tag: `claude plugin marketplace add unify-apps/unifyapps-headless#v0.0.6-beta.1`, `codex plugin marketplace add unify-apps/unifyapps-headless --ref v0.0.6-beta.1`, `opencode plugin add 'github:unify-apps/unifyapps-headless#v0.0.6-beta.1'` or `gemini extensions install https://github.com/unify-apps/unifyapps-headless --pre-release`. [RELEASING.md](./RELEASING.md) explains how releases are made.
 
 ### After installing
 

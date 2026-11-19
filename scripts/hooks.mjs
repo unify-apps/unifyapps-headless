@@ -21,6 +21,7 @@ import { recordClaudeProcess } from './workspace/claude-process.mjs';
 import { ledgerLine } from './lib/ledger.mjs';
 import { startCaffeinate, stopCaffeinate } from './workspace/caffeinate.mjs';
 import { effortFor, modelFitNotice } from './workspace/model-fit.mjs';
+import { checkForUpdate, updateNotice } from './lib/update-check.mjs';
 
 const eventNames = new Set(['SessionStart', 'PostToolUse', 'PreCompact']);
 const scriptsFolder = path.dirname(fileURLToPath(import.meta.url));
@@ -276,6 +277,13 @@ export async function main() {
     let lines = [];
     try { lines = await sessionSyncLines(event); }
     catch { lines = [SYNC_NOT_STARTED]; }
+    let updateLine = null, updateRequired = false;
+    if (event.hook_event_name === 'SessionStart' && (process.env.UA_FAKE !== '1' || process.env.UA_RELEASE_URL)) {
+      const update = await checkForUpdate().catch(() => null);
+      updateLine = updateNotice(update);
+      updateRequired = update?.state === 'required';
+      if (updateLine) lines.push(updateLine);
+    }
     if (event.hook_event_name === 'SessionStart') {
       // A folder with a MOBILE or WEB app gets the loops health line (the UnifyApps Headless loops). It
       // reads only local state and the cached check.
@@ -291,7 +299,7 @@ export async function main() {
       const before = output?.hookSpecificOutput?.additionalContext;
       output = { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: [before, ...lines].filter(Boolean).join('\n') } };
     }
-    const notice = modelNotice(event);
+    const notice = [updateRequired ? updateLine : null, modelNotice(event)].filter(Boolean).join('\n');
     if (notice) output = { ...output, systemMessage: notice };
     if (output) process.stdout.write(JSON.stringify(output) + '\n');
   } catch (error) { process.stderr.write('UnifyApps Headless could not checkpoint local context. The saved platform records remain available.\n'); }
