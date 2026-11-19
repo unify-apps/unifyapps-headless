@@ -19,6 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compareVersions, parseVersion, readVersions, setCatalogueSource, setVersion } from './versions.mjs';
 import { writeCodexManifest } from './codex-manifest.mjs';
+import { writeCopilotFiles } from './copilot-manifest.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
 
@@ -68,6 +69,7 @@ export function prepare(root, options, tags = execFileSync('git', ['tag', '-l', 
     setVersion(root, version);
     setCatalogueSource(root, tag);
     writeCodexManifest(root);
+    writeCopilotFiles(root);
     if (!prerelease) {
       const changelog = path.join(root, 'CHANGELOG.md');
       const named = nameUnreleased(fs.readFileSync(changelog, 'utf8'), version);

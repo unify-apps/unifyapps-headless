@@ -9,7 +9,7 @@ export const REPO = 'unify-apps/unifyapps-headless';
 export const REPO_GIT_URL = `https://github.com/${REPO}.git`;
 
 /** Every file that carries the version, and where in it. */
-export const VERSION_FILES = ['package.json', '.claude-plugin/plugin.json', 'gemini-extension.json', '.codex-plugin/plugin.json'];
+export const VERSION_FILES = ['package.json', '.claude-plugin/plugin.json', 'gemini-extension.json', '.codex-plugin/plugin.json', '.github/plugin/plugin.json'];
 
 const MARKETPLACE = '.claude-plugin/marketplace.json';
 const SEMVER = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/u;
