@@ -23,6 +23,14 @@ function validatedEntityId(id) {
   return value;
 }
 
+/** A tenant workspace id, or null for Global (which is stored as nothing at all). */
+function validatedWorkspaceId(workspaceId) {
+  const value = String(workspaceId ?? '').trim();
+  if (!value || Number(value) === 0) return null;
+  if (!/^\d{1,18}$/u.test(value)) throw new Error('Invalid workspace id.');
+  return value;
+}
+
 function validatedTenant(host) {
   const tenant = normalizeTenant(host);
   if (!tenant) throw new Error('A tenant host is required.');
@@ -132,6 +140,8 @@ function validateEntry(index, entry, version) {
     throw new Error('Invalid session registry timestamp.');
   }
   if (entry.storage !== undefined && !STORAGES.includes(entry.storage)) throw new Error('Invalid session registry storage.');
+  // An entry written before workspaces were asked for carries none, and means Global.
+  if (entry.workspaceId !== undefined && !validatedWorkspaceId(entry.workspaceId)) throw new Error('Invalid session registry workspace.');
   assertRecordedPath({ ...entry, sessionId }, version);
   return { ...entry, key, path: deriveSolutionHome(entry.cwd, key) };
 }
@@ -278,7 +288,7 @@ export function mutateRegistry(change) {
   } finally { releaseLock(token); }
 }
 
-export function registerSession({ sessionId, cwd, tenant, solutionId, solutionName, storage = 'platform' }) {
+export function registerSession({ sessionId, cwd, tenant, solutionId, solutionName, storage = 'platform', workspaceId, workspaceName }) {
   const id = validatedSessionId(sessionId);
   const host = validatedTenant(tenant);
   const entityId = validatedEntityId(solutionId);
@@ -291,9 +301,20 @@ export function registerSession({ sessionId, cwd, tenant, solutionId, solutionNa
     if (resolved.sessionHome) fs.mkdirSync(resolved.sessionHome, { recursive: true, mode: 0o700 });
     assertHome(resolved.home);
     if (!STORAGES.includes(storage)) throw new Error('Invalid solution storage.');
+    // The tenant workspace this solution works in. Only `solution open` knows it;
+    // every other caller (`solution mcp-setup`) rewrites the same row and must
+    // keep the one already there, or the bridge would quietly fall back to Global
+    // and build the next thing in the wrong place. Absent means Global, which is
+    // what every folder set up before workspaces were asked for holds.
+    const previous = current.sessions[id];
+    const keptWorkspace = previous?.tenant === host && previous.solutionId === entityId ? previous.workspaceId : undefined;
+    const workspace = validatedWorkspaceId(workspaceId) ?? validatedWorkspaceId(keptWorkspace);
+    const workspaceLabel = validatedWorkspaceId(workspaceId)
+      ? String(workspaceName ?? '').trim() : String(previous?.workspaceName ?? '').trim();
     const stored = {
       path: resolved.home, cwd: canonicalCwd(cwd), tenant: host,
       solutionId: entityId, solutionName: name, lastUsedAt: new Date().toISOString(), storage,
+      ...(workspace ? { workspaceId: workspace, workspaceName: workspaceLabel || `Workspace ${workspace}` } : {}),
     };
     current.sessions[id] = stored;
     // The solution row now names this session's tenant, so its sign-in entry is done.

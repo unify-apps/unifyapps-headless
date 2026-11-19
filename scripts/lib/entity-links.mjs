@@ -1,13 +1,18 @@
-// Browser links for platform entities, and the entity table the chat shows
-// when a plan finishes or the person asks what exists. Paths follow the platform's routes; `/p/0/` is the default
-// project and the platform redirects an entity in another project from there.
-import { refsMatch } from "./contracts.mjs";
+// Browser links for platform entities, and the entity table the chat shows when
+// a plan finishes or the person asks what exists. Paths follow the platform's
+// routes: `/p/<workspace>/…`, where `0` is Global. An entity still opens from
+// `/p/0/` (the route reads the id, not the slug), but a link into the entity's
+// own workspace is the one whose sidenav, settings and screens are the ones the
+// person sees around it.
+import { GLOBAL_WORKSPACE_ID, refsMatch, workspaceHeaderValue } from "./contracts.mjs";
 
 const part = (value) => encodeURIComponent(String(value));
+/** The `/p/<slug>` a link carries: the solution's workspace, else Global. */
+const workspaceSlug = (workspaceId) => workspaceHeaderValue(workspaceId) ?? GLOBAL_WORKSPACE_ID;
 
-export function entityUrl(host, ref = {}) {
+export function entityUrl(host, ref = {}, { workspaceId } = {}) {
   if (!host || !ref.id) return null;
-  const base = `https://${host}/p/0`;
+  const base = `https://${host}/p/${part(workspaceSlug(workspaceId))}`;
   const id = part(ref.id);
   switch (ref.kind) {
     case "object": return `${base}/objects/${id}/schema`;
@@ -43,9 +48,9 @@ export function entityUrl(host, ref = {}) {
 // code app's build is served by the code builder's engine at
 // `/agent-api/preview/b/<app>/<branch>`, and `main` is the branch every app
 // surface shows.
-export function previewUrl(host, ref = {}) {
+export function previewUrl(host, ref = {}, { workspaceId } = {}) {
   if (!host || !ref.id) return null;
-  const base = `https://${host}/p/0/interfaces`;
+  const base = `https://${host}/p/${part(workspaceSlug(workspaceId))}/interfaces`;
   if (ref.kind === "code-app") return `https://${host}/agent-api/preview/b/${part(ref.id)}/main`;
   if (ref.kind === "app") return `${base}/${part(ref.id)}/preview`;
   if (ref.kind === "page" && ref.appId) return `${base}/${part(ref.appId)}/preview/page/${part(ref.id)}`;

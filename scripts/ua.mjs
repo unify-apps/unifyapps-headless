@@ -13,11 +13,11 @@ import { installedCopy, RELOAD_STEP } from './release/installed-copy.mjs';
 
 export { COMMANDS };
 
-const setup = new Set(['state next', 'state resolve','solution resolve', 'solution handoff', 'solution handoff-claim', 'solution find', 'solution locate', 'solution storage-check', 'solution connect', 'solution open', 'solution create']);
+const setup = new Set(['state next', 'state resolve','solution resolve', 'solution handoff', 'solution handoff-claim', 'solution find', 'solution locate', 'solution storage-check', 'solution connect', 'solution open', 'solution create', 'workspace list']);
 // What a folder connected to a tenant with no solution open may still run. The
 // `task` area answers questions about the tenant, so it runs there too.
-const tenantOnly = new Set(['solution mcp-setup']);
-const exitCodes = { USAGE: 2, FOLDER_SOLUTION_MISMATCH: 2, FOLDER_CONTENT_CONFLICT: 2, TENANT_BINDING_CONFLICT: 2, AUTH_EXPIRED: 3, PERMISSION_REQUIRED: 3, PLAN_INTERRUPTED: 5, PLATFORM_UNREACHABLE: 6, MCP_SETUP_FAILED: 6 };
+const tenantOnly = new Set(['solution mcp-setup', 'workspace list']);
+const exitCodes = { USAGE: 2, FOLDER_SOLUTION_MISMATCH: 2, FOLDER_CONTENT_CONFLICT: 2, TENANT_BINDING_CONFLICT: 2, WORKSPACE_MISMATCH: 2, AUTH_EXPIRED: 3, PERMISSION_REQUIRED: 3, PLAN_INTERRUPTED: 5, PLATFORM_UNREACHABLE: 6, MCP_SETUP_FAILED: 6 };
 
 /**
  * Claude Code keeps the plugin folder a session started with, while a copy
@@ -78,7 +78,7 @@ export async function execute(argv, { cwd = process.cwd() } = {}) {
   // --help is answered before anything else, so it works without a session, a
   // solution or the platform, and so a wrong flag can be diagnosed with it.
   if (flags.help || !area) return helpFor(area, command);
-  if (!COMMANDS[area]?.includes(command)) throw new UaError('USAGE', 'Use `ua <state|solution|task|spec|fast|entity|cache|impact|plan|memory|feature|prd|session|changeset|skill> <command>`. Run `ua --help` for the list.');
+  if (!COMMANDS[area]?.includes(command)) throw new UaError('USAGE', 'Use `ua <state|solution|task|spec|fast|entity|cache|impact|plan|memory|feature|prd|session|changeset|skill|workspace> <command>`. Run `ua --help` for the list.');
   const key = `${area} ${command}`;
   for (const flag of Object.keys(flags)) if (!['json', 'session'].includes(flag) && !FLAGS[key].includes(flag)) throw new UaError('USAGE', `Unknown flag --${flag} for ${key}. Run UnifyApps Headless ${key} --help.`);
   // An installed update says restart before anything else, because the restart
@@ -176,7 +176,10 @@ export async function execute(argv, { cwd = process.cwd() } = {}) {
     state: state ?? (taskHome ? readState(taskHome, sessionId) : null), tenantBinding,
     actor: executionActor(),
     service: state ? serviceFor(state.tenant, { retry: withRetry, beforeWrite: () => assertStarted(binding.home, sessionId),
-      storage: state.storage ?? 'platform', home: binding.home, sessionId, solutionId: state.solutionId }) : null };
+      storage: state.storage ?? 'platform', home: binding.home, sessionId, solutionId: state.solutionId,
+      // So a record write through the tenant's own tool, which sends no workspace
+      // header, cannot leave the solution outside its workspace.
+      workspaceId: state.workspaceId }) : null };
   const handler = await import(`./cmd/${area}.mjs`);
   let result, failure;
   try { result = await handler.run(command, positionals, flags, ctx); }

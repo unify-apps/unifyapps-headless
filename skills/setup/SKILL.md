@@ -76,9 +76,17 @@ Order: the tenant, then the sign-in, then the solution. No work starts before th
 
 After the sign-in, run `solution storage-check --tenant <host> --json`. It makes setup's first tool calls, so it is the first place the tenant can refuse the plugin's tools to this person. When `checkError.code` is `PERMISSION_REQUIRED`, show `checkError.message` once, as it comes back: it names the `AGENT_LLM_TOOLS` permission, the tenant, that a tenant admin must add it when the person's role lacks it, and that the tenant refuses the same way when it could not read the role's permissions just then. Then stop setup, since every later step would be refused the same way, and say to run `/ua:setup` again once it is granted, or in a minute when the person already holds it. The same refusal from any later tool call in setup ends it the same way, and is never a reason to take a fallback. On `storage: "local"`, tell the person in one line that this tenant has no solution records, so UnifyApps Headless keeps the solution files in this folder. Say nothing otherwise. Keep the response's `localTools.pdf` in mind for later: when a PDF requirements file needs more than Read's first 10 pages, `pdftoppm` and `pdftotext` both present is what lets Read's `pages` option open the rest. Keep `localTools.bun` in mind too: a code app's build needs Bun, and UnifyApps Headless installs nothing. When the solution holds a code app or the person asks for one, and `bun.present` is false, tell them once, before the first code-app task, to install it from bun.sh, or with `npm install -g bun` when that download is blocked. When `bun.present` is true and `bun.onPath` is false, tell them once to add `~/.bun/bin` to their PATH and restart Claude Code. Tell the person once, in one line, how to keep Claude Code's auto mode from refusing work on this tenant: in a terminal, `/permissions`, under **Auto mode**, add the environment line `<host> is a UnifyApps UAT test tenant, not production.`; in the desktop app, say nothing. Check the auto-mode rules (see Auto-mode rules). Then rerun `state next --tenant <host> --after-login --json`, or go straight to the open when the solution is already chosen.
 
+**The workspace.** Run `workspace list --tenant <host> --json`. A tenant groups its apps, objects, automations and solutions into workspaces; this folder works in exactly one of them, chosen now and never changed afterwards. Choose by what comes back, and say which workspace the folder will work in either way:
+
+- `only` names a workspace: use it, without asking. That person works in one workspace, so there is nothing to choose.
+- More than one: ask with one AskUserQuestion, "Which workspace should this solution work in?", with Global first and the workspaces from `workspaces` after it, at most four. Say that everything built here lands in the chosen workspace, and that nothing outside it can be changed from this folder. Global is the exception the other way: a folder that takes Global works on every workspace, as the Global screens show every workspace's items.
+- Only Global, or the list fails: Global, said in one line. A failure is never a reason to stop setup.
+
+Carry the chosen workspace into `solution create` as `--workspace "<name or id>"`; leave the flag out for Global. An existing solution brings its own workspace, so the question is skipped when the solution is already chosen — see Choosing the solution.
+
 **The solution** (the `pick_solution` answer). See Choosing the solution.
 
-**Ready** (the `ready` answer). Run `solution context --json` and keep its memory, plans, `resumable` and `storage` in mind. Ask no other setup question. Then:
+**Ready** (the `ready` answer). Run `solution context --json` and keep its memory, plans, `resumable`, `storage` and `workspace` in mind. Ask no other setup question. Then:
 
 - The opening request names something to do: start on it, following the guide.
 - Only a link or a name: ask what to do with it.
@@ -105,7 +113,7 @@ Pick the cheapest path the request allows:
 
 A chosen solution whose `folders` is not empty already has a folder. Ask whether to open it here too or use that folder. Using that folder goes to Start in another folder.
 
-Open with `solution open --tenant <host> --id <id> [--request "<opening request>"] --json`. Show the `entityTable` it returns as it is. On `movedFrom`, tell the person UnifyApps Headless now works in this folder, not `<movedFrom>`. Then rerun `state next --tenant <host> --after-login --solution <key> --json`. `otherSessions` is context only.
+Open with `solution open --tenant <host> --id <id> [--request "<opening request>"] --json`. The answer's `workspace` is the solution's own, taken from the record rather than asked for: name it in one line when it is not Global, since it decides where everything built here lands. Show the `entityTable` it returns as it is. On `movedFrom`, tell the person UnifyApps Headless now works in this folder, not `<movedFrom>`. Then rerun `state next --tenant <host> --after-login --solution <key> --json`. `otherSessions` is context only.
 
 Errors from open or create:
 
@@ -127,14 +135,14 @@ Run `solution resolve "<name>" --tenant <host> --json`. One exact match: ask whe
 
 Every create is these steps with the chosen `<name>`. Call `create_solution` at most once per name: a call that times out may still have landed a record. Carry `--override-folder` into every command below only when the person chose `Override this folder`.
 
-1. **Check first.** Run `solution create --tenant <host> --name "<name>" --prepare --json`. It runs the folder and name checks and posts nothing. `FOLDER_SOLUTION_MISMATCH` and `FOLDER_CONTENT_CONFLICT` follow the errors above. It answers `via`: `"cli"` sends you to step 4; `"tool"` gives the exact `tool.arguments` for step 3.
+1. **Check first.** Run `solution create --tenant <host> --name "<name>" [--workspace "<workspace>"] --prepare --json`, with the workspace chosen above and no flag for Global. It runs the folder, name and workspace checks and posts nothing. `FOLDER_SOLUTION_MISMATCH` and `FOLDER_CONTENT_CONFLICT` follow the errors above. It answers `via`: `"cli"` sends you to step 4; `"tool"` gives the exact `tool.arguments` for step 3. A workspace other than Global always answers `"cli"`, because `create_solution` cannot put a record in a workspace.
 2. **Find the tool.** Run ToolSearch with `select:mcp__plugin_ua_solution__create_solution`. Not found: the tenant does not serve it yet. Tell the person in one line, in your own words, that UnifyApps Headless creates the record another way, and go to step 4.
 3. **Create.** Call `create_solution {name}` with exactly `tool.arguments` from step 1, nothing added; the tool adds the `UnifyApps Headless` tag itself. Then, by its answer:
    - `ok: true`: run `solution open --tenant <host> --id <id> --created [--request "<opening request>"] --json`. Done.
    - `ok: false` with `result: "invalid"`: the record was not created. Say its `message` and ask for the name again.
    - An error that names `AGENT_LLM_TOOLS` (`PERMISSION_REQUIRED`): the tenant refused the tool to this person and made no record. It reaches you as a transport error, but it is not one. Show that line once, as it comes back, and stop setup there, as after the storage check. Never go to step 4: its direct create is never checked for that permission.
    - Anything else (no answer, a timeout, a transport error, `result: "error"`): the record may or may not exist. Run `solution resolve "<name>" --tenant <host> --json`. When it lists an exact match that no earlier search in this setup listed, open that id with the `solution open … --created` command above. Otherwise tell the person in one line that the tenant did not answer, so UnifyApps Headless creates the record another way, and go to step 4. Do not run `solution mcp-setup` here: it needs an open solution.
-4. **Create directly** (for `via: "cli"`, and the fallback from steps 2 and 3). Run `solution create --tenant <host> --name "<name>" [--request "<opening request>"] --json`. Its `localFallback` answer follows the errors above.
+4. **Create directly** (for `via: "cli"`, and the fallback from steps 2 and 3). Run `solution create --tenant <host> --name "<name>" [--workspace "<workspace>"] [--request "<opening request>"] --json`. Its `localFallback` answer follows the errors above. `WORKSPACE_MISMATCH` means the record was made but not in the chosen workspace: show the message and ask the person to pick the workspace again.
 
 Done when `solution open` or `solution create` has answered; show its `entityTable` and continue as after any open.
 

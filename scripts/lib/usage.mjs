@@ -22,13 +22,14 @@ export const COMMANDS = Object.freeze({
   session: ['save'],
   changeset: ['confirm'],
   skill: ['sessions', 'publish'],
+  workspace: ['list', 'show'],
 });
 
 export const FLAGS = {
   'state next': ['tenant', 'after-login', 'solution'],
   'state resolve': ['request'],
   'solution resolve': ['tenant'], 'solution handoff': ['tenant', 'id', 'name', 'entity', 'request', 'folder'], 'solution handoff-claim': ['release'], 'solution find': ['tenant', 'entity'], 'solution locate': ['link'], 'solution storage-check': ['tenant'], 'solution connect': ['tenant'],
-  'solution open': ['tenant', 'id', 'request', 'override-folder', 'storage', 'created'], 'solution create': ['tenant', 'name', 'request', 'override-folder', 'storage', 'prepare'],
+  'solution open': ['tenant', 'id', 'request', 'override-folder', 'storage', 'created'], 'solution create': ['tenant', 'name', 'request', 'override-folder', 'storage', 'prepare', 'workspace'],
   'solution refresh': [], 'solution mcp-setup': ['tenant', 'url'], 'solution context': [],
   'task begin': ['request', 'outcome', 'targets', 'references'], 'task update': ['outcome', 'phase', 'plan', 'approval', 'sent', 'agent', 'done', 'entity', 'read-back', 'waiting'],
   'task get': [], 'task end': ['status'], 'task note': ['decision', 'question'],
@@ -66,6 +67,7 @@ export const FLAGS = {
   'session save': ['type', 'family', 'suggested-family', 'plan-id', 'remarks', 'remarks-file', 'remarks-only'],
   'changeset confirm': ['name', 'id', 'answer', 'password-choice'],
   'skill sessions': [], 'skill publish': ['folder', 'skill-id', 'replace'],
+  'workspace list': ['tenant', 'search'], 'workspace show': [],
 };
 
 export const BOOLEAN = new Set(['json', 'help', 'refresh', 'save', 'contract', 'deps', 'after-login', 'ask-before-deploy', 'no-ask-before-deploy', 'user-requested', 'failed', 'override-folder', 'remarks-only', 'minor', 'add', 'mark', 'no-resume', 'spread', 'usage-limit', 'release', 'prepare', 'created', 'go', 'preview', 'html', 'replace']);
@@ -296,10 +298,12 @@ const HELP = {
       request: 'What the person typed after /ua:setup, kept word for word on the session as openingRequest, up to 4,000 characters; a longer one is cut and openingRequestTruncated is true.',
       'override-folder': 'Boolean. Use this folder even though it already holds a different solution.',
       storage: 'platform or local. Defaults to the tenant storage check, or platform.',
-      prepare: 'Boolean. Run the folder and name checks and post nothing. Answers via: tool (call create_solution with the returned tool.arguments, then solution open --created) or cli (local storage: run this command again without --prepare).',
+      prepare: 'Boolean. Run the folder and name checks and post nothing. Answers via: tool (call create_solution with the returned tool.arguments, then solution open --created) or cli (local storage, or any workspace but Global: run this command again without --prepare).',
+      workspace: 'The tenant workspace the solution is created in, as its exact name or id (workspace list). Left out, or "global", creates it outside every workspace. Everything the folder builds afterwards lands in this workspace.',
     },
     required: ['--tenant', '--name'],
-    notes: ['A 5xx from the platform marks the error localFallback: true; rerun with --storage local to continue in this folder.',
+    notes: ['A workspace other than Global always answers via: cli, because create_solution takes no workspace; the CLI create sends the workspace header and reads the record back to prove it landed there.',
+      'A 5xx from the platform marks the error localFallback: true; rerun with --storage local to continue in this folder.',
       'Setup creates through the create_solution tool: --prepare first, the tool call, then solution open --created. This command without --prepare is the path for local storage and for a tenant that does not serve the tool.', BINDING_NOTE],
   },
   'solution refresh': { summary: 'Pull the solution, its specs, plans and documents from the platform into this folder, through the tenant\'s get_solution tool when it serves it.', flags: {} },
@@ -308,7 +312,7 @@ const HELP = {
     flags: { tenant: 'Tenant host. Must match the open session, or the tenant this folder is connected to.', url: 'Replacement HTTPS base to verify instead of https://<tenant>/llm-tools.' },
     required: ['--tenant'],
   },
-  'solution context': { summary: 'Report the open solution: app (desktop in the Claude desktop app, else terminal), the tenant and the environment it answered at the production check on open, mode, storage, the opening request, memory, features, one short line per plan (id, title, status, mode, spec, date, source plan), the resumable plan with its task counts, and other sessions. plan get reads one plan in full.', flags: {} },
+  'solution context': { summary: 'Report the open solution: app (desktop in the Claude desktop app, else terminal), the tenant, the workspace it works in (Global when it is in none), the environment it answered at the production check on open, mode, storage, the opening request, memory, features, one short line per plan (id, title, status, mode, spec, date, source plan), the resumable plan with its task counts, and other sessions. plan get reads one plan in full.', flags: {} },
   'spec check': {
     summary: 'Check a spec Markdown file without writing anything. It needs a title, ## Requested outcome, ## Touches and ## Ready when; a requirements checklist, when present, only adds warnings.',
     flags: { 'md-file': 'Path to the spec Markdown.' },
@@ -821,6 +825,20 @@ const HELP = {
       replace: 'Boolean. Replace the skill already linked to this solution under the folder\'s name. Without it, that skill is refused with SKILL_EXISTS.',
     },
     required: ['--folder'],
+  },
+  'workspace list': {
+    summary: 'List the tenant workspaces this person may open, Global first. A workspace groups apps, objects, automations and solutions on a tenant; the platform\'s API calls it a project. `only` names the single workspace to default to when the person belongs to exactly one.',
+    args: [],
+    flags: {
+      tenant: 'Tenant host. Defaults to the open solution\'s tenant, or the tenant this folder is connected to.',
+      search: 'Only workspaces whose name contains this text.',
+    },
+    notes: ['Global is not a stored workspace: it holds everything that belongs to no workspace, and a call for it carries no workspace at all.',
+      'listedAll is false when there are more workspaces than one listing can hold, so a name that matched nothing is not proof it does not exist.'],
+  },
+  'workspace show': {
+    summary: 'Report the workspace this folder\'s solution works in. Everything UnifyApps Headless creates here lands in that workspace, and an item in another workspace is refused with WORKSPACE_MISMATCH.',
+    args: [], flags: {},
   },
   'changeset confirm': {
     summary: 'Record the person\'s answer to the changeset question on the session, right after the AskUserQuestion and never without it. The tenant bridge lets the matching save_changeset, send_changeset or export_changeset through and refuses any other.',

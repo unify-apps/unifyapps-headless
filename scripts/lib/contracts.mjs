@@ -360,6 +360,10 @@ export function errorMessage(code, details = {}) {
   if (code === "FOLDER_CONTENT_CONFLICT") {
     return "This folder already contains files UnifyApps Headless would need to manage. Please use a new folder so those files are not overwritten.";
   }
+  if (code === "WORKSPACE_MISMATCH") {
+    const [name, assetWorkspace, solutionWorkspace] = detail(details, "asset", "assetWorkspace", "solutionWorkspace");
+    return `${name || "That item"} is in ${assetWorkspace || "another workspace"}, and this solution works in ${solutionWorkspace || "a different workspace"}. UnifyApps Headless works only on what is in its own workspace. Open a solution in ${assetWorkspace || "that workspace"}, in its own folder, to work on it.`;
+  }
   if (code === "PLAN_INTERRUPTED") {
     return "This build stopped because the plan was interrupted.";
   }
@@ -379,6 +383,27 @@ export class UaError extends Error {
     this.code = code;
     this.details = resolvedDetails;
   }
+}
+
+/** A tenant's workspaces (the platform calls them projects). A solution works in
+ * exactly one of them. The workspace never travels in a payload: it is this
+ * request header, and a request that leaves it off lands in Global — which is
+ * why an edit that means to keep an item where it is still has to send it. */
+export const WORKSPACE_HEADER = "x-ua-project-id";
+/** Global is not a stored workspace. It is id 0, which the platform's own client
+ * turns into "send no header at all"; a header of 0 matches nothing. */
+export const GLOBAL_WORKSPACE_ID = "0";
+export const GLOBAL_WORKSPACE_NAME = "Global";
+/** The header value for one workspace, or undefined when nothing should be sent. */
+export function workspaceHeaderValue(workspaceId) {
+  const value = String(workspaceId ?? "").trim();
+  if (!value || Number(value) === 0 || !/^\d+$/u.test(value)) return undefined;
+  return value;
+}
+/** The workspace a request should carry, as headers to spread into a call. */
+export function workspaceHeaders(workspaceId) {
+  const value = workspaceHeaderValue(workspaceId);
+  return value ? { [WORKSPACE_HEADER]: value } : {};
 }
 
 
