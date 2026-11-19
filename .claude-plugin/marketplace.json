@@ -7,7 +7,11 @@
   "plugins": [
     {
       "name": "ua",
-      "source": "./",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/unify-apps/unifyapps-headless.git",
+        "ref": "v0.0.5"
+      },
       "description": "Build UnifyApps solutions through final spec acceptance, a task graph, parallel builders, and read-back proof.",
       "strict": true
     }

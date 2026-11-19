@@ -2,7 +2,7 @@
 
 Notable changes to UnifyApps Headless.
 
-## Unreleased
+## 0.0.5
 
 - Releases: a merge to `main` publishes nothing. A person publishes a version
   from the publish workflow; every agent installs the newest release, never

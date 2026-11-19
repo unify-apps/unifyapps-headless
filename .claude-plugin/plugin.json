@@ -1,6 +1,6 @@
 {
   "name": "ua",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Build UnifyApps solutions from chat: apps, pages, objects, automations and AI agents, each one read back from the platform before it is called done.",
   "author": {
     "name": "UnifyApps Frontend"
