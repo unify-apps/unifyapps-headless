@@ -2,6 +2,11 @@
 
 Notable changes to UnifyApps Headless.
 
+## Unreleased
+
+- A required update takes effect within an hour of its release: the release
+  check is cached for one hour, not six.
+
 ## 0.0.7
 
 - OpenCode update: OpenCode keeps the downloaded copy of a GitHub plugin and
