@@ -2,6 +2,39 @@
 
 Notable changes to UnifyApps Headless.
 
+## Unreleased
+
+- The plugin's hooks now run on Codex. A Codex install writes them as
+  `[[hooks.<Event>]]` blocks into Codex's own `config.toml`, between markers, so
+  everything else in that file stays as the person left it, and Codex asks once
+  to trust them. A plugin cannot carry hooks — `codex features list` reports
+  `plugin_hooks` as removed — and a `hooks/hooks.json` in the Codex home or in a
+  project is not read: measured on codex-cli 0.170.0, a hook in either file never
+  ran. Six events are registered: `PreToolUse` (the builder guard),
+  `PostToolUse`, `SessionStart` (the solution sync, the session snapshot and the
+  resume recovery line), `PreCompact`, `PermissionRequest` (where Claude Code
+  raises `Notification`) and `SubagentStop`, which is how a Codex session learns
+  a builder finished, in place of Claude Code's agent notifications.
+- `scripts/codex-hooks.mjs`, one entry point for every Codex hook event, and
+  `scripts/codex/host-events.mjs`, which translates a Codex payload into the
+  shape the plugin's existing hook code reads. Codex sends the same field names
+  and takes the same answer envelope as Claude Code, so no hook logic is
+  duplicated, and it names a tool to a hook the way Claude Code does: a shell
+  call arrives as `Bash` with `tool_input.command`. The adapter still maps
+  Codex's own names — `apply_patch` becomes one write per file in the patch,
+  because the guard decides per file, and `shell` and `unified_exec` become
+  `Bash` — for the calls that arrive under them. It also narrows each answer to
+  what Codex accepts for that event: a `PreToolUse` hook there may refuse but
+  may not approve, and Codex drops a whole answer that holds something the event
+  disallows, the refusal with it.
+- A builder agent was not held to its own folder on Codex. The guard recognised
+  only the Claude Code spelling of a builder's name (`ua:fde-agent`), while a
+  Codex agent is installed as `ua_fde_agent`, because a Codex agent name takes
+  neither a colon nor a hyphen. Every builder passed the guard unjailed. Names
+  are canonicalised before the guard reads them now: in `denyReason`, in the
+  approvals gate, in the design-capture write root, and in the fail-closed branch
+  that runs when a payload cannot be parsed at all.
+
 ## 0.0.9
 
 Maintenance release.

@@ -18,6 +18,7 @@ import { readRegistry } from './workspace/session-registry.mjs';
 import { DELETE_YES_DIR } from './workspace/delete-yes.mjs';
 import { UA_HOME } from './lib/session-paths.mjs';
 import { checkoutContaining } from './workspace/code-checkout.mjs';
+import { canonicalAgent } from './codex/host-events.mjs';
 
 // Files that run code or steer Claude in a later session. Blocked at any depth.
 const PROTECTED = new Set([
@@ -79,7 +80,7 @@ function appManifestInCheckout(root, target, parts) {
 // cache under LOOPS_HOME, outside the working folder; only that one agent, and
 // only that one folder, gets the extra root.
 function agentWriteRoots(input) {
-  if (String(input?.agent_type ?? '') !== 'ua:design-capture') return [];
+  if (canonicalAgent(input?.agent_type) !== 'ua:design-capture') return [];
   const loopsHome = path.resolve(process.env.LOOPS_HOME || path.join(UA_HOME, 'loops'));
   return [realTarget(path.join(loopsHome, 'figma-cache'))];
 }
@@ -282,7 +283,7 @@ export function approvalsDenyReason(input) {
     // A builder never writes code that names these files, so a script it
     // writes now to run later is refused too. The main session edits this
     // repository's own code, so the content check is a builder rule.
-    const match = String(input?.agent_type ?? '').startsWith('ua:') ? gateMatch(writtenText(args)) : null;
+    const match = canonicalAgent(input?.agent_type).startsWith('ua:') ? gateMatch(writtenText(args)) : null;
     return match ? gateDeny('the text written', match) : null;
   }
   if (input?.tool_name !== 'Bash') return null;
@@ -294,7 +295,7 @@ export function approvalsDenyReason(input) {
 export function denyReason(input) {
   const approvals = approvalsDenyReason(input);
   if (approvals) return approvals;
-  const agent = String(input?.agent_type ?? '');
+  const agent = canonicalAgent(input?.agent_type);
   if (!agent.startsWith('ua:')) return null;
   if (FILE_TOOLS.has(input?.tool_name)) return writeDenyReason(input);
   if (READ_TOOLS.has(input?.tool_name)) return readDenyReason(input);
@@ -313,7 +314,9 @@ async function main() {
   } catch {
     // Fail closed for a builder, open for everyone else: a broken guard must
     // never let a builder through, and must never block the person's own work.
-    reason = /"agent_type"\s*:\s*"ua:/u.test(text) ? WRITE_DENY : null;
+    // Every host's spelling of a builder name, because this is the branch that
+    // runs when the payload could not be parsed at all.
+    reason = /"agent_type"\s*:\s*"ua[:_-]/u.test(text) ? WRITE_DENY : null;
   }
   if (reason) { fs.writeSync(1, JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } })); return; }
   // The loops' device pool guards its reserved simulators: argent's MCP
