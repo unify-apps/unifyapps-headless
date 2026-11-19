@@ -2,6 +2,10 @@
 
 Notable changes to UnifyApps Headless.
 
+## 0.0.9
+
+Maintenance release.
+
 ## 0.0.8
 
 - A required update takes effect within an hour of its release: the release

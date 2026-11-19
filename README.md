@@ -153,7 +153,7 @@ gemini extensions uninstall unifyapps-headless
 Install:
 
 ```bash
-agy plugin install https://github.com/unify-apps/unifyapps-headless/tree/v0.0.8
+agy plugin install https://github.com/unify-apps/unifyapps-headless/tree/v0.0.9
 ```
 
 Start `agy` in an empty folder, sign in to Antigravity, and ask: "set up UnifyApps Headless here". The link names the newest release; each release updates it here.
@@ -161,7 +161,7 @@ Start `agy` in an empty folder, sign in to Antigravity, and ask: "set up UnifyAp
 Update (the same command with the newest release, which UnifyApps Headless names when an update is out):
 
 ```bash
-agy plugin install https://github.com/unify-apps/unifyapps-headless/tree/v0.0.8
+agy plugin install https://github.com/unify-apps/unifyapps-headless/tree/v0.0.9
 ```
 
 Remove:

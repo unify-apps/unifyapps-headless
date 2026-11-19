@@ -1,6 +1,6 @@
 {
   "name": "ua",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Build UnifyApps solutions from chat: apps, pages, objects, automations and AI agents, each one read back from the platform before it is called done.",
   "author": {
     "name": "UnifyApps Frontend"
@@ -19,7 +19,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/application-builder\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/application-builder\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -29,7 +29,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/object\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/object\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -39,7 +39,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/automation-code\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/automation-code\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -49,7 +49,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/agent-builder\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/agent-builder\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -59,7 +59,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/app-testing\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/app-testing\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -69,7 +69,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/connection\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/connection\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -79,7 +79,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/solution\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/solution\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -89,7 +89,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/evaluation\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/evaluation\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -99,7 +99,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/api-gateway\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/api-gateway\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -109,7 +109,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/connectors-sdk\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/connectors-sdk\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -119,7 +119,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/changeset\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/changeset\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -129,7 +129,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/code-builder\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/code-builder\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -139,7 +139,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/context-graph\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/run-node.sh\" \"$r/scripts/mcp-bridge.mjs\" \"/mcp/context-graph\""
       ],
       "env_vars": [
         "CODEX_HOME"
@@ -149,7 +149,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.8\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/playwright-mcp.sh\""
+        "r=\"${CODEX_HOME:-$HOME/.codex}/plugins/cache/unifyapps-headless/ua/0.0.9\"; export CLAUDE_PLUGIN_ROOT=\"$r\" UA_AGENT=codex; exec bash \"$r/scripts/playwright-mcp.sh\""
       ],
       "env_vars": [
         "CODEX_HOME"
