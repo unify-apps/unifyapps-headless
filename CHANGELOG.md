@@ -2,7 +2,7 @@
 
 Notable changes to UnifyApps Headless.
 
-## Unreleased
+## 0.0.8
 
 - A required update takes effect within an hour of its release: the release
   check is cached for one hour, not six.

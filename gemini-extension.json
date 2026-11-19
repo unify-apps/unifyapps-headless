@@ -1,6 +1,6 @@
 {
   "name": "unifyapps-headless",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Build UnifyApps solutions from your AI coding agent",
   "mcpServers": {
     "application-builder": {
