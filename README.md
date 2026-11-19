@@ -102,10 +102,11 @@ opencode plugin add 'github:unify-apps/unifyapps-headless#semver:*'
 
 Start `opencode` in an empty folder and type `/ua:setup`. `#semver:*` installs the newest release rather than work in progress.
 
-Update:
+Update (OpenCode keeps the downloaded copy of a GitHub plugin, so the update removes it before adding the newest release):
 
 ```bash
 opencode plugin remove 'github:unify-apps/unifyapps-headless#semver:*'
+rm -rf ~/.cache/opencode/npm/git-unifyapps-headless-*
 opencode plugin add 'github:unify-apps/unifyapps-headless#semver:*'
 ```
 
