@@ -46,7 +46,7 @@ export function updateCommand(agent = installedBy()) {
     copilot: 'copilot plugin marketplace update unifyapps-headless && copilot plugin update ua@unifyapps-headless, then restart Copilot',
     codex: 'codex plugin marketplace upgrade unifyapps-headless && codex plugin add ua@unifyapps-headless, then start a new Codex session',
     gemini: 'gemini extensions update unifyapps-headless, then restart Gemini CLI',
-    opencode: "opencode plugin remove 'github:unify-apps/unifyapps-headless#semver:*' && opencode plugin add 'github:unify-apps/unifyapps-headless#semver:*', then restart OpenCode",
+    opencode: "opencode plugin remove 'github:unify-apps/unifyapps-headless#semver:*' && rm -rf ~/.cache/opencode/npm/git-unifyapps-headless-* && opencode plugin add 'github:unify-apps/unifyapps-headless#semver:*', then restart OpenCode",
     installer: 'run the install command again: curl -fsSL https://github.com/unify-apps/unifyapps-headless/releases/latest/download/install.sh | bash',
     checkout: 'git pull in this checkout',
   }[agent] ?? 'reinstall UnifyApps Headless';
