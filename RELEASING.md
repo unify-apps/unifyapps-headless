@@ -17,7 +17,7 @@ The workflow (`.github/workflows/publish.yml`) runs `scripts/release/publish.mjs
 
 1. picks the version from the tags;
 2. writes it into `package.json`, `.claude-plugin/plugin.json`, `gemini-extension.json` and `.codex-plugin/plugin.json`;
-3. points the plugin entry in `.claude-plugin/marketplace.json` at the new tag;
+3. points the plugin entry in `.claude-plugin/marketplace.json` at the new tag, and writes Copilot's `.github/plugin/marketplace.json` and `plugin.json` from the Claude files;
 4. names the CHANGELOG's `## Unreleased` section after the version (stable);
 5. writes `release.json`: `{ "version", "minRequiredVersion", "message" }`.
 
@@ -29,8 +29,9 @@ Write what changed under `## Unreleased` at the top of `CHANGELOG.md` as you mer
 
 | Agent | Reads | Installs |
 |---|---|---|
-| Claude Code, Copilot CLI | `.claude-plugin/marketplace.json` on `main`: `"source": { "source": "url", "url": "…/unifyapps-headless.git", "ref": "vX.Y.Z" }` | that tag |
-| Codex | the same catalogue (a `url` source; Codex skips a `github` one) | that tag |
+| Claude Code | `.claude-plugin/marketplace.json` on `main`: `"source": { "source": "url", "url": "…/unifyapps-headless.git", "ref": "vX.Y.Z" }` | that tag |
+| Copilot CLI | its own `.github/plugin/marketplace.json` on `main`, the same entry | that tag |
+| Codex | the Claude catalogue (a `url` source; Codex skips a `github` one) | that tag |
 | Gemini CLI | GitHub's Latest release | that release |
 | OpenCode | the tags matching `#semver:*` in its install command | the highest one |
 | `install.sh` | GitHub's Latest release | that release's source |
