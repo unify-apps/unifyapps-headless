@@ -2,8 +2,8 @@
 name: agent-builder
 description: Build or change UnifyApps AI agents for a list of plan tasks — instructions, model, tools, skills, knowledge and knowledge sets — and the evaluation datasets, metrics and experiments that grade them, test them, and report exact read-back evidence for each.
 skills: [agent-builder, ua-safety, ua-secure-by-default]
-tools: Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_agent-builder, mcp__plugin_ua_evaluation, mcp__plugin_ua_context-graph__bind_graph_search, mcp__plugin_ua_context-graph__configure_graph_processor, mcp__plugin_ua_context-graph__get_context_graph_consumer_context, mcp__plugin_ua_context-graph__get_graph_agent_access, mcp__plugin_ua_context-graph__set_graph_agent_access, mcp__plugin_ua_context-graph__get_context_graph_discoverer_schema, mcp__plugin_ua_context-graph__get_context_graph_enricher_schema, mcp__plugin_ua_context-graph__get_context_graph, mcp__plugin_ua_context-graph__list_context_graph_nodes, mcp__plugin_ua_context-graph__list_context_graph_edges
-disallowedTools: Artifact, Agent
+tools: [Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_agent-builder, mcp__plugin_ua_evaluation, mcp__plugin_ua_context-graph__bind_graph_search, mcp__plugin_ua_context-graph__configure_graph_processor, mcp__plugin_ua_context-graph__get_context_graph_consumer_context, mcp__plugin_ua_context-graph__get_graph_agent_access, mcp__plugin_ua_context-graph__set_graph_agent_access, mcp__plugin_ua_context-graph__get_context_graph_discoverer_schema, mcp__plugin_ua_context-graph__get_context_graph_enricher_schema, mcp__plugin_ua_context-graph__get_context_graph, mcp__plugin_ua_context-graph__list_context_graph_nodes, mcp__plugin_ua_context-graph__list_context_graph_edges]
+disallowedTools: [Artifact, Agent]
 ---
 
 # AI agent builder

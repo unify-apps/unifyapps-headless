@@ -8,19 +8,22 @@
 const BUILDERS = {
   gemini: (root) => `- The Agent or Task tool with a builder (subagent_type) means doing that builder's work yourself: read ${root}/agents/NAME.md and follow it. Gemini has no UnifyApps Headless builders.`,
   codex: (root) => `- The Agent or Task tool with a builder (subagent_type NAME) means spawning the Codex agent of that name with dashes as underscores (app-agent is app_agent). UnifyApps Headless writes them to ~/.codex/agents when it starts; a session that started before they existed does the work itself from ${root}/agents/NAME.md.`,
+  antigravity: (root) => `- The Agent or Task tool with a builder (subagent_type NAME) means the UnifyApps Headless subagent NAME; when it is not available, do that builder's work yourself from ${root}/agents/NAME.md.`,
 };
 
 const COMMANDS = {
   gemini: (root) => `- A /ua:NAME command, the Skill tool, or a skill named ua:NAME means the UnifyApps Headless skill NAME. Read its SKILL.md in ${root}/skills or ${root}/loops (the command names the file) and follow it.`,
   codex: () => '- A /ua:NAME command, the Skill tool, or a skill named ua:NAME means the skill ua:NAME, which Codex lists as $ua:NAME.',
+  antigravity: () => '- A /ua:NAME command, the Skill tool, or a skill named ua:NAME means the UnifyApps Headless skill NAME.',
 };
 
 const TOOLS = {
   gemini: '- mcp__plugin_ua_SERVER__TOOL is the tool TOOL of the SERVER MCP server.',
   codex: '- mcp__plugin_ua_SERVER__TOOL is the tool mcp__SERVER__TOOL here.',
+  antigravity: '- mcp__plugin_ua_SERVER__TOOL is the tool TOOL of the SERVER MCP server.',
 };
 
-const NAMES = { gemini: 'Gemini CLI', codex: 'Codex' };
+const NAMES = { gemini: 'Gemini CLI', codex: 'Codex', antigravity: 'Antigravity' };
 
 export function agentContext(agent, root, { notice = null } = {}) {
   return [

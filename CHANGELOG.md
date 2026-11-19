@@ -10,6 +10,13 @@ Notable changes to UnifyApps Headless.
   (`.github/plugin/marketplace.json`, `.github/plugin/plugin.json`) instead of
   falling back to the Claude Code ones. Each release writes both from the
   Claude files, so they always name the same version and tag.
+- Antigravity: `agy plugin install https://github.com/unify-apps/unifyapps-headless/tree/<release>`
+  installs a release with its own manifest (`.antigravity-plugin/plugin.json`
+  and `mcp_config.json`): every skill, the builders and the tenant servers.
+  Each release writes the newest tag into the README command, and the update
+  notice names it.
+- Builders list their `tools` and `disallowedTools` as YAML lists, which
+  Claude Code and Antigravity both read.
 
 ## 0.0.7
 

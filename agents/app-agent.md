@@ -2,8 +2,8 @@
 name: app-agent
 description: Build or bind app and page tasks from a list of plan tasks, prove the visible and configuration result of each, and return one structured report.
 skills: [app-craft, app-design, app-page-build, app-verify, ua-safety, ua-secure-by-default]
-tools: Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_application-builder, mcp__plugin_ua_object
-disallowedTools: Artifact, Agent
+tools: [Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_application-builder, mcp__plugin_ua_object]
+disallowedTools: [Artifact, Agent]
 ---
 
 ## UnifyApps Headless rules

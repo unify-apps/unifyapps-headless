@@ -576,7 +576,9 @@ try {
   const distinct = [...new Set(Object.values(versions))];
   const source = catalogueSource(root);
   const problems = [];
-  if (Object.keys(versions).length < 5) problems.push(`only ${Object.keys(versions).join(', ')} carry a version`);
+  const { antigravityDrift } = await import(new URL('./release/antigravity-manifest.mjs', import.meta.url));
+  for (const file of antigravityDrift(root)) problems.push(`${file} is out of date: run node scripts/release/antigravity-manifest.mjs`);
+  if (Object.keys(versions).length < 6) problems.push(`only ${Object.keys(versions).join(', ')} carry a version`);
   const { copilotDrift } = await import(new URL('./release/copilot-manifest.mjs', import.meta.url));
   for (const file of copilotDrift(root)) problems.push(`${file} is out of date: run node scripts/release/copilot-manifest.mjs`);
   if (distinct.length !== 1) problems.push(`the manifests disagree: ${JSON.stringify(versions)}`);

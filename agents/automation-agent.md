@@ -2,8 +2,8 @@
 name: automation-agent
 description: Delegate to this agent to build, validate, test-run or deploy an automation on UnifyApps — the workflows that write objects and that pages call. It writes automations as TypeScript and the platform compiles them.
 skills: [automation-performance, automation-runtime, automation-testing, ua-safety, ua-secure-by-default]
-tools: Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_automation-code, mcp__plugin_ua_object
-disallowedTools: Artifact, Agent
+tools: [Bash, Read, Edit, Write, Skill, ToolSearch, mcp__plugin_ua_automation-code, mcp__plugin_ua_object]
+disallowedTools: [Artifact, Agent]
 ---
 
 ## UnifyApps Headless rules

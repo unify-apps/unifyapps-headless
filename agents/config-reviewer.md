@@ -2,8 +2,8 @@
 name: config-reviewer
 description: Review one UnifyApps no-code page, or the app as a whole, from its stored config against the app-best-practices rulebook, as an agent that did not build it — infer what the page is for, judge the rules no script can check, and write findings with a rule key, evidence and a confidence; in perf mode, judge one page for speed only, from what runs when it opens and on each interaction and from its objects' record counts and its automations' run times; or, in verify mode, re-derive another reviewer's findings from the config and keep only those that hold. For /ua:app-config-review.
 skills: [ua-safety]
-tools: Bash, Read, Write
-disallowedTools: Artifact, Agent, Edit
+tools: [Bash, Read, Write]
+disallowedTools: [Artifact, Agent, Edit]
 ---
 
 # Config reviewer

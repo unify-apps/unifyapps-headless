@@ -33,15 +33,18 @@ export function installedBy(root = PLUGIN_ROOT) {
   if (at.includes('/.claude') && at.includes('/plugins/cache/')) return 'claude';
   if (at.includes('/.copilot/')) return 'copilot';
   if (at.includes('/.gemini/extensions/')) return 'gemini';
+  if (at.includes('/.gemini/config/plugins/')) return 'antigravity';
   if (at.includes('/opencode/') && at.includes('/node_modules/')) return 'opencode';
   if (at.includes('/.unifyapps-solutions/plugin/')) return 'installer';
-  if (process.env.UA_AGENT === 'codex') return 'codex';
+  if (['codex', 'antigravity'].includes(process.env.UA_AGENT)) return process.env.UA_AGENT;
   return 'checkout';
 }
 
 /** The command that updates this copy, for the agent that installed it. */
-export function updateCommand(agent = installedBy()) {
+export function updateCommand(agent = installedBy(), latest = null) {
+  const tag = latest ? `v${latest}` : 'vX.Y.Z';
   return {
+    antigravity: `agy plugin install https://github.com/unify-apps/unifyapps-headless/tree/${tag}, then restart Antigravity`,
     claude: 'claude plugin marketplace update unifyapps-headless && claude plugin update ua@unifyapps-headless, then restart Claude Code',
     copilot: 'copilot plugin marketplace update unifyapps-headless && copilot plugin update ua@unifyapps-headless, then restart Copilot',
     codex: 'codex plugin marketplace upgrade unifyapps-headless && codex plugin add ua@unifyapps-headless, then start a new Codex session',
@@ -108,7 +111,8 @@ export function updateState(version, release) {
 
 export async function checkForUpdate(options = {}) {
   const version = options.version ?? installedVersion();
-  return { ...updateState(version, await latestRelease(options)), command: updateCommand(options.agent) };
+  const release = await latestRelease(options);
+  return { ...updateState(version, release), command: updateCommand(options.agent, release?.version) };
 }
 
 /** One line for a session start, or null when there is nothing to say. */

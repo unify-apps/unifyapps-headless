@@ -974,15 +974,17 @@ function checkoutNote(localPath, unpacked) {
 
 const PLUGIN_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 
-/** Under Codex, the solution server's instructions: where the plugin is and
- * what the Claude Code names in its skills mean there, since Codex's shell has
- * no plugin-root variable. Codex shows a server's instructions to the model.
- * It also writes the builders to ~/.codex/agents, which a plugin cannot carry. */
+/** Under Codex and Antigravity, the solution server's instructions: where the
+ * plugin is and what the Claude Code names in its skills mean there, since
+ * neither sets a plugin-root variable in its shell. Both show a server's
+ * instructions to the model. Under Codex it also writes the builders to
+ * ~/.codex/agents, which a Codex plugin cannot carry. */
 async function codexInstructions(server, updates) {
-  if (process.env.UA_AGENT !== 'codex' || server !== 'solution') return null;
-  try { writeCodexAgents(PLUGIN_ROOT); } catch { /* the builders are a convenience; the skills still work */ }
+  const agent = process.env.UA_AGENT;
+  if (!['codex', 'antigravity'].includes(agent) || server !== 'solution') return null;
+  if (agent === 'codex') try { writeCodexAgents(PLUGIN_ROOT); } catch { /* the builders are a convenience; the skills still work */ }
   const notice = updateNotice(await updates().catch(() => null));
-  return agentContext('codex', PLUGIN_ROOT, { notice });
+  return agentContext(agent, PLUGIN_ROOT, { notice });
 }
 
 export function createBridge(target, { context = bridgeContext, request = fetch, tempFolders = TEMP_FOLDERS, onListFailed = () => {}, elicit = null, verifySignIn = verifyCookie, identify = fetchUserContext, linkCreated = linkToSolution, updates = () => checkForUpdate() } = {}) {

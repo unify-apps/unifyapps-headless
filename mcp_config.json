@@ -1,0 +1,156 @@
+{
+  "mcpServers": {
+    "application-builder": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/application-builder"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "object": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/object"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "automation-code": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/automation-code"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "agent-builder": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/agent-builder"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "app-testing": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/app-testing"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "connection": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/connection"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "solution": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/solution"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "evaluation": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/evaluation"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "api-gateway": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/api-gateway"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "connectors-sdk": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/connectors-sdk"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "changeset": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/changeset"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "code-builder": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/code-builder"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "context-graph": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/run-node.sh",
+        "${PLUGIN_ROOT}/scripts/mcp-bridge.mjs",
+        "/mcp/context-graph"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    },
+    "playwright": {
+      "command": "bash",
+      "args": [
+        "${PLUGIN_ROOT}/scripts/playwright-mcp.sh"
+      ],
+      "env": {
+        "UA_AGENT": "antigravity"
+      }
+    }
+  }
+}

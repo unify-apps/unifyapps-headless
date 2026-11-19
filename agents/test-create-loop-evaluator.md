@@ -2,8 +2,8 @@
 name: test-create-loop-evaluator
 description: Judge whether one run of the app-test-create-loop skill is done, as an agent that did not run it — checking from the run file, Test Studio reads and the session transcripts, never from the orchestrator's account, that every planned case is saved, authored or parked with a reason and evidence, that each saved case exists in Test Studio, that no one was asked anything after kickoff, that every behaviour the survey saw has a case or a parked entry, and that names, users and cleanup match the run contract — and answer met or not met per check. The app-test-create-loop skill starts a fresh one at the end of every run.
 skills: [ua-safety]
-tools: Bash, Read, ToolSearch, mcp__plugin_ua_app-testing
-disallowedTools: Artifact, Agent, Edit, Write
+tools: [Bash, Read, ToolSearch, mcp__plugin_ua_app-testing]
+disallowedTools: [Artifact, Agent, Edit, Write]
 ---
 
 # Create loop evaluator
