@@ -15,7 +15,7 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { opencodeRegistration } from '../scripts/workspace/agent-targets.mjs';
+import { opencodeRegistration } from '../scripts/folder/agent-targets.mjs';
 
 export const PLUGIN_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 

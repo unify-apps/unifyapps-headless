@@ -4,7 +4,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { UaError, normalizeTenant, STORAGES, TENANT_BINDING_HOLD_MS } from '../lib/contracts.mjs';
 import {
-  UA_HOME, approveWorkspace, assertHome, assertLocalPath, atomicFile, canonicalCwd,
+  UA_HOME, approveFolder, assertHome, assertLocalPath, atomicFile, canonicalCwd,
   deriveSolutionHome, readJsonFile, solutionSlug, validatedSessionId, validatedSolutionKey,
 } from '../lib/session-paths.mjs';
 
@@ -23,6 +23,14 @@ function validatedEntityId(id) {
   return value;
 }
 
+/** A tenant workspace id, or null for Global (which is stored as nothing at all). */
+function validatedWorkspaceId(workspaceId) {
+  const value = String(workspaceId ?? '').trim();
+  if (!value || Number(value) === 0) return null;
+  if (!/^\d{1,18}$/u.test(value)) throw new Error('Invalid workspace id.');
+  return value;
+}
+
 function validatedTenant(host) {
   const tenant = normalizeTenant(host);
   if (!tenant) throw new Error('A tenant host is required.');
@@ -34,7 +42,7 @@ export function solutionKey(name, host, id) {
 }
 
 export function paths(cwd, key, sessionId = process.env.CLAUDE_CODE_SESSION_ID) {
-  const workspace = approveWorkspace(cwd);
+  const workspace = approveFolder(cwd);
   const home = assertHome(deriveSolutionHome(workspace, validatedSolutionKey(key)));
   const id = sessionId ? validatedSessionId(sessionId) : null;
   const sessionHome = id ? path.join(home, '.sessions', id) : null;
@@ -132,6 +140,8 @@ function validateEntry(index, entry, version) {
     throw new Error('Invalid session registry timestamp.');
   }
   if (entry.storage !== undefined && !STORAGES.includes(entry.storage)) throw new Error('Invalid session registry storage.');
+  // An entry written before workspaces were asked for carries none, and means Global.
+  if (entry.workspaceId !== undefined && !validatedWorkspaceId(entry.workspaceId)) throw new Error('Invalid session registry workspace.');
   assertRecordedPath({ ...entry, sessionId }, version);
   return { ...entry, key, path: deriveSolutionHome(entry.cwd, key) };
 }
@@ -278,7 +288,7 @@ export function mutateRegistry(change) {
   } finally { releaseLock(token); }
 }
 
-export function registerSession({ sessionId, cwd, tenant, solutionId, solutionName, storage = 'platform' }) {
+export function registerSession({ sessionId, cwd, tenant, solutionId, solutionName, storage = 'platform', workspaceId, workspaceName }) {
   const id = validatedSessionId(sessionId);
   const host = validatedTenant(tenant);
   const entityId = validatedEntityId(solutionId);
@@ -291,9 +301,20 @@ export function registerSession({ sessionId, cwd, tenant, solutionId, solutionNa
     if (resolved.sessionHome) fs.mkdirSync(resolved.sessionHome, { recursive: true, mode: 0o700 });
     assertHome(resolved.home);
     if (!STORAGES.includes(storage)) throw new Error('Invalid solution storage.');
+    // The tenant workspace this solution works in. Only `solution open` knows it;
+    // every other caller (`solution mcp-setup`) rewrites the same row and must
+    // keep the one already there, or the bridge would quietly fall back to Global
+    // and build the next thing in the wrong place. Absent means Global, which is
+    // what every folder set up before workspaces were asked for holds.
+    const previous = current.sessions[id];
+    const keptWorkspace = previous?.tenant === host && previous.solutionId === entityId ? previous.workspaceId : undefined;
+    const workspace = validatedWorkspaceId(workspaceId) ?? validatedWorkspaceId(keptWorkspace);
+    const workspaceLabel = validatedWorkspaceId(workspaceId)
+      ? String(workspaceName ?? '').trim() : String(previous?.workspaceName ?? '').trim();
     const stored = {
       path: resolved.home, cwd: canonicalCwd(cwd), tenant: host,
       solutionId: entityId, solutionName: name, lastUsedAt: new Date().toISOString(), storage,
+      ...(workspace ? { workspaceId: workspace, workspaceName: workspaceLabel || `Workspace ${workspace}` } : {}),
     };
     current.sessions[id] = stored;
     // The solution row now names this session's tenant, so its sign-in entry is done.
@@ -318,7 +339,7 @@ export function registerSession({ sessionId, cwd, tenant, solutionId, solutionNa
 export function registerSignIn({ sessionId, cwd, tenant }) {
   const validSessionId = validatedSessionId(sessionId);
   const host = validatedTenant(tenant);
-  const folder = canonicalCwd(approveWorkspace(cwd));
+  const folder = canonicalCwd(approveFolder(cwd));
   return mutateRegistry(current => {
     const signIn = { cwd: folder, tenant: host, at: new Date().toISOString() };
     // Expired entries are dropped on read; this write is where they leave the file.
@@ -351,11 +372,11 @@ export function signInForFolder(cwd = process.cwd()) {
  */
 export function moveSessionHere(sessionId, cwd, { tenant, solutionId }) {
   const id = validatedSessionId(sessionId);
-  const workspace = approveWorkspace(cwd);
+  const workspace = approveFolder(cwd);
   const entry = readStoredRegistry().sessions[id];
   if (!entry || entry.cwd === workspace) return null;
   if (entry.tenant !== validatedTenant(tenant) || entry.solutionId !== solutionId) return entry.cwd;
-  approveWorkspace(entry.cwd);
+  approveFolder(entry.cwd);
   const from = path.join(entry.path, '.sessions', id), to = path.join(workspace, '.sessions', id);
   if (!fs.existsSync(from) || fs.existsSync(to)) return entry.cwd;
   fs.mkdirSync(path.dirname(to), { recursive: true, mode: 0o700 });
@@ -385,7 +406,7 @@ export function homeForCwd(cwd = process.cwd(), sessionId = process.env.CLAUDE_C
   let id;
   try { id = validatedSessionId(sessionId); } catch { return null; }
   let workspace;
-  try { workspace = approveWorkspace(cwd); } catch { return null; }
+  try { workspace = approveFolder(cwd); } catch { return null; }
   const registry = readRegistry();
   const entry = registry.sessions[id];
   if (!entry || entry.cwd !== workspace || entry.path !== deriveSolutionHome(workspace, entry.key) || !available(id, entry)) return null;
@@ -444,7 +465,7 @@ export function tenantOnlyHome(cwd = process.cwd(), sessionId = process.env.CLAU
   try { id = validatedSessionId(sessionId); } catch { return null; }
   const binding = tenantBindingFor(cwd);
   if (!binding) return null;
-  const home = assertHome(approveWorkspace(binding.folder));
+  const home = assertHome(approveFolder(binding.folder));
   return { home, sessionHome: path.join(home, '.sessions', id), tenant: binding.tenant };
 }
 
@@ -457,7 +478,7 @@ export function tenantOnlyHome(cwd = process.cwd(), sessionId = process.env.CLAU
 export function connectTenantBinding({ sessionId, cwd, tenant, now = Date.now() }) {
   const id = validatedSessionId(sessionId);
   const host = validatedTenant(tenant);
-  const folder = approveWorkspace(cwd);
+  const folder = approveFolder(cwd);
   return mutateRegistry(current => {
     current.tenantBindings ??= {};
     const solution = Object.values(current.sessions).filter(entry => entry.cwd === folder)

@@ -1,32 +1,55 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { DEFAULT_MODE, UaError, normalizeTenant, normalizeStorage, norm, actorsMatch, SOLUTION_TAG, SOLUTION_ID } from '../lib/contracts.mjs';
+import { DEFAULT_MODE, GLOBAL_WORKSPACE_NAME, UaError, normalizeTenant, normalizeStorage, norm, actorsMatch, SOLUTION_TAG, SOLUTION_ID } from '../lib/contracts.mjs';
+import { GLOBAL_WORKSPACE, isGlobalWorkspace, resolveWorkspace, workspaceOf } from '../platform/workspaces.mjs';
 import { isUaPlan, parseMemory, renderMemory, parseFeature, parsePlan } from '../lib/formats.mjs';
 import { isPrd, prdIndex } from '../lib/prd.mjs';
 import { serviceFor } from '../platform/service.mjs';
 import { fetchUserIdentity, knownEnvironment } from '../platform/user-context.mjs';
 import { withRetry } from '../lib/retry.mjs';
-import { paths, solutionKey, canonicalCwd, readConfig, registerSession, registerSignIn, solutionsForTenant, sessionsForSolution, readState, writeState, resetSessionState, reconcileRecords, readRecord, readRecords, validatedSessionId, assertStarted, writeConfig, ensureWorkspaceSelection } from '../workspace/local.mjs';
-import { assertTenantBindingFree, connectTenantBinding, moveSessionHere, sessionForFolder } from '../workspace/session-registry.mjs';
-import { fetchSolution, readSyncStatus, refreshCurrent, refreshCurrentIfStale, writeSyncStatus } from '../workspace/solution-sync.mjs';
+import { paths, solutionKey, canonicalCwd, readConfig, registerSession, registerSignIn, solutionsForTenant, sessionsForSolution, readState, writeState, resetSessionState, reconcileRecords, readRecord, readRecords, validatedSessionId, assertStarted, writeConfig, ensureFolderSelection } from '../folder/local.mjs';
+import { assertTenantBindingFree, connectTenantBinding, moveSessionHere, sessionForFolder } from '../folder/session-registry.mjs';
+import { fetchSolution, readSyncStatus, refreshCurrent, refreshCurrentIfStale, writeSyncStatus } from '../folder/solution-sync.mjs';
 import { setupTenantMcp } from '../platform/tenant-mcp.mjs';
-import { linkedAssetRefs, listCachedEntities, refreshLinkedEntities, solutionLinks } from '../workspace/entity-cache.mjs';
-import { syncSolutionSkills } from '../workspace/skill-sync.mjs';
-import { readInterfaceManifest } from '../workspace/interface-cache.mjs';
+import { linkedAssetRefs, listCachedEntities, refreshLinkedEntities, solutionLinks } from '../folder/entity-cache.mjs';
+import { syncSolutionSkills } from '../folder/skill-sync.mjs';
+import { readInterfaceManifest } from '../folder/interface-cache.mjs';
 import { checkTenantStorage, isLocalId } from '../platform/storage-check.mjs';
 import { bunPresence, pdfToolsPresence } from '../platform/local-tools.mjs';
 import { entityUrl, rowsTable } from '../lib/entity-links.mjs';
 import { liveSessionIds, maybeStopped } from '../lib/progress-table.mjs';
 import { parseEntityInput, extractLinks } from '../lib/entity-target.mjs';
 import { callSolutionTool } from '../platform/solution-mcp.mjs';
-import { claimHandoff, claimedHandoffIdentity, claudeApp, consumeHandoff, handoffFolder, handoffIdentity, folderHoldsSolution, HANDOFF_REQUEST_MAX, pinHandoff, readHandoff, releaseHandoff, validHandoffEntity, writeHandoff } from '../workspace/handoff.mjs';
+import { claimHandoff, claimedHandoffIdentity, claudeApp, consumeHandoff, handoffFolder, handoffIdentity, folderHoldsSolution, HANDOFF_REQUEST_MAX, pinHandoff, readHandoff, releaseHandoff, validHandoffEntity, writeHandoff } from '../folder/handoff.mjs';
 
 const required = (value, label) => {
   if (typeof value !== 'string' || !value.trim()) throw new UaError('USAGE', `${label} is required.`);
   return value.trim();
 };
 const tenantFrom = (flags) => normalizeTenant(required(flags.tenant, 'Tenant'));
+/**
+ * One workspace id with the name the person would recognise. The name is a
+ * courtesy: a tenant that cannot list workspaces just now still opens the
+ * solution, with the id standing in for the name.
+ */
+const namedWorkspace = async (tenant, workspaceId) => {
+  if (isGlobalWorkspace(workspaceId)) return { ...GLOBAL_WORKSPACE };
+  const id = String(workspaceId);
+  try { return await resolveWorkspace(tenant, id); }
+  catch { return workspaceOf({ workspaceId: id }); }
+};
+/**
+ * The workspace a create was asked for. No `--workspace` means Global, which is
+ * what a tenant with no workspaces, and every folder set up before this, uses.
+ * A named workspace is resolved on the tenant, so a typo is refused here rather
+ * than silently creating the solution somewhere else.
+ */
+const workspaceFrom = async (tenant, flags) => {
+  const asked = flags.workspace === undefined ? '' : String(flags.workspace).trim();
+  if (!asked || isGlobalWorkspace(asked)) return { ...GLOBAL_WORKSPACE };
+  return resolveWorkspace(tenant, asked);
+};
 const featuresFor = (records) => records.flatMap((record) => {
   const text = record?.properties?.document;
   // A PRD is a document too, but never a feature: it has no slug.
@@ -89,7 +112,7 @@ async function solutionsNamed(host, name, sessionId) {
   }
   return { matches: rows.map((row) => ({ ...row, folders: foldersFor(host, row.id) })), warnings };
 }
-const workspaceService = (host, storage, cwd, sessionId, solutionId) => serviceFor(host, { retry: withRetry, storage, home: canonicalCwd(cwd), sessionId, solutionId });
+const folderService = (host, storage, cwd, sessionId, solutionId) => serviceFor(host, { retry: withRetry, storage, home: canonicalCwd(cwd), sessionId, solutionId });
 // What the person typed after `/ua:setup`, kept on the session so a compaction,
 // a resume or a saved session still knows what they came to do. Text only: it is
 // never a command. Kept word for word, with the same cap and flag as a handoff's request.
@@ -106,7 +129,7 @@ function handoffToConsume(ctx) {
 }
 async function open(host, id, ctx, { overrideFolder = false, storage = 'platform', created = false, request = null, requestTruncated = false } = {}) {
   const sessionId = validatedSessionId(ctx.sessionId ?? process.env.CLAUDE_CODE_SESSION_ID);
-  const service = ctx.service ?? workspaceService(host, storage, ctx.cwd, sessionId, id);
+  const service = ctx.service ?? folderService(host, storage, ctx.cwd, sessionId, id);
   const logHeaders = { sessionId };
   let records;
   try { records = await fetchSolution(service, id, logHeaders); }
@@ -121,7 +144,11 @@ async function open(host, id, ctx, { overrideFolder = false, storage = 'platform
   if (created) pinHandoff(ctx.cwd, id);
   const name = records.solution.properties.name;
   const key = solutionKey(name, host, id);
-  ensureWorkspaceSelection(ctx.cwd, { tenant: host, solutionId: id, override: overrideFolder });
+  // The workspace is the solution record's own, never a choice made here: the
+  // record already lives somewhere, and everything this folder builds has to land
+  // beside it. A local solution has no workspace at all.
+  const workspace = storage === 'local' ? { ...GLOBAL_WORKSPACE } : await namedWorkspace(host, records.solution.projectId);
+  ensureFolderSelection(ctx.cwd, { tenant: host, solutionId: id, override: overrideFolder });
   // The `create_solution` tool adds the `UnifyApps Headless` tag itself, as the
   // CLI create does. A tenant whose platform predates that leaves it off, so the
   // one missing tag is added here, once the folder is settled, so the write and
@@ -154,6 +181,8 @@ async function open(host, id, ctx, { overrideFolder = false, storage = 'platform
   const identity = await (ctx.identity ?? fetchUserIdentity)(host);
   const sessionMode = (continuingSameSession ? previous?.mode : null) ?? DEFAULT_MODE;
   writeState(home, { claudeSessionId: sessionId, tenant: host, solutionId: id, solutionName: name, key, mode: sessionMode, storage,
+    // Global is stored as nothing, so a folder from before workspaces reads the same as one that chose Global.
+    workspaceId: workspace.global ? undefined : workspace.id, workspaceName: workspace.global ? undefined : workspace.name,
     // Names only the request typed on this exact open/create; it never accumulates
     // across calls, so an open with none clears whatever an earlier call recorded.
     openingRequest: request, openingRequestTruncated: requestTruncated || undefined,
@@ -164,7 +193,8 @@ async function open(host, id, ctx, { overrideFolder = false, storage = 'platform
     ...(knownEnvironment(host) ? { environment: knownEnvironment(host) } : {}),
     startedAt: new Date().toISOString(),
     planIds: continuingSameSession && Array.isArray(previous.planIds) ? previous.planIds : [] }, sessionId);
-  registerSession({ sessionId, cwd: ctx.cwd, tenant: host, solutionId: id, solutionName: name, storage });
+  registerSession({ sessionId, cwd: ctx.cwd, tenant: host, solutionId: id, solutionName: name, storage,
+    workspaceId: workspace.global ? undefined : workspace.id, workspaceName: workspace.global ? undefined : workspace.name });
   // This open just pulled the whole solution, so it records the sync status a
   // typed `solution refresh` would have. Without this the status file still
   // describes an older pass, and the session start that opened the folder waits
@@ -174,9 +204,9 @@ async function open(host, id, ctx, { overrideFolder = false, storage = 'platform
     solutionName: name, endedAt: new Date().toISOString(), changed: entities.refreshed, failed: entities.stale.length,
     error: null, reason: null });
   // A local solution lives only in this folder, so it has no platform link.
-  const url = storage === 'local' ? null : entityUrl(host, { kind: 'solution', id });
+  const url = storage === 'local' ? null : entityUrl(host, { kind: 'solution', id }, { workspaceId: workspace.id });
   const entityTable = url ? rowsTable([{ name, kind: 'solution', status: created ? '✅ Created' : '✅ Opened', url }]) : '';
-  return { data: { key, id, name, home, mode: sessionMode, storage, openingRequest: request, ...(requestTruncated ? { openingRequestTruncated: true } : {}), claudeSessionId: sessionId, plans: records.plans.length, specs: records.specs.length, features: counts.features,
+  return { data: { key, id, name, home, mode: sessionMode, storage, workspace, openingRequest: request, ...(requestTruncated ? { openingRequestTruncated: true } : {}), claudeSessionId: sessionId, plans: records.plans.length, specs: records.specs.length, features: counts.features,
     linkedEntities: entities,
     ...(skills.written.length || skills.removed.length || skills.flagged.length || skills.failed.length
       ? { skills: { fetched: skills.written.length, removed: skills.removed.length, flagged: skills.flagged.length, failed: skills.failed.length } } : {}),
@@ -441,7 +471,10 @@ export async function run(command, args, flags, ctx) {
     const verifiedAt = new Date().toISOString();
     // Notify already-running bridges that the tool base may have changed.
     registerSession({ sessionId: ctx.sessionId, cwd: ctx.cwd, tenant: host, solutionId: ctx.state.solutionId,
-      solutionName: ctx.state.solutionName ?? readRecord(ctx.home, 'solution').properties.name });
+      solutionName: ctx.state.solutionName ?? readRecord(ctx.home, 'solution').properties.name,
+      // This rewrite exists to tell running bridges the tool base moved; it must
+      // not drop the workspace they read from the same row.
+      workspaceId: ctx.state.workspaceId, workspaceName: ctx.state.workspaceName });
     return { data: { ...result, verified: true, verifiedAt }, message: `Tools ready for ${host}.` };
   }
   if (command === 'open') {
@@ -460,7 +493,7 @@ export async function run(command, args, flags, ctx) {
     assertTenantBindingFree({ sessionId: ctx.sessionId, cwd: ctx.cwd, tenant });
     const handoff = handoffToConsume(ctx);
     const sameName = solutionsForTenant(tenant).filter((s) => norm(s.name) === norm(name)).map(({ key, id }) => ({ key, id }));
-    ensureWorkspaceSelection(ctx.cwd, { tenant, override: !!flags['override-folder'] });
+    ensureFolderSelection(ctx.cwd, { tenant, override: !!flags['override-folder'] });
     const storage = storageFor(tenant, null, flags);
     // `--prepare`: the checks above and nothing else. Setup runs it before it calls
     // the `create_solution` tool, so a folder that cannot take a solution is refused
@@ -468,21 +501,34 @@ export async function run(command, args, flags, ctx) {
     // the tool, with exactly these arguments (the tool adds the `UnifyApps Headless` tag itself),
     // or this command without `--prepare` for a tenant whose solutions live in the
     // folder, where no tool can write.
+    // The workspace the solution is made in. `create_solution` takes no workspace,
+    // so anything but Global is created here instead, where the request can carry
+    // the workspace header.
+    const workspace = await workspaceFrom(tenant, flags);
     if (flags.prepare) {
-      const via = storage === 'local' ? 'cli' : 'tool';
+      const via = storage === 'local' || !workspace.global ? 'cli' : 'tool';
       const throughTool = via === 'tool';
-      return { data: { prepared: true, via, storage, name, sameName,
+      return { data: { prepared: true, via, storage, name, sameName, workspace,
         ...(throughTool ? { tool: { server: 'solution', name: 'create_solution', arguments: { name } } } : {}) },
-      message: throughTool ? `Ready to create "${name}" on ${tenant} through create_solution.` : `Ready to create "${name}" in this folder.` };
+      message: throughTool ? `Ready to create "${name}" on ${tenant} through create_solution.`
+        : workspace.global ? `Ready to create "${name}" in this folder.`
+          : `Ready to create "${name}" on ${tenant} in the ${workspace.name} workspace.` };
     }
-    const service = workspaceService(tenant, storage, ctx.cwd, ctx.sessionId);
+    const service = folderService(tenant, storage, ctx.cwd, ctx.sessionId);
     let record;
-    // Through the entity API itself: this create is the fallback for a tenant without `create_solution`, and the local store's own.
-    try { record = await service.create('e_solution', { name, description: '', memory: renderMemory({}) }, { tags: [SOLUTION_TAG], direct: true }); }
+    // Through the entity API itself: this create is the fallback for a tenant without `create_solution`, the local store's own, and every create into a workspace.
+    try { record = await service.create('e_solution', { name, description: '', memory: renderMemory({}) }, { tags: [SOLUTION_TAG], direct: true, workspaceId: workspace.id }); }
     catch (error) {
       // A tenant that answers but cannot create the record can still keep this solution in the folder.
       if (storage === 'platform' && error?.code === 'PLATFORM_UNREACHABLE' && error.status >= 500) error.details = { ...error.details, localFallback: true };
       throw error;
+    }
+    // A 200 is a claim about the call, not about where the record landed: a
+    // workspace that did not take refuses here, while the only thing made is one
+    // empty solution record, rather than after a folder has been built on it.
+    if (storage !== 'local' && !workspace.global && String(record.projectId ?? '') !== workspace.id) {
+      throw new UaError('WORKSPACE_MISMATCH', undefined, { asset: `The new solution "${name}"`,
+        assetWorkspace: record.projectId ? `workspace ${record.projectId}` : GLOBAL_WORKSPACE_NAME, solutionWorkspace: workspace.name });
     }
     pinHandoff(ctx.cwd, record.id);
     const result = await open(tenant, record.id, { ...ctx, service }, { overrideFolder: !!flags['override-folder'], storage, created: true, ...openingRequestFrom(flags.request) });
@@ -528,8 +574,13 @@ export async function run(command, args, flags, ctx) {
           : actorsMatch(plan.owner, ctx.actor) && maybeStopped(plan, ctx.state.claudeSessionId, { clientId: ctx.actor?.clientId, live: liveSessionIds(otherSessions) }) ? 'stale-running' : null;
       if (reason) { resumable = { planId: plan.planId, title: plan.title, status: plan.status, reason, mode: plan.mode ?? 'zen', specId: plan.specId, counts: taskCounts(plan.tasks) }; break; }
     }
-    return { data: { app: claudeApp(), tenant: ctx.state.tenant ?? null, environment: ctx.state.environment ?? null, mode: ctx.state.mode ?? null, execution: ctx.state.execution ?? null, storage: ctx.state.storage ?? 'platform', openingRequest: ctx.state.openingRequest ?? null, ...(ctx.state.openingRequestTruncated ? { openingRequestTruncated: true } : {}), solution: { id: record.id, name: p.name, description: p.description, status: p.status ?? null, linkedEntities: solutionLinks(record, readRecords(ctx.home, 'asset')), linkedAssets: linkedAssetRefs(readRecords(ctx.home, 'asset')) },
-      memory: { ...memory, lines }, features, prds, plans: plans.map(({ owner, runner, tasks, runningAt, endedAt, ...index }) => index), sessionPlanIds: Array.isArray(ctx.state.planIds) ? ctx.state.planIds : [], resumable, otherSessions, memoryOverCap: lines > 500 }, message: `Working on ${p.name}.` };
+    // The workspace decides where every build lands and which items may be
+    // changed at all, so it sits beside the tenant rather than behind its own
+    // command. A folder from before workspaces were asked for reads as Global.
+    const workspace = ctx.state.storage === 'local' ? { ...GLOBAL_WORKSPACE } : workspaceOf(ctx.state);
+    return { data: { app: claudeApp(), tenant: ctx.state.tenant ?? null, workspace, environment: ctx.state.environment ?? null, mode: ctx.state.mode ?? null, execution: ctx.state.execution ?? null, storage: ctx.state.storage ?? 'platform', openingRequest: ctx.state.openingRequest ?? null, ...(ctx.state.openingRequestTruncated ? { openingRequestTruncated: true } : {}), solution: { id: record.id, name: p.name, description: p.description, status: p.status ?? null, linkedEntities: solutionLinks(record, readRecords(ctx.home, 'asset')), linkedAssets: linkedAssetRefs(readRecords(ctx.home, 'asset')) },
+      memory: { ...memory, lines }, features, prds, plans: plans.map(({ owner, runner, tasks, runningAt, endedAt, ...index }) => index), sessionPlanIds: Array.isArray(ctx.state.planIds) ? ctx.state.planIds : [], resumable, otherSessions, memoryOverCap: lines > 500 },
+    message: `Working on ${p.name}${workspace.global ? '' : ` in the ${workspace.name} workspace`}.` };
   }
   throw new UaError('USAGE', `Unknown solution command: ${command}.`);
 }

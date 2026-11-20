@@ -53,7 +53,7 @@ before you add or move one, and update it in the same change.
 - `scripts/cmd/` — one file per CLI area
 - `scripts/lib/` — pure logic: no files, no network
 - `scripts/platform/` — talking to the tenant
-- `scripts/workspace/` — the solution folder on disk
+- `scripts/folder/` — the solution folder on disk
 - `scripts/release/` — what ships
 
 ## Two rules that hold everywhere

@@ -3,7 +3,7 @@ import { parsePlan } from '../lib/formats.mjs';
 import { liveSessionIds } from '../lib/progress-table.mjs';
 import { readRecords } from './local.mjs';
 import { sessionsForSolution } from './session-registry.mjs';
-import { associationAt, sessionStates } from './workspace-layout.mjs';
+import { associationAt, sessionStates } from './folder-layout.mjs';
 
 /** Plan records, local or just read from the tenant, as the rows the progress table and plan propose read. */
 export function planRows(records) {

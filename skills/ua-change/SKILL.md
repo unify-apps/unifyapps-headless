@@ -47,7 +47,7 @@ A loop builds a change and proves it: pages in a browser or on a device, an AI a
 
 | Need | Where |
 |---|---|
-| The tenant and its environment, the solution, memory, other work | `solution context --json`, once per session |
+| The tenant and its environment, the workspace, the solution, memory, other work | `solution context --json`, once per session |
 | The reads, cheapest first | [quick-scope.md](references/quick-scope.md) |
 | Values the request does not give | [defaults.md](references/defaults.md). Name each one you used. |
 | The order of work and what to check first | [order-of-work.md](references/order-of-work.md). A missing item is one more piece of the work. |

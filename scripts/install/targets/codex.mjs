@@ -8,7 +8,7 @@
 import path from 'node:path';
 import { pluginId } from '../../release/plugin-id.mjs';
 import { codexManifestIsCurrent } from '../../release/codex-manifest.mjs';
-import { removeCodexAgents, writeCodexAgents } from '../../workspace/codex-agents.mjs';
+import { removeCodexAgents, writeCodexAgents } from '../../folder/codex-agents.mjs';
 import { home, run, versionOf, which } from '../util.mjs';
 
 const codexHome = () => process.env.CODEX_HOME || path.join(home(), '.codex');

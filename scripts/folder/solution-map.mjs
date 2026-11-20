@@ -4,7 +4,7 @@ import { atomicFile, assertHome } from '../lib/session-paths.mjs';
 import { buildWiring, renderSolutionMap } from '../lib/wiring.mjs';
 import { renderSolutionChart } from '../lib/solution-chart.mjs';
 import { listCachedEntities, readCachedAppContext, readCachedEntityContext, readCachedSolutionContext } from './entity-cache.mjs';
-import { SOLUTION_CHART_FILE, SOLUTION_MAP_FILE, WIRING_FILE, associationAt } from './workspace-layout.mjs';
+import { SOLUTION_CHART_FILE, SOLUTION_MAP_FILE, WIRING_FILE, associationAt } from './folder-layout.mjs';
 
 const TYPES = Object.freeze({ app: 'e_interface', automation: 'WORKFLOW_DEFINITION', object: 'ENTITY_TYPE', agent: 'ai_agent' });
 

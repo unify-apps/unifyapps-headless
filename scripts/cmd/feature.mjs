@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import { UaError, mergeRefs, refsMatch, slug } from '../lib/contracts.mjs';
 import { parseFeature, renderFeature, parsePlan } from '../lib/formats.mjs';
-import { readRecord, readRecords, cacheRecords, renderDocs } from '../workspace/local.mjs';
-import { refreshCurrent } from '../workspace/solution-sync.mjs';
+import { readRecord, readRecords, cacheRecords, renderDocs } from '../folder/local.mjs';
+import { refreshCurrent } from '../folder/solution-sync.mjs';
 
 const required = (value, label) => {
   if (typeof value !== 'string' || !value.trim()) throw new UaError('USAGE', `${label} is required.`);

@@ -3,24 +3,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { homeForCwd, readState, readRecords, renderAll, canonicalCwd, executionActor } from './workspace/local.mjs';
-import { approveWorkspace, atomicFile } from './lib/session-paths.mjs';
+import { homeForCwd, readState, readRecords, renderAll, canonicalCwd, executionActor } from './folder/local.mjs';
+import { approveFolder, atomicFile } from './lib/session-paths.mjs';
 import { parsePlan } from './lib/formats.mjs';
 import { spawn } from 'node:child_process';
-import { readSyncStatus } from './workspace/solution-sync.mjs';
-import { tenantOnlyHome } from './workspace/session-registry.mjs';
+import { readSyncStatus } from './folder/solution-sync.mjs';
+import { tenantOnlyHome } from './folder/session-registry.mjs';
 import { refreshSession, syncRunning } from './session-sync.mjs';
-import { SYNC_FILE } from './workspace/workspace-layout.mjs';
-import { readWiring } from './workspace/solution-map.mjs';
-import { readChatTasks, readLiveSessions, readPlans } from './workspace/solution-work.mjs';
-import { GUIDE_NAME, UA_CLI, pluginVersion, writeSolutionGuide } from './workspace/solution-guide.mjs';
+import { SYNC_FILE } from './folder/folder-layout.mjs';
+import { readWiring } from './folder/solution-map.mjs';
+import { readChatTasks, readLiveSessions, readPlans } from './folder/solution-work.mjs';
+import { GUIDE_NAME, UA_CLI, pluginVersion, writeSolutionGuide } from './folder/solution-guide.mjs';
 import { buildSessionSnapshot, pendingSaveLine } from './lib/session-snapshot.mjs';
-import { loopsHealthLine } from './workspace/loops-health.mjs';
-import { approveDelete, dropDelete, pendingSummaryShown, recordFailedYes } from './workspace/delete-yes.mjs';
-import { recordClaudeProcess } from './workspace/claude-process.mjs';
+import { loopsHealthLine } from './folder/loops-health.mjs';
+import { approveDelete, dropDelete, pendingSummaryShown, recordFailedYes } from './folder/delete-yes.mjs';
+import { recordClaudeProcess } from './folder/claude-process.mjs';
 import { ledgerLine } from './lib/ledger.mjs';
-import { startCaffeinate, stopCaffeinate } from './workspace/caffeinate.mjs';
-import { effortFor, modelFitNotice } from './workspace/model-fit.mjs';
+import { startCaffeinate, stopCaffeinate } from './folder/caffeinate.mjs';
+import { effortFor, modelFitNotice } from './folder/model-fit.mjs';
 import { checkForUpdate, updateNotice } from './lib/update-check.mjs';
 
 const eventNames = new Set(['SessionStart', 'PostToolUse', 'PreCompact']);
@@ -207,7 +207,7 @@ function refreshGuide(home) {
   try {
     const text = fs.readFileSync(path.join(home, GUIDE_NAME), 'utf8');
     const stamped = GUIDE_VERSION.exec(text)?.[1];
-    if (stamped !== undefined && (stamped !== pluginVersion() || !text.includes(UA_CLI))) writeSolutionGuide(approveWorkspace(home));
+    if (stamped !== undefined && (stamped !== pluginVersion() || !text.includes(UA_CLI))) writeSolutionGuide(approveFolder(home));
   } catch { /* no guide to refresh */ }
 }
 

@@ -2,6 +2,32 @@
 
 Notable changes to UnifyApps Headless.
 
+## Unreleased
+
+- A solution works in one tenant workspace. Setup asks for the workspace once,
+  after the tenant: one workspace beside Global is taken without asking, several
+  are offered, and Global is the default and what every existing folder reads
+  as. Everything the folder builds lands in that workspace, its links open
+  `/p/<workspace>/…`, and a write or a link on an item in another workspace — or
+  on one that belongs to no workspace — is refused with `WORKSPACE_MISMATCH`
+  before anything is sent. A solution in no workspace works on everything,
+  because Global is the view without a workspace. Reads are never refused.
+- New: `workspace list` and `workspace show`, and `solution create --workspace`.
+  `solution context` and `solution open` name the workspace they work in.
+- A create that cannot say which workspace its asset belongs to (an AI agent, a
+  context graph, a connection, the evaluation and test creates, a connector, an
+  API policy) is refused up front in a workspace solution, naming the tool,
+  rather than stranding the asset in Global where that folder could never
+  change it again.
+- Because a tenant write that carries no workspace header moves the item to
+  Global, every placement is read back and repaired rather than trusted: the
+  solution record after a record write, and an app, object or automation after a
+  create or an edit. Each entity goes back to its own workspace, so a Global
+  folder's edit never re-homes another workspace's app.
+- Rename, no behaviour change: the local folder is a folder, so the platform's
+  workspace can keep the word. `scripts/workspace/` is `scripts/folder/`, and
+  `WORKSPACE_CONTENT_CONFLICT` and `WORKSPACE_SOLUTION_MISMATCH` are `FOLDER_*`.
+
 ## 0.0.9
 
 Maintenance release.

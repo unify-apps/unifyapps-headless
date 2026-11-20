@@ -25,8 +25,8 @@ import {
   readCachedEntityVersion,
   readCachedPageBody,
   readCachedPageContext,
-} from '../workspace/entity-cache.mjs';
-import { readInterfaceManifest } from '../workspace/interface-cache.mjs';
+} from '../folder/entity-cache.mjs';
+import { readInterfaceManifest } from '../folder/interface-cache.mjs';
 import {
   MCP_ONLY, calledAutomationId,
   agentView, appNavigation, appOverview, contextKeys, dataSourceView, dependencyGraph, eventView, findBlocks, formView, formatStale, grepPages, objectView,

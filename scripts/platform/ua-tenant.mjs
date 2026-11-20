@@ -1,7 +1,7 @@
 // Shared surface CLI context and transport. Authentication is explicit.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { homeForCwd, readState, assertStarted } from '../workspace/local.mjs';
+import { homeForCwd, readState, assertStarted } from '../folder/local.mjs';
 import { normalizeTenant, UaError } from '../lib/contracts.mjs';
 import { readCookie, tenantMcpFor } from './auth.mjs';
 import { tenantFetch, USER_AGENT } from './tenant-fetch.mjs';

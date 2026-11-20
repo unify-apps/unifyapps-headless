@@ -1,6 +1,6 @@
 // The entity transport. It has no output, browser, or cache side effects.
 import { tenantFetch } from './tenant-fetch.mjs';
-import { UaError, normalizeTenant, LIFECYCLE_TYPES } from '../lib/contracts.mjs';
+import { UaError, normalizeTenant, LIFECYCLE_TYPES, workspaceHeaders } from '../lib/contracts.mjs';
 import { fakeEntityApi, fakeEntityReads } from './service-fake.mjs';
 import { localEntityApi, mirrorLocalRecord } from './entity-store.mjs';
 import { callTenantTool } from './tenant-mcp.mjs';
@@ -9,6 +9,8 @@ const OWN_RECORD_TYPES = new Set(LIFECYCLE_TYPES);
 // The entity types `get_definition` reads, by the kind it names each.
 const DEFINITION_KINDS = Object.freeze({ ENTITY_TYPE: 'object', WORKFLOW_DEFINITION: 'automation', ai_agent: 'ai-agent' });
 const PLATFORM_ID = /^[A-Za-z0-9_-]+$/u;
+/** The one record type that lives in a workspace; every other one UnifyApps Headless writes is Global. */
+const SOLUTION_TYPE = 'e_solution';
 // Fields a type no longer declares. An update sends the record's whole
 // properties back, and a solution linked before 2026-10-02 still holds
 // `linkedEntities`, which the tenant now refuses as an extra property on every
@@ -150,9 +152,12 @@ function toolService({ host, callTool, retry, beforeWrite, sessionId, solutionId
  *   An injected `api` (the fake platform, the local store, a test) stands in for a tenant and is
  *   called on the entity API's own paths; a real tenant is reached through its tools.
  */
-export function createService({ host, api, callTool, retry = (operation) => operation(), beforeWrite = () => {}, sessionId, solutionId, home } = {}) {
+export function createService({ host, api, callTool, retry = (operation) => operation(), beforeWrite = () => {}, sessionId, solutionId, home, workspaceId } = {}) {
   host = host ? normalizeTenant(host) : 'platform';
-  const viaTools = api ? null : toolService({ host, callTool, retry, beforeWrite, sessionId, solutionId, home });
+  // A caller that supplies both an `api` and a `callTool` gets the tool path with
+  // that api behind it, which is how the workspace repair below is tested without
+  // a tenant: the repair writes through the entity API, the tools do not.
+  const viaTools = api && !callTool ? null : toolService({ host, callTool, retry, beforeWrite, sessionId, solutionId, home });
   // The entity API's own record paths, below, serve the local store
   // (`localEntityApi`, a file in the working folder that answers them in process,
   // for a tenant that cannot hold UnifyApps Headless's records), the fake platform the tests
@@ -161,9 +166,11 @@ export function createService({ host, api, callTool, retry = (operation) => oper
   // other call to a real tenant goes through `viaTools`.
   if (!api) {
     if (host === 'platform') throw new UaError('USAGE', 'A tenant is required.');
-    api = async (pathname, body, method) => tenantFetch(host, pathname, {
+    api = async (pathname, body, method, { workspaceId } = {}) => tenantFetch(host, pathname, {
       method, signal: AbortSignal.timeout(30_000),
-      headers: { 'content-type': 'application/json' },
+      // A write with no workspace header lands in Global, whatever the record
+      // says, so a record that lives in a workspace sends it on every write.
+      headers: { 'content-type': 'application/json', ...workspaceHeaders(workspaceId) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   }
@@ -171,7 +178,7 @@ export function createService({ host, api, callTool, retry = (operation) => oper
     const perform = async () => {
     if (pathname === '/api/entity' || pathname === '/api/entity/update') beforeWrite();
     let response;
-    try { response = await api(pathname, body, method); }
+    try { response = await api(pathname, body, method, { workspaceId: options.workspaceId }); }
     catch (cause) {
       if (cause instanceof UaError) throw cause;
       throw new UaError('PLATFORM_UNREACHABLE', undefined, { host });
@@ -207,7 +214,10 @@ export function createService({ host, api, callTool, retry = (operation) => oper
   // duplicate records; callers recover using their saved receipt or pointer.
   const create = (type, properties, { tags, ...options } = {}) => request('/api/entity',
     { entityType: type, ...(tags ? { tags } : {}), properties }, 'POST', { retry: false, ...options });
-  const update = (record, patchProperties) => {
+  // `workspaceId` is the workspace the record must still be in afterwards, not a
+  // move: only the solution record carries one. UnifyApps Headless's other record
+  // types stay in Global, so they pass nothing and the header is left off.
+  const update = (record, patchProperties, { workspaceId } = {}) => {
     if (!record?.id || !record.entityType || !Number.isFinite(record.version)) {
       throw new UaError('USAGE', 'A versioned entity record is required.');
     }
@@ -216,7 +226,7 @@ export function createService({ host, api, callTool, retry = (operation) => oper
       // The platform clears the tags of an update that leaves them out, so send the record's own.
       ...(Array.isArray(record.tags) ? { tags: record.tags } : {}),
       properties: propertiesForUpdate(record, patchProperties),
-    });
+    }, 'POST', { workspaceId });
   };
   const search = async (type, col, value) => {
     const records = [], cursors = new Set();
@@ -244,8 +254,36 @@ export function createService({ host, api, callTool, retry = (operation) => oper
     get: (type, id, { direct } = {}) => (direct ? get(type, id) : viaTools.get(type, id)),
     search: (type, col, value, { direct } = {}) => (direct ? search(type, col, value) : viaTools.search(type, col, value)),
     create: (type, properties, options = {}) => (options.direct ? create(type, properties, options) : viaTools.create(type, properties, options)),
-    update: (record, patch, { direct } = {}) => (direct ? update(record, patch) : viaTools.update(record, patch)),
+    update: async (record, patch, options = {}) => {
+      if (options.direct) return update(record, patch, { workspaceId: options.workspaceId });
+      const saved = await viaTools.update(record, patch);
+      return keptInWorkspace(record, saved);
+    },
   } : { get, create, update, search };
+
+  /**
+   * Put the solution record back in its workspace when the tenant's own write
+   * dropped it.
+   *
+   * `save_solution_record` sends no workspace header, and a header-less write
+   * moves the record to Global — measured on a test tenant, where one memory line
+   * took a solution out of its workspace. Until the tenant's tools keep the
+   * workspace themselves, this reads the answer back and repairs it with the
+   * direct entity API, which does send the header. It runs only for the solution
+   * record of a folder that works in a workspace; everything else UnifyApps
+   * Headless writes belongs in Global and is left alone.
+   */
+  async function keptInWorkspace(record, saved) {
+    if (!workspaceId || Number(workspaceId) === 0) return saved;
+    if (record?.entityType !== SOLUTION_TYPE) return saved;
+    if (String(saved?.projectId ?? '') === String(workspaceId)) return saved;
+    const current = await get(SOLUTION_TYPE, record.id);
+    if (String(current?.projectId ?? '') === String(workspaceId)) return current;
+    const repaired = await update(current, {}, { workspaceId });
+    if (String(repaired?.projectId ?? '') === String(workspaceId)) return repaired;
+    throw new UaError('WORKSPACE_MISMATCH', undefined, { asset: `The solution ${record.id}`,
+      assetWorkspace: 'Global', solutionWorkspace: `workspace ${workspaceId}` });
+  }
   const readMergeWrite = async (type, id, mergeFn, { attempts = 3 } = {}) => {
     if (!Number.isInteger(attempts) || attempts < 1) throw new UaError('USAGE', 'Merge attempts must be positive.');
     for (let attempt = 0; attempt < attempts; attempt++) {
@@ -271,7 +309,7 @@ export function withLocalStorage(platform, local) {
     getVersioned: (type, id) => platform.getVersioned(type, id),
     getAppEntities: (...args) => platform.getAppEntities(...args),
     create: (type, properties, options) => pick(type).create(type, properties, options),
-    update: (record, patch) => pick(record?.entityType).update(record, patch),
+    update: (record, patch, options) => pick(record?.entityType).update(record, patch, options),
     search: (type, col, value) => pick(type).search(type, col, value),
     readMergeWrite: (type, id, mergeFn, options) => pick(type).readMergeWrite(type, id, mergeFn, options),
   };
@@ -297,15 +335,15 @@ export function withMirroredStorage(platform, mirror) {
   };
 }
 
-export function serviceFor(host, { retry, beforeWrite, storage = 'platform', home, sessionId, solutionId } = {}) {
+export function serviceFor(host, { retry, beforeWrite, storage = 'platform', home, sessionId, solutionId, workspaceId } = {}) {
   host = normalizeTenant(host);
   const fakeApi = process.env.UA_FAKE === '1' ? fakeEntityApi(host) : null;
   // A fake platform has no MCP tools, so it adds the definition and app reads itself.
   const platform = fakeApi
     ? { ...createService({ host, api: fakeApi, retry, beforeWrite }), ...fakeEntityReads({ host, api: fakeApi, retry }) }
-    : createService({ host, retry, beforeWrite, home, sessionId, solutionId });
+    : createService({ host, retry, beforeWrite, home, sessionId, solutionId, workspaceId });
   if (storage === 'local') {
-    if (!home) throw new UaError('USAGE', 'Local storage needs a workspace.');
+    if (!home) throw new UaError('USAGE', 'Local storage needs a folder.');
     return withLocalStorage(platform, createService({ host, api: localEntityApi(home), retry, beforeWrite }));
   }
   // A platform tenant's service names its host: `solution-sync` then reads the

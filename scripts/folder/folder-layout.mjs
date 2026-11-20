@@ -1,9 +1,9 @@
-/** Flat workspace ownership and safe migration/override rules. */
+/** Flat folder ownership and safe migration/override rules. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { UaError, normalizeTenant } from '../lib/contracts.mjs';
 import {
-  approveWorkspace, assertLocalPath, readJsonFile, removeFolderSafe, removeSafe, validatedSessionId,
+  approveFolder, assertLocalPath, readJsonFile, removeFolderSafe, removeSafe, validatedSessionId,
 } from '../lib/session-paths.mjs';
 import { featureSlugs, isRenderedFor, prdFileNames } from './render.mjs';
 import { LOCAL_STORE_FILE } from '../platform/entity-store.mjs';
@@ -35,7 +35,7 @@ export function sessionStates(home) {
 export function associationAt(home, scope = 'root') {
   const solution = readJsonFile(path.join(home, 'records', 'solution.json'), null);
   if (solution && (!recordIdPattern.test(String(solution.id ?? '')) || solution.entityType && solution.entityType !== 'e_solution')) {
-    throw new UaError('WORKSPACE_CONTENT_CONFLICT', undefined, { paths: ['records/solution.json'] });
+    throw new UaError('FOLDER_CONTENT_CONFLICT', undefined, { paths: ['records/solution.json'] });
   }
   const states = sessionStates(home);
   const stateIds = [...new Set(states.map(state => state.solutionId).filter(Boolean))];
@@ -52,20 +52,20 @@ export function associationAt(home, scope = 'root') {
   };
 }
 
-export function workspaceAssociations(cwd) {
-  const workspace = approveWorkspace(cwd);
-  const root = associationAt(workspace);
+export function folderAssociations(cwd) {
+  const folderPath = approveFolder(cwd);
+  const root = associationAt(folderPath);
   return root ? [root] : [];
 }
 
 /** Files a folder with no solution already holds at a path UnifyApps Headless writes to by a fixed
  * name, so opening a solution here would replace them. Other files in specs/, plans/
  * and docs/ are not listed: UnifyApps Headless never removes a file it did not render. */
-function unassociatedConflicts(workspace) {
+function unassociatedConflicts(folderPath) {
   const conflicts = [];
-  const addFile = relative => { if (fs.existsSync(path.join(workspace, relative))) conflicts.push(relative); };
+  const addFile = relative => { if (fs.existsSync(path.join(folderPath, relative))) conflicts.push(relative); };
   const addMatches = (relative, predicate) => {
-    const directory = path.join(workspace, relative);
+    const directory = path.join(folderPath, relative);
     if (!fs.existsSync(directory) || !fs.lstatSync(directory).isDirectory()) return;
     for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
       if (predicate(item)) conflicts.push(path.join(relative, item.name));
@@ -87,13 +87,13 @@ function unassociatedConflicts(workspace) {
  * entity-manifests/ folder that already has something in it. UnifyApps Headless overwrites
  * none of it, but its files would land among the person's own: a repository's
  * docs/ once got UnifyApps Headless's README.md, and git saw 11 new paths. */
-function occupiedFolders(workspace) {
-  const found = fs.existsSync(path.join(workspace, '.git')) ? ['.git'] : [];
+function occupiedFolders(folderPath) {
+  const found = fs.existsSync(path.join(folderPath, '.git')) ? ['.git'] : [];
   // `solution create` writes the local store (and its lock and temp files)
   // before the solution record lands, so that one is UnifyApps Headless's own.
   const uaOwn = name => name === '.DS_Store' || name.startsWith(path.basename(LOCAL_STORE_FILE));
   for (const name of ['records', 'specs', 'plans', 'docs', 'entities', 'entity-manifests']) {
-    const folder = path.join(workspace, name);
+    const folder = path.join(folderPath, name);
     if (!fs.existsSync(folder)) continue;
     if (!fs.lstatSync(folder).isDirectory() || fs.readdirSync(folder).some(item => !uaOwn(item))) found.push(`${name}/`);
   }
@@ -125,44 +125,44 @@ const recordIdsIn = directory => {
  * its records, the files rendered from them (named by record id or doc slug), its entity
  * cache folders, and the state files that bind a session to it. Questionnaires, drafts,
  * reports and every file UnifyApps Headless did not write stay where they are. */
-function clearRootAssociation(workspace, association) {
-  const solutionFile = path.join(workspace, 'records', 'solution.json');
+function clearRootAssociation(folderPath, association) {
+  const solutionFile = path.join(folderPath, 'records', 'solution.json');
   const hasSolutionRecord = fs.existsSync(solutionFile);
-  const specIds = recordIdsIn(path.join(workspace, 'records', 'specs'));
-  const planIds = recordIdsIn(path.join(workspace, 'records', 'plans'));
-  const docRecords = recordIdsIn(path.join(workspace, 'records', 'docs'))
-    .map(id => { try { return readJsonFile(path.join(workspace, 'records', 'docs', `${id}.json`), null); } catch { return null; } });
+  const specIds = recordIdsIn(path.join(folderPath, 'records', 'specs'));
+  const planIds = recordIdsIn(path.join(folderPath, 'records', 'plans'));
+  const docRecords = recordIdsIn(path.join(folderPath, 'records', 'docs'))
+    .map(id => { try { return readJsonFile(path.join(folderPath, 'records', 'docs', `${id}.json`), null); } catch { return null; } });
   const docSlugs = new Set(featureSlugs(docRecords));
   const prdFiles = new Set(prdFileNames(docRecords));
 
   for (const folder of ['specs', 'plans', 'docs', 'assets']) {
-    removeMatching(path.join(workspace, 'records', folder), name => name.endsWith('.json') && recordIdPattern.test(name.slice(0, -5)));
+    removeMatching(path.join(folderPath, 'records', folder), name => name.endsWith('.json') && recordIdPattern.test(name.slice(0, -5)));
   }
   if (hasSolutionRecord) removeSafe(solutionFile);
 
-  removeMatching(path.join(workspace, 'specs'), name => isRenderedFor(name, specIds));
-  removeMatching(path.join(workspace, 'plans'), name => isRenderedFor(name, planIds));
+  removeMatching(path.join(folderPath, 'specs'), name => isRenderedFor(name, specIds));
+  removeMatching(path.join(folderPath, 'plans'), name => isRenderedFor(name, planIds));
   for (const folder of ['applications', 'automations', 'features']) {
-    removeMatching(path.join(workspace, 'docs', folder), name => name.endsWith('.md') && docSlugs.has(name.slice(0, -3)));
+    removeMatching(path.join(folderPath, 'docs', folder), name => name.endsWith('.md') && docSlugs.has(name.slice(0, -3)));
   }
-  removeMatching(path.join(workspace, 'docs', 'prd'), name => prdFiles.has(name));
+  removeMatching(path.join(folderPath, 'docs', 'prd'), name => prdFiles.has(name));
   if (hasSolutionRecord) {
-    removeSafe(path.join(workspace, 'docs', 'README.md'));
-    removeSafe(path.join(workspace, 'memory.md'));
-    removeSafe(path.join(workspace, WIRING_FILE));
-    removeSafe(path.join(workspace, SOLUTION_MAP_FILE));
-    removeSafe(path.join(workspace, SOLUTION_CHART_FILE));
+    removeSafe(path.join(folderPath, 'docs', 'README.md'));
+    removeSafe(path.join(folderPath, 'memory.md'));
+    removeSafe(path.join(folderPath, WIRING_FILE));
+    removeSafe(path.join(folderPath, SOLUTION_MAP_FILE));
+    removeSafe(path.join(folderPath, SOLUTION_CHART_FILE));
   }
 
-  const entities = path.join(workspace, 'entities');
+  const entities = path.join(folderPath, 'entities');
   if (fs.existsSync(entities) && fs.lstatSync(entities).isDirectory()) {
     for (const item of fs.readdirSync(entities, { withFileTypes: true })) {
       if (item.isDirectory() && entityDirectoryPattern.test(item.name)) removeFolderSafe(path.join(entities, item.name));
     }
   }
-  clearEntityCache(workspace);
+  clearEntityCache(folderPath);
 
-  const sessions = path.join(workspace, '.sessions');
+  const sessions = path.join(folderPath, '.sessions');
   if (fs.existsSync(sessions) && fs.lstatSync(sessions).isDirectory()) {
     for (const item of fs.readdirSync(sessions, { withFileTypes: true })) {
       if (!item.isDirectory()) continue;
@@ -177,10 +177,10 @@ function clearRootAssociation(workspace, association) {
   }
 
   for (const directory of [
-    path.join(workspace, 'records', 'specs'), path.join(workspace, 'records', 'plans'), path.join(workspace, 'records', 'docs'), path.join(workspace, 'records', 'assets'), path.join(workspace, 'records'),
-    path.join(workspace, 'specs'), path.join(workspace, 'plans'),
-    path.join(workspace, 'docs', 'applications'), path.join(workspace, 'docs', 'automations'), path.join(workspace, 'docs', 'features'), path.join(workspace, 'docs', 'prd'),
-    path.join(workspace, 'docs'), path.join(workspace, SOLUTION_MAP_FOLDER), entities, sessions,
+    path.join(folderPath, 'records', 'specs'), path.join(folderPath, 'records', 'plans'), path.join(folderPath, 'records', 'docs'), path.join(folderPath, 'records', 'assets'), path.join(folderPath, 'records'),
+    path.join(folderPath, 'specs'), path.join(folderPath, 'plans'),
+    path.join(folderPath, 'docs', 'applications'), path.join(folderPath, 'docs', 'automations'), path.join(folderPath, 'docs', 'features'), path.join(folderPath, 'docs', 'prd'),
+    path.join(folderPath, 'docs'), path.join(folderPath, SOLUTION_MAP_FOLDER), entities, sessions,
   ]) removeIfEmpty(directory);
 }
 
@@ -197,12 +197,12 @@ function foldersIn(directory) {
   if (!fs.existsSync(directory) || !fs.lstatSync(directory).isDirectory()) return [];
   return fs.readdirSync(directory, { withFileTypes: true }).filter(item => item.isDirectory() && SAFE_PART.test(item.name)).map(item => path.join(directory, item.name));
 }
-function clearEntityCache(workspace) {
-  for (const folder of foldersIn(path.join(workspace, 'entities'))) {
+function clearEntityCache(folderPath) {
+  for (const folder of foldersIn(path.join(folderPath, 'entities'))) {
     removeMatching(folder, name => SNAPSHOT_FILE.test(name));
     removeIfEmpty(folder);
   }
-  const manifests = path.join(workspace, 'entity-manifests');
+  const manifests = path.join(folderPath, 'entity-manifests');
   removeMatching(path.join(manifests, 'interfaces'), name => MANIFEST_FILE.test(name));
   for (const markers of ['interface-dirty', 'entity-dirty']) {
     for (const folder of foldersIn(path.join(manifests, markers))) {
@@ -214,38 +214,38 @@ function clearEntityCache(workspace) {
   removeIfEmpty(manifests);
 }
 
-export function ensureWorkspaceSelection(cwd, { tenant, solutionId = null, override = false } = {}) {
-  const workspace = approveWorkspace(cwd);
+export function ensureFolderSelection(cwd, { tenant, solutionId = null, override = false } = {}) {
+  const folderPath = approveFolder(cwd);
   const host = normalizeTenant(tenant);
-  const associations = workspaceAssociations(workspace);
+  const associations = folderAssociations(folderPath);
   if (!associations.length) {
-    const paths = unassociatedConflicts(workspace);
-    if (paths.length) throw new UaError('WORKSPACE_CONTENT_CONFLICT', undefined, { paths });
+    const paths = unassociatedConflicts(folderPath);
+    if (paths.length) throw new UaError('FOLDER_CONTENT_CONFLICT', undefined, { paths });
     // After an override the person chose this folder knowing what is in it.
-    const occupied = override ? [] : occupiedFolders(workspace);
+    const occupied = override ? [] : occupiedFolders(folderPath);
     if (occupied.length) {
       const folders = occupied.filter(name => name.endsWith('/'));
       const what = [folders.length < occupied.length ? 'is a code repository' : null,
         folders.length ? `already has files in ${folders.join(', ')}` : null].filter(Boolean).join(', and it ');
-      throw new UaError('WORKSPACE_CONTENT_CONFLICT',
+      throw new UaError('FOLDER_CONTENT_CONFLICT',
         `This folder ${what}. UnifyApps Headless would add its own files there. Please use a new, empty folder for this solution.`,
         { paths: occupied });
     }
   }
   const conflicts = associations.filter(association => !sameSolution(association, host, solutionId));
-  if (!conflicts.length) return { workspace, association: associations[0] ?? null, overridden: false };
+  if (!conflicts.length) return { folderPath, association: associations[0] ?? null, overridden: false };
   if (!override) {
     const current = conflicts[0];
-    throw new UaError('WORKSPACE_SOLUTION_MISMATCH', undefined, {
+    throw new UaError('FOLDER_SOLUTION_MISMATCH', undefined, {
       currentTenant: current.tenant,
       currentSolutionId: current.solutionId,
       currentSolutionName: current.solutionName,
     });
   }
-  for (const association of conflicts) clearRootAssociation(workspace, association);
-  if (!associationAt(workspace)) {
-    const paths = unassociatedConflicts(workspace);
-    if (paths.length) throw new UaError('WORKSPACE_CONTENT_CONFLICT', undefined, { paths });
+  for (const association of conflicts) clearRootAssociation(folderPath, association);
+  if (!associationAt(folderPath)) {
+    const paths = unassociatedConflicts(folderPath);
+    if (paths.length) throw new UaError('FOLDER_CONTENT_CONFLICT', undefined, { paths });
   }
-  return { workspace, association: null, overridden: true };
+  return { folderPath, association: null, overridden: true };
 }

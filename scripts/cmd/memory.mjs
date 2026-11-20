@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import { UaError } from '../lib/contracts.mjs';
 import { parseMemory, parsePlan, renderMemory as formatMemory } from '../lib/formats.mjs';
-import { readRecord, cacheRecords, renderMemory } from '../workspace/local.mjs';
-import { refreshCurrent } from '../workspace/solution-sync.mjs';
+import { readRecord, cacheRecords, renderMemory } from '../folder/local.mjs';
+import { refreshCurrent } from '../folder/solution-sync.mjs';
 
 // Solution memory is written when the person explicitly asks to remember
 // something, and also automatically at plan finish, when the routing skill

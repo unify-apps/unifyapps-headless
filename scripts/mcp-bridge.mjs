@@ -23,7 +23,7 @@
 // code-builder a downloaded codebase is written to a local checkout, a push may
 // send that checkout's own diff, and the files new dataSources answer (Storage
 // bindings, an automation's binding) are written into it (`localPath`; see
-// `workspace/code-checkout.mjs`).
+// `folder/code-checkout.mjs`).
 // A tool's refusal for the AGENT_LLM_TOOLS permission is answered as what it means
 // (see `isPermissionRefusal`). Some calls are refused before they leave: a delete
 // without the person's yes (`destructiveCall`), a page built by hand at a
@@ -33,11 +33,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { UA_HOME, canonicalCwd, readRecords, readRegistry, readState, sessionForFolder, signInForFolder, tenantMcp, writeState } from './workspace/local.mjs';
-import { claudeProcessSession } from './workspace/claude-process.mjs';
+import { UA_HOME, canonicalCwd, readRecords, readRegistry, readState, sessionForFolder, signInForFolder, tenantMcp, writeState } from './folder/local.mjs';
+import { claudeProcessSession } from './folder/claude-process.mjs';
 import { parsePlan } from './lib/formats.mjs';
-import { approveWorkspace } from './lib/session-paths.mjs';
-import { confirmRequiredText, isTenantOnlyRead, normalizeTenant, UaError, SOLUTION_TAG } from './lib/contracts.mjs';
+import { approveFolder } from './lib/session-paths.mjs';
+import { confirmRequiredText, GLOBAL_WORKSPACE_NAME, isTenantOnlyRead, normalizeTenant, UaError, SOLUTION_TAG } from './lib/contracts.mjs';
+import { landsOutsideWorkspace, withWorkspace, workspaceAllows, writeTargets } from './lib/workspace-gate.mjs';
+import { repairEntityWorkspace, resolveWorkspace, workspaceOfEntity } from './platform/workspaces.mjs';
 import { handBuiltAuthPage } from './lib/auth-pages.mjs';
 import { missingVersionProblem } from './lib/expected-version.mjs';
 import { callKey, destructiveCall } from './lib/destructive.mjs';
@@ -50,16 +52,16 @@ import { screenCodeSkillAnswer } from './lib/skill-scan.mjs';
 import { readCookie } from './platform/auth.mjs';
 import { tenantFetch } from './platform/tenant-fetch.mjs';
 import { fetchUserContext, fetchUserIdentity, verifyCookie } from './platform/user-context.mjs';
-import { addPendingDelete, failedYesFor, takeDeleteYes } from './workspace/delete-yes.mjs';
-import { linkEntityRefs, markCachedEntityDirty, markCachedInterfaceDirty, markCachedPageDirty } from './workspace/entity-cache.mjs';
+import { addPendingDelete, failedYesFor, takeDeleteYes } from './folder/delete-yes.mjs';
+import { linkEntityRefs, markCachedEntityDirty, markCachedInterfaceDirty, markCachedPageDirty } from './folder/entity-cache.mjs';
 import { createdEntityRefs } from './lib/mcp-entity-changes.mjs';
 import { agentContext } from './lib/agent-context.mjs';
 import { checkForUpdate, updateNotice, updateRequiredMessage } from './lib/update-check.mjs';
-import { writeCodexAgents } from './workspace/codex-agents.mjs';
+import { writeCodexAgents } from './folder/codex-agents.mjs';
 import {
   boundCallable, checkoutFolder, localPatch, markCommitted, provisionedBindings, pullBase, pullChanges, readCheckout, unpackCodebase,
   writeBindings, writeCallable,
-} from './workspace/code-checkout.mjs';
+} from './folder/code-checkout.mjs';
 
 /** The plugin version that made the call. llm-tools governs a call that carries it
  * (the AGENT_LLM_TOOLS permission check, see `isPermissionRefusal`). */
@@ -140,6 +142,8 @@ export function bridgeContext(cwd = process.cwd(), claudeSessionId = process.env
   const sessionId = liveSessionId ?? (onlySignedInHere ? claudeSessionId : session.sessionId);
   const identity = { sessionId, solutionId, version: pluginVersion() };
   return { tenant, url: tenantMcp(tenant).url, cookie: readCookie(tenant), home: row.path, storage: row.storage ?? 'platform',
+    // The workspace this folder's solution works in. Absent means Global.
+    workspaceId: row.workspaceId ?? null, workspaceName: row.workspaceName ?? null,
     identity, client: clientHeaders(identity) };
 }
 
@@ -795,7 +799,7 @@ function changesetStates(ctx) {
   // harness, so approve this home before reading or writing its state, the
   // way `homeForCwd` does for the CLI.
   try {
-    approveWorkspace(ctx.home);
+    approveFolder(ctx.home);
     const named = [ctx.identity.sessionId, readState(ctx.home, ctx.identity.sessionId) ?? {}];
     const own = process.env.CLAUDE_CODE_SESSION_ID;
     if (!own || own === ctx.identity.sessionId) return [named];
@@ -811,6 +815,47 @@ function changesetGate(ctx, name, args) {
   const problems = states.map(([, state]) => gateProblem(state, name, args ?? {}));
   return problems.includes(null) ? null : problems[0];
 }
+/**
+ * The refusal for a write on an item that lives in another workspace, or null.
+ *
+ * A solution in a workspace changes that workspace and nothing else, an item
+ * in no workspace included. A solution in no workspace changes everything: the
+ * Global screens list every workspace's items, so the folder reaches what the
+ * person reaches.
+ *
+ * A read that cannot say where the item lives passes too. A refusal is a claim,
+ * and a claim built on a failed read would stop work that is allowed; the tenant
+ * still has the last word on every write.
+ */
+async function workspaceGate(ctx, name, args, before = []) {
+  const here = ctx.workspaceName ?? (ctx.workspaceId ? `workspace ${ctx.workspaceId}` : GLOBAL_WORKSPACE_NAME);
+  // A create that cannot say which workspace it goes in puts the asset in Global,
+  // where this solution could never change it again. Refused while it is still
+  // nothing, rather than after it exists and nothing can finish it.
+  if (ctx.workspaceId && Number(ctx.workspaceId) !== 0 && landsOutsideWorkspace(name)) {
+    return `Nothing was sent. \`${name}\` cannot say which workspace the new item belongs to, so it would be created in ${GLOBAL_WORKSPACE_NAME}, `
+      + `and this solution works in ${here} — it could never change the item afterwards. `
+      + `Tell the person this kind cannot be built in a workspace yet, and that it needs a solution in ${GLOBAL_WORKSPACE_NAME}, in its own folder.`;
+  }
+  const targets = writeTargets(name, args).filter((item) => item.path);
+  if (!targets.length) return null;
+  let target = null, itemWorkspace = null;
+  for (const candidate of targets) {
+    // eslint-disable-next-line no-await-in-loop -- a batch names a handful of objects, and the first one in another workspace refuses the call
+    const found = await workspaceOfEntity(ctx.tenant, candidate.path, { cookie: ctx.cookie });
+    // What it was before the write, so a route that drops the workspace can be undone.
+    if (found) before.push({ kind: candidate.kind, id: candidate.id, workspaceId: found.id });
+    if (found && !workspaceAllows(ctx.workspaceId, found.id)) { target = candidate; itemWorkspace = found; break; }
+  }
+  if (!target) return null;
+  // Only now, on the refusal itself, is the workspace's name worth a call: the
+  // person has to recognise it to know which folder to open.
+  const named = await resolveWorkspace(ctx.tenant, itemWorkspace.id, { cookie: ctx.cookie }).catch(() => itemWorkspace);
+  return `Nothing was sent. The ${target.kind} \`${target.id}\` is in ${named.name}, and this solution works in ${here}. `
+    + 'UnifyApps Headless changes only what is in its own workspace. '
+    + `To change this ${target.kind}, open a solution in ${named.name} in another folder (/ua:setup), and tell the person that — do not try another tool.`;
+}
+
 function rememberChangesetAnswer(ctx, msg, replies) {
   const name = msg.params?.name, args = msg.params?.arguments ?? {};
   if (name !== 'save_changeset' && name !== 'revert_changeset_to_draft') return;
@@ -1376,6 +1421,9 @@ export function createBridge(target, { context = bridgeContext, request = fetch,
       // automation is never retyped from the reply; the file is checked before
       // anything is sent, and the tenant never sees `outFile`.
       let outFile = null;
+      // The workspace each item this call names was in before it ran, read once by
+      // the gate below and used after to put back anything the write dropped.
+      const workspacesBefore = [];
       if (outFileOf(name) && msg.params.arguments?.[outFileOf(name).input] !== undefined) {
         const { [outFileOf(name).input]: file, ...args } = msg.params.arguments;
         const checkedFile = outFileTarget(file, { ...outFileOf(name), folders: [ctx.home, sessionHome(process.env.CLAUDE_CODE_SESSION_ID), process.cwd(), ...tempFolders].filter(Boolean) });
@@ -1424,7 +1472,14 @@ export function createBridge(target, { context = bridgeContext, request = fetch,
         const problem = changesetGate(ctx, name, msg.params?.arguments);
         if (problem) return refuse(problem);
       }
-      if (isTool) msg = { ...msg, params: { ...msg.params, arguments: withChangeTag(name, withUaTag(name, msg.params?.arguments), { home: ctx.home, sessionId: ctx.identity?.sessionId }) } };
+      // One folder works in one workspace. A write on an item in another one is
+      // refused here, before anything is sent: the item's own workspace is read
+      // live, because the folder's copy of it may be older than a move.
+      if (isTool) {
+        const problem = await workspaceGate(ctx, name, msg.params?.arguments, workspacesBefore);
+        if (problem) return refuse(problem);
+      }
+      if (isTool) msg = { ...msg, params: { ...msg.params, arguments: withWorkspace(name, withChangeTag(name, withUaTag(name, msg.params?.arguments), { home: ctx.home, sessionId: ctx.identity?.sessionId }), ctx.workspaceId) } };
       // Marked dirty in the `finally` below, once the reply says the write
       // actually went through: a save the tenant refused wrote nothing, and
       // marking the cache stale for it only makes a later read refuse to
@@ -1445,6 +1500,13 @@ export function createBridge(target, { context = bridgeContext, request = fetch,
       }
       if (outFile) {
         replies = replies.map((reply) => (reply?.id === msg.id && reply.result ? { ...reply, result: withOutFile(reply.result, outFileOf(name), outFile) } : reply));
+      }
+      // An app write goes through a route that sends no workspace header, and a
+      // header-less write means Global: the app UnifyApps Headless just edited
+      // would fall out of its workspace and be refused by the gate next time.
+      // Put it back.
+      if (isTool && workspacesBefore.length && !replyFailed(replies, msg.id)) {
+        replies = await withKeptWorkspace(ctx, msg, replies, workspacesBefore);
       }
       if (isTool && target === CHANGESET) rememberChangesetAnswer(ctx, msg, replies);
       if (isTool) replies = await withCreatedLinks(ctx, target, msg, replies, linkCreated);
@@ -1469,16 +1531,56 @@ async function linkToSolution(ctx, refs) {
   const { serviceFor } = await import('./platform/service.mjs');
   // The bridge approves only its own folder; a solution opened after a `cd` is
   // another one, and the rows are mirrored into it (see `changesetStates`).
-  approveWorkspace(ctx.home);
+  approveFolder(ctx.home);
   const solutionId = ctx.identity.solutionId;
-  const service = serviceFor(ctx.tenant, { storage: ctx.storage, home: ctx.home, sessionId: ctx.identity.sessionId, solutionId });
+  const service = serviceFor(ctx.tenant, { storage: ctx.storage, home: ctx.home, sessionId: ctx.identity.sessionId, solutionId, workspaceId: ctx.workspaceId });
   return linkEntityRefs({ home: ctx.home, service, state: { solutionId } }, refs);
 }
 const READ_KINDS = new Set(['object', 'automation', 'app', 'ai-agent']);
+/**
+ * Keep what a create just made inside this folder's workspace.
+ *
+ * A create can place its entity and then lose it: an app's create writes again
+ * on its own (the domain mapping, the first page) through a route that sends no
+ * workspace header, and a header-less write means Global — an app created in a
+ * workspace read back in Global at version 1 on a test tenant. The entity would
+ * then be refused by the gate above, so the folder could not finish what it had
+ * just made. Read back and put it right.
+ *
+ * Never fails the call: the entity exists either way, and the reply says so when
+ * it could not be moved.
+ */
+async function withKeptWorkspace(ctx, msg, replies, refs) {
+  const stranded = [];
+  for (const ref of refs) {
+    // Each entity goes back to ITS OWN workspace: the folder's for something this
+    // call created, the one it was in for something this call changed. A folder
+    // in no workspace still puts another workspace's app back where it was.
+    const wanted = ref.workspaceId ?? ctx.workspaceId;
+    if (!REPAIRABLE_KINDS.has(ref.kind) || !wanted || Number(wanted) === 0) continue;
+    // eslint-disable-next-line no-await-in-loop -- one read and at most one write per entity
+    const kept = await repairEntityWorkspace(ctx.tenant, ref.kind, ref.id, wanted, { cookie: ctx.cookie });
+    if (!kept) stranded.push(ref);
+  }
+  if (!stranded.length) return replies;
+  const note = `UnifyApps Headless could not keep ${stranded.map((ref) => `${ref.kind} ${ref.id}`).join(', ')} in its workspace, `
+    + 'so it may now sit outside the workspace it belonged to and be refused by the next write. Tell the person, and read it back before building on it.';
+  return replies.map((reply) => (reply?.id === msg.id && reply.result
+    ? { ...reply, result: { ...reply.result, content: [...(Array.isArray(reply.result.content) ? reply.result.content : []), { type: 'text', text: note }] } }
+    : reply));
+}
+const REPAIRABLE_KINDS = new Set(['app', 'object', 'automation']);
+/** Whether the tenant refused this call, so there is nothing to keep in place. */
+function replyFailed(replies, id) {
+  const reply = replies.find((item) => item?.id === id);
+  return !reply?.result || reply.result.isError === true;
+}
+
 async function withCreatedLinks(ctx, target, msg, replies, link) {
   if (!ctx?.home || !ctx.identity?.solutionId || ctx.tenantOnly) return replies;
   const refs = createdEntityRefs({ server: target, tool: msg.params?.name, args: msg.params?.arguments, replies, requestId: msg.id });
   if (!refs.length) return replies;
+  replies = await withKeptWorkspace(ctx, msg, replies, refs);
   try {
     await link(ctx, refs);
     return replies;

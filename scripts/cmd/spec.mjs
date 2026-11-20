@@ -3,9 +3,9 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { DEFAULT_MODE, UaError, SPEC_FORMATS, parseSpecBody, slug, specFormat, validateSpecHtml } from '../lib/contracts.mjs';
 import { parseFrontmatter, renderFrontmatter } from '../lib/formats.mjs';
-import { executionActor, readRecord, readRecords, cacheRecords, renderSpec, writeDraft, readDraft, draftSlugs, removeDraft, readAcceptanceReceipt, writeAcceptanceReceipt, clearAcceptanceReceipt, sessionHome, writeState } from '../workspace/local.mjs';
+import { executionActor, readRecord, readRecords, cacheRecords, renderSpec, writeDraft, readDraft, draftSlugs, removeDraft, readAcceptanceReceipt, writeAcceptanceReceipt, clearAcceptanceReceipt, sessionHome, writeState } from '../folder/local.mjs';
 import { loadSpecHtmlAssets, renderSpecHtml, validateSpecHtmlFormat } from '../lib/spec-html.mjs';
-import { refreshCurrent, refreshCurrentIfStale } from '../workspace/solution-sync.mjs';
+import { refreshCurrent, refreshCurrentIfStale } from '../folder/solution-sync.mjs';
 
 const required = (value, name) => {
   if (typeof value !== 'string' || !value.trim()) throw new UaError('USAGE', `${name} is required.`);
