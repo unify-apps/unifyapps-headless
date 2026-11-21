@@ -795,6 +795,64 @@ try {
   record(name, problems.length === 0, problems.join('\n        '));
 }
 
+// The launcher runs `node "$@"`, so its allow rule must name a plugin script,
+// and `apply` must take out the broad rule older releases wrote. Which commands
+// Claude Code lets these rules through was checked with `claude -p`
+// (lib/permission-rules.mjs); this keeps the rules themselves from drifting.
+{
+  const name = 'the run-node.sh allow rule names a plugin script, and apply retires the broad one';
+  const problems = [];
+  try {
+    const rules = await import(pathToFileURL(path.join(root, 'scripts/lib/permission-rules.mjs')).href);
+    const dir = '/c/plugins/cache/unifyapps-headless/ua';
+    const launcher = rules.allowRules(dir).filter((rule) => rule.includes('run-node.sh'));
+    if (!launcher.length) problems.push('no run-node.sh rule');
+    for (const rule of launcher) if (!rule.includes(`${dir}/*.mjs`)) problems.push(`accepts any arguments: ${rule}`);
+    const broad = [`Bash(bash "${dir}/*/scripts/run-node.sh" *)`, `Bash(bash ${dir}/0.0.9/scripts/run-node.sh:*)`];
+    const mine = 'Bash(git status *)';
+    const before = { permissions: { allow: [mine, ...broad] } };
+    if (rules.missingRules(before, { versionsDir: dir, version: '0.0.9' }).retired.length !== 2) problems.push('check does not flag the broad rules');
+    const { settings, removed } = rules.mergeRules(before, { allow: rules.allowRules(dir), ask: [], retire: rules.retiredRules(before, dir) });
+    if (removed.length !== 2 || settings.permissions.allow.some((rule) => broad.includes(rule))) problems.push('apply left a broad rule in');
+    if (settings.permissions.allow[0] !== mine) problems.push('apply moved or removed the person\'s own rule');
+    const after = rules.missingRules(settings, { versionsDir: dir, version: '0.0.9' });
+    if (after.allow.length || after.retired.length) problems.push(`not clean after apply: ${JSON.stringify(after)}`);
+  } catch (error) { problems.push(error.message); }
+  record(name, problems.length === 0, problems.join('\n        '));
+}
+
+// A builder's Read and Grep stay out of the person's saved sign-in, whatever
+// path spells it. Run in its own process: the guard reads UA_HOME on load.
+{
+  const name = 'a builder cannot read or search the saved sign-in';
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ua-guard-'));
+  const work = path.join(home, 'work');
+  for (const dir of ['session/cookies', 'session/chrome-profile', 'loops', 'work']) fs.mkdirSync(path.join(home, dir), { recursive: true });
+  fs.symlinkSync(path.join(home, 'session/cookies'), path.join(work, 'link'));
+  const cases = [
+    [true, 'Read', { file_path: path.join(home, 'session/cookies/t.example.com') }],
+    [true, 'Read', { file_path: path.join(home, 'session/chrome-profile/Default/Cookies') }],
+    [true, 'Read', { file_path: path.join(work, 'link/t.example.com') }],
+    [true, 'Read', { file_path: '../session/cookies/t.example.com' }],
+    [true, 'Read', { file_path: path.join(os.homedir(), '.ssh/id_ed25519') }],
+    [true, 'Grep', { pattern: '_at', path: home }],
+    [true, 'Grep', { pattern: '_at', path: path.join(work, 'link') }],
+    [false, 'Read', { file_path: path.join(work, 'notes.md') }],
+    [false, 'Read', { file_path: path.join(home, 'loops/run.json') }],
+    [false, 'Grep', { pattern: 'cookies', path: work }],
+  ];
+  const script = `const { denyReason } = await import(${JSON.stringify(pathToFileURL(path.join(root, 'scripts/tool-guard.mjs')).href)});
+    const cases = ${JSON.stringify(cases)};
+    const wrong = cases.filter(([deny, tool, input]) => Boolean(denyReason({ agent_type: 'ua:fde-agent', tool_name: tool, cwd: ${JSON.stringify(work)}, tool_input: input })) !== deny);
+    if (denyReason({ tool_name: 'Read', cwd: ${JSON.stringify(work)}, tool_input: cases[0][2] })) wrong.push('the main session was refused');
+    console.log(JSON.stringify(wrong));`;
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8', env: { ...process.env, UA_HOME: home }, timeout: 30_000 });
+  let wrong;
+  try { wrong = JSON.parse(run.stdout); } catch { wrong = [run.stderr.split('\n').slice(0, 3).join(' ')]; }
+  fs.rmSync(home, { recursive: true, force: true });
+  record(name, wrong.length === 0, wrong.map((item) => JSON.stringify(item)).join('\n        '));
+}
+
 const failed = results.filter((result) => !result.ok);
 process.stdout.write(`\n${results.length - failed.length}/${results.length} checks passed\n`);
 process.exit(failed.length ? 1 : 0);

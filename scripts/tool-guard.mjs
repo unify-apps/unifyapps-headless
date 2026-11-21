@@ -5,8 +5,9 @@
 // (the hook's folder or the one this session opened UnifyApps Headless in) or the system
 // temp folder, away from files that run code or steer Claude
 // later, Bash is refused what BASH_RULES below lists, and Read and Grep are
-// kept out of the private folders that hold a saved sign-in and the browser
-// profiles signed in with it.
+// kept out of the person's saved sign-in (the cookie folder and the browser
+// profile signed in with it), SSH and cloud keys, and the private folders that
+// hold a test user's sign-in and the browser profiles signed in with it.
 // Hooks in a plugin agent's frontmatter are ignored, so the check lives here.
 // The main session and other agents pass through untouched, except for the one
 // check every caller meets: a copy below the oldest supported version.
@@ -110,8 +111,9 @@ function writeDenyReason(input) {
 // Add a rule here only after the same replay shows it stops no plugin work.
 const SIGN_IN_DENY = 'UnifyApps Headless builder agents may not name a saved sign-in or a browser profile in a private browser folder; only the browser wrapper\'s state-load and state-save may name the test-user sign-in.';
 const commandIs = (names) => new RegExp(`(^|[;&|(\`\\n]|\\$\\()\\s*(\\S*\\/)?(${names})(\\s|$)`, 'u');
+const SECRET_PATH = String.raw`\.ssh\/|\.aws\/|\.gnupg|\.netrc|session\/cookies`;
 const BASH_RULES = [
-  [/(\.ssh\/|\.aws\/|\.gnupg|\.netrc|session\/cookies|security\s+(find-generic-password|find-internet-password|dump-keychain))/u, 'UnifyApps Headless builder agents may not touch sign-in secrets: SSH or cloud keys, the UnifyApps Headless cookie folder or the Keychain.'],
+  [new RegExp(`(${SECRET_PATH}|security\\s+(find-generic-password|find-internet-password|dump-keychain))`, 'u'), 'UnifyApps Headless builder agents may not touch sign-in secrets: SSH or cloud keys, the UnifyApps Headless cookie folder or the Keychain.'],
   [{ test: plantsCode }, WRITE_DENY],
   [{ test: namesTestSignIn }, SIGN_IN_DENY],
   [{ test: probesPrivateFolder }, SIGN_IN_DENY],
@@ -231,15 +233,47 @@ function probesPrivateFolder(command) {
 const READ_TOOLS = new Set(['Read', 'Grep', 'Glob']);
 const PROFILE_PATH = /(?:ua|nebula)-(?:test-author|proof-browser)-[^/]*\/(?:.*\/)?profile(\/|$)/u;
 
+// The person's own saved sign-in: a cookie file per tenant, and the browser
+// profile signed in with it (platform/auth.mjs, COOKIE_DIR and PROFILE_DIR).
+// The Bash rule above stops the shell naming the cookie folder; these stop the
+// file tools reading either one, by the path as written and as it resolves, so
+// a relative path or a symlink in the working folder does not reach them.
+const SECRET_DENY = 'UnifyApps Headless builder agents may not read sign-in secrets: SSH or cloud keys, or the person\'s saved UnifyApps Headless sign-in (the cookie folder and the browser profile signed in with it).';
+const SIGN_IN_DIRS = ['cookies', 'chrome-profile'].map((name) => path.join(UA_HOME, 'session', name));
+const SECRET_TEXT = new RegExp(`${SECRET_PATH}|session\\/chrome-profile`, 'u');
+const within = (file, dir) => {
+  const relative = path.relative(dir, file);
+  return !relative || !(relative.startsWith('..') || path.isAbsolute(relative));
+};
+function resolved(input, file) {
+  const cwd = typeof input?.cwd === 'string' && path.isAbsolute(input.cwd) ? input.cwd : process.cwd();
+  try { return realTarget(path.resolve(cwd, file)); } catch { return path.resolve(cwd, file); }
+}
+const signInDirs = () => SIGN_IN_DIRS.flatMap((dir) => {
+  try { return [dir, realTarget(dir)]; } catch { return [dir]; }
+});
+// A path inside the saved sign-in, or, for a search, a folder in UnifyApps
+// Headless's own home that holds it: searching the home searches the cookies.
+function reachesSignIn(input, file, { search = false } = {}) {
+  const target = resolved(input, file);
+  const home = resolved(input, UA_HOME);
+  return signInDirs().some((dir) => within(target, dir) || (search && within(target, home) && within(dir, target)));
+}
+
 // Glob only lists names, so it passes. Grep returns contents, so it may not
 // search the private folder at all.
 function readDenyReason(input) {
   const args = input?.tool_input ?? {};
   if (input.tool_name === 'Read') {
     const file = String(args.file_path ?? '');
-    return SIGN_IN_NAME.test(file) || PROFILE_PATH.test(file) ? SIGN_IN_DENY : null;
+    if (SIGN_IN_NAME.test(file) || PROFILE_PATH.test(file)) return SIGN_IN_DENY;
+    return file && (SECRET_TEXT.test(file) || reachesSignIn(input, file)) ? SECRET_DENY : null;
   }
-  if (input.tool_name === 'Grep') return [args.path, args.glob, args.pattern].some((value) => PRIVATE_FOLDER.test(String(value ?? ''))) ? SIGN_IN_DENY : null;
+  if (input.tool_name === 'Grep') {
+    if ([args.path, args.glob, args.pattern].some((value) => PRIVATE_FOLDER.test(String(value ?? '')))) return SIGN_IN_DENY;
+    if ([args.path, args.glob].some((value) => SECRET_TEXT.test(String(value ?? '')))) return SECRET_DENY;
+    return reachesSignIn(input, String(args.path || '.'), { search: true }) ? SECRET_DENY : null;
+  }
   return null;
 }
 

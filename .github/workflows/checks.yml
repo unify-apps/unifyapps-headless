@@ -31,7 +31,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - run: npm install -g @anthropic-ai/claude-code
+      # The same pinned version as publish.yml; bump the two together.
+      - run: npm install -g "@anthropic-ai/claude-code@2.1.323"
       - run: claude plugin validate .
 
   secrets:

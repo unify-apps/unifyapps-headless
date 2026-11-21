@@ -4,6 +4,18 @@ Notable changes to UnifyApps Headless.
 
 ## Unreleased
 
+- Security: the auto-mode allow rule for `run-node.sh` now names a plugin
+  script. The old rule let the launcher run any arguments, so
+  `run-node.sh -e "<code>"` ran without a prompt. Run the permissions command
+  once more (`/ua:setup` names it when it is needed): it adds the new rule and
+  takes the old one out.
+- Security: a builder's Read and Grep can no longer reach the person's saved
+  sign-in (the cookie folder and the signed-in browser profile) or SSH and cloud
+  keys. Before, only its Bash was kept out.
+- Releases: the tests and the Claude Code CLI (now pinned) run in a job that
+  never sees the release deploy key; the keyed job only commits, tags and pushes
+  the commit that job tested.
+
 - A solution works in one tenant workspace. Setup asks for the workspace once,
   after the tenant: one workspace beside Global is taken without asking, several
   are offered, and Global is the default and what every existing folder reads
