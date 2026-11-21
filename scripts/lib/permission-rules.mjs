@@ -17,6 +17,11 @@
 //   in both spellings.
 // - A `*` mixed with the trailing `:*` form is matched as a literal prefix, so
 //   these rules use `<command> *`, never `/*/...:*`.
+//
+// `run-node.sh` runs `node "$@"`, so a rule that accepts any arguments after it
+// also accepts `run-node.sh -e "<any code>"`. Its rule therefore names the
+// script too: the first argument must be a `.mjs` file in the same versions
+// folder. The broad rule older releases wrote is RETIRED: `apply` takes it out.
 
 /** Every UnifyApps Headless MCP server, allowed whole, so a tool a later release adds is
  * covered too: auto mode refused tools no single-tool rule named (2026-10-11,
@@ -75,14 +80,26 @@ export const ASK_RULES = Object.freeze([
   'mcp__plugin_ua_playwright__browser_run_code_unsafe',
 ]);
 
-/** The scripts a UnifyApps Headless command runs by path, with the program that runs each. */
-const CLI_SCRIPTS = Object.freeze([['bash', 'run-node.sh'], ['node', 'ua.mjs']]);
-
+/** The commands a UnifyApps Headless skill runs by path, in both spellings: the
+ * launcher with a plugin script as its first argument (with arguments after it,
+ * and without, which ` *` does not match), and the CLI. */
 function cliRules(versionsDir, version) {
-  return CLI_SCRIPTS.flatMap(([program, script]) => {
-    const file = `${versionsDir}/${version}/scripts/${script}`;
-    return [`Bash(${program} ${file} *)`, `Bash(${program} "${file}" *)`];
-  });
+  const launcher = `${versionsDir}/${version}/scripts/run-node.sh`;
+  const script = `${versionsDir}/${version === '*' ? '' : `${version}/`}*.mjs`;
+  const cli = `${versionsDir}/${version}/scripts/ua.mjs`;
+  return [
+    `Bash(bash ${launcher} ${script} *)`, `Bash(bash "${launcher}" "${script}" *)`,
+    `Bash(bash ${launcher} ${script})`, `Bash(bash "${launcher}" "${script}")`,
+    `Bash(node ${cli} *)`, `Bash(node "${cli}" *)`,
+  ];
+}
+
+const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+
+/** The `run-node.sh` rules older releases wrote, for any version folder, which
+ * let the launcher run any arguments. */
+function retiredRule(versionsDir) {
+  return new RegExp(`^Bash\\(bash "?${escape(versionsDir)}/[^/"]+/scripts/run-node\\.sh"?(?: \\*|:\\*)\\)$`, 'u');
 }
 
 /** The rules for `permissions.allow`. `versionsDir` is the folder that holds every
@@ -91,8 +108,15 @@ export function allowRules(versionsDir) {
   return [...MCP_SERVERS.map(server => `mcp__plugin_ua_${server}`), ...cliRules(versionsDir, '*')];
 }
 
-/** Adds the missing rules and never removes or reorders one. Returns a new object. */
-export function mergeRules(settings, { allow, ask }) {
+/** The allow rules in `settings` that UnifyApps Headless once wrote and now retires. */
+export function retiredRules(settings, versionsDir) {
+  const retired = retiredRule(versionsDir);
+  return (settings?.permissions?.allow ?? []).filter(rule => typeof rule === 'string' && retired.test(rule));
+}
+
+/** Adds the missing rules and takes out the `retire` ones, the only rules it
+ * ever removes; the rest keep their order. Returns a new object. */
+export function mergeRules(settings, { allow, ask, retire = [] }) {
   const next = structuredClone(settings ?? {});
   const permissions = next.permissions && typeof next.permissions === 'object' ? next.permissions : (next.permissions = {});
   const added = {};
@@ -101,13 +125,16 @@ export function mergeRules(settings, { allow, ask }) {
     added[key] = rules.filter(rule => !have.includes(rule));
     have.push(...added[key]);
   }
-  return { settings: next, added };
+  const removed = permissions.allow.filter(rule => retire.includes(rule));
+  if (removed.length) permissions.allow = permissions.allow.filter(rule => !retire.includes(rule));
+  return { settings: next, added, removed };
 }
 
-/** The allow and ask rules `settings` still lacks. A rule counts as present when
- * it is there as written, or, for the running `version`, as an older rule pinned
- * to that version (either `<command> *` or `<command>:*`); an MCP server also
- * counts when written as `mcp__plugin_ua_<server>__*`. */
+/** The allow and ask rules `settings` still lacks, and the retired rules it
+ * still has. A rule counts as present when it is there as written, or, for the
+ * running `version`, as an older rule pinned to that version (either
+ * `<command> *` or `<command>:*`); an MCP server also counts when written as
+ * `mcp__plugin_ua_<server>__*`. */
 export function missingRules(settings, { versionsDir, version }) {
   const have = new Set(settings?.permissions?.allow ?? []);
   const asked = new Set(settings?.permissions?.ask ?? []);
@@ -120,5 +147,6 @@ export function missingRules(settings, { versionsDir, version }) {
   return {
     allow: allowRules(versionsDir).filter((rule, index) => !present(rule, index)),
     ask: ASK_RULES.filter(rule => !asked.has(rule)),
+    retired: retiredRules(settings, versionsDir),
   };
 }
