@@ -623,6 +623,97 @@ try {
   record('an out-of-date copy refuses tool calls; Codex learns the plugin folder', run.status === 0 && problems.length === 0, problems.join('\n        ') || run.stderr.slice(0, 400));
 }
 
+// Codex runs the same hook code through its own registration. A Codex payload is
+// replayed end to end: a builder's patch onto a protected file is refused, a
+// builder's Bash into a sign-in folder is refused, the person's own identical
+// calls are not, and every answer keeps only what Codex accepts for that event.
+// Keyed on real Codex spellings (`apply_patch`, `shell`, `ua_fde_agent`),
+// because the guard matching nothing is how it would silently stop jailing.
+try {
+  const { claudeEvents, canonicalAgent, codexOutput, patchTargets } = await import(new URL('./codex/host-events.mjs', import.meta.url));
+  const { codexHooks, codexHooksToml, configWithHooks, writeCodexHooks } = await import(new URL('./folder/codex-hooks.mjs', import.meta.url));
+  const { handle } = await import(new URL('./codex-hooks.mjs', import.meta.url));
+  const problems = [];
+
+  if (canonicalAgent('ua_fde_agent') !== 'ua:fde-agent') problems.push('a Codex builder name does not reach the guard');
+  if (canonicalAgent('ua:fde-agent') !== 'ua:fde-agent') problems.push('a Claude builder name was rewritten');
+  // A bare name belongs to any agent a person may have installed, so it must
+  // not be read as one of ours.
+  if (canonicalAgent('') !== '' || canonicalAgent('general-purpose') !== 'general-purpose') problems.push('a name that is not a builder was taken for one');
+
+  const patch = '*** Begin Patch\n*** Add File: CLAUDE.md\n+planted\n*** Update File: notes.md\n+fine\n*** End Patch\n';
+  const targets = patchTargets(patch).map((target) => target.file).join();
+  if (targets !== 'CLAUDE.md,notes.md') problems.push(`a patch's files were read as ${targets}`);
+  const mapped = claudeEvents({ hook_event_name: 'PreToolUse', tool_name: 'apply_patch', tool_input: { input: patch }, agent_type: 'ua_fde_agent', cwd: root, session_id: 'smoke' });
+  if (mapped.length !== 2 || mapped.some((event) => event.tool_name !== 'Write')) problems.push('a patch did not become one write per file');
+  const shell = claudeEvents({ hook_event_name: 'PreToolUse', tool_name: 'shell', tool_input: { command: ['bash', '-lc', 'cat ~/.ssh/id_rsa'] }, agent_type: 'ua_fde_agent', cwd: root, session_id: 'smoke' });
+  if (shell[0]?.tool_name !== 'Bash' || !shell[0]?.tool_input?.command.includes('.ssh')) problems.push('a Codex shell call did not become a Bash call');
+
+  const asBuilder = (tool, args) => ({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: args, agent_type: 'ua_fde_agent', cwd: root, session_id: 'smoke', tool_use_id: 'call_1', model: 'gpt', permission_mode: 'default', transcript_path: null, turn_id: 't1' });
+  const refusals = [
+    ['a patch that plants a file that runs later', asBuilder('apply_patch', { input: patch })],
+    ['a shell call that reads a saved sign-in', asBuilder('shell', { command: ['bash', '-lc', 'cat ~/.ssh/id_rsa'] })],
+    ['a shell call that names the delete gate', asBuilder('shell', { command: 'node ua-delete-yes/x.mjs' })],
+  ];
+  for (const [what, event] of refusals) {
+    const answer = await handle(event);
+    if (answer?.hookSpecificOutput?.permissionDecision !== 'deny' || !answer.hookSpecificOutput.permissionDecisionReason) problems.push(`${what} was not refused on Codex`);
+  }
+  // The same calls from the person, who is not a builder, are theirs to make.
+  const mine = await handle({ ...asBuilder('shell', { command: ['bash', '-lc', 'cat ~/.ssh/id_rsa'] }), agent_type: undefined });
+  if (mine) problems.push('the person\'s own call was refused on Codex');
+  const fine = await handle(asBuilder('apply_patch', { input: '*** Begin Patch\n*** Update File: notes.md\n+fine\n*** End Patch\n' }));
+  if (fine) problems.push('a builder\'s ordinary patch was refused on Codex');
+
+  // Codex drops a whole answer holding something the event does not allow, so an
+  // approval or a suppressed output must never travel with a refusal.
+  if (codexOutput('PreToolUse', { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow' }, suppressOutput: true })) problems.push('a PreToolUse answer kept an approval Codex rejects');
+  if (codexOutput('PreCompact', { hookSpecificOutput: { hookEventName: 'PreCompact', additionalContext: 'x' } })) problems.push('a PreCompact answer kept context Codex rejects');
+  if (codexOutput('SessionStart', { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: 'x' } })?.hookSpecificOutput?.additionalContext !== 'x') problems.push('a SessionStart answer lost its context');
+
+  // The guard must match the tool names Codex actually sends, which are the
+  // Claude ones: measured on codex-cli 0.170.0, a shell call arrives as `Bash`.
+  const registered = codexHooks(root);
+  for (const event of ['PreToolUse', 'PostToolUse', 'SessionStart', 'PreCompact', 'PermissionRequest', 'SubagentStop']) {
+    if (!registered[event]) problems.push(`Codex is not given the ${event} hook`);
+  }
+  for (const tool of ['Bash', 'apply_patch', 'mcp__plugin_ua_object']) {
+    if (!new RegExp(`^(?:${registered.PreToolUse[0].matcher})$`, 'u').test(tool)) problems.push(`the Codex guard does not match ${tool}`);
+  }
+  for (const groups of Object.values(registered)) {
+    for (const hook of groups.flatMap((group) => group.hooks)) {
+      for (const match of String(hook.command).matchAll(/\/[\w./-]+?\.(?:mjs|sh)/gu)) {
+        if (!fs.existsSync(match[0])) problems.push(`a Codex hook names ${match[0]}, which does not exist`);
+      }
+    }
+  }
+
+  // The block written into the person's own config.toml, and everything else in
+  // that file left theirs, through an install, a reinstall and an uninstall.
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ua-codex-home-'));
+  try {
+    const file = path.join(codexHome, 'config.toml');
+    const theirs = 'model = "gpt-5.5"\n\n[mcp_servers.theirs]\ncommand = "echo"\n';
+    fs.writeFileSync(file, theirs);
+    writeCodexHooks(root, file);
+    writeCodexHooks(root, file);
+    const written = fs.readFileSync(file, 'utf8');
+    if (!written.startsWith(theirs)) problems.push('installing the Codex hooks changed the person\'s own config');
+    if ((written.match(/\[\[hooks\.PreToolUse\]\]/gu) ?? []).length !== 1) problems.push('a second install stacked another copy of the Codex hooks');
+    if ((written.match(/codex-hooks\.mjs/gu) ?? []).length !== 6) problems.push('the Codex config does not hold one command per event');
+    const removed = configWithHooks(written, null);
+    if (removed.includes('hooks.PreToolUse') || removed.includes('codex-hooks.mjs')) problems.push('uninstalling left the Codex hooks behind');
+    if (removed.trim() !== theirs.trim()) problems.push('uninstalling did not leave the config as the person had it');
+    if (!codexHooksToml(root).includes('[[hooks.SubagentStop]]')) problems.push('the Codex config block has no SubagentStop hook');
+  } finally {
+    fs.rmSync(codexHome, { recursive: true, force: true });
+  }
+
+  record('Codex runs the guard, the session sync and the builder-finished signal through its own registration', problems.length === 0, problems.slice(0, 8).join('\n        '));
+} catch (error) {
+  record('Codex runs the guard, the session sync and the builder-finished signal through its own registration', false, error.message);
+}
+
 // One folder works in one tenant workspace. Three things decide that, and each
 // is checked here: what a create carries so the new item lands in the folder's
 // workspace, which write or link is refused because the item it names lives in

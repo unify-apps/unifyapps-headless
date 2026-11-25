@@ -9,6 +9,7 @@ import path from 'node:path';
 import { pluginId } from '../../release/plugin-id.mjs';
 import { codexManifestIsCurrent } from '../../release/codex-manifest.mjs';
 import { removeCodexAgents, writeCodexAgents } from '../../folder/codex-agents.mjs';
+import { removeCodexHooks, writeCodexHooks } from '../../folder/codex-hooks.mjs';
 import { home, run, versionOf, which } from '../util.mjs';
 
 const codexHome = () => process.env.CODEX_HOME || path.join(home(), '.codex');
@@ -40,9 +41,19 @@ export default {
     run(bin, ['plugin', 'add', own.id]);
     const result = installed(bin, own.id);
     if (!result?.enabled) throw new Error(`Codex did not enable ${own.id} after installing it.`);
-    writeCodexAgents(path.join(codexHome(), 'plugins', 'cache', own.marketplace, own.plugin, result.version));
+    const cached = path.join(codexHome(), 'plugins', 'cache', own.marketplace, own.plugin, result.version);
+    writeCodexAgents(cached);
+    const notes = [];
+    try {
+      // The hooks name the cached copy Codex runs, the same folder the builders
+      // are written from, so an update moves them with it.
+      writeCodexHooks(cached);
+      notes.push('Codex asks once to trust the UnifyApps Headless hooks (the builder guard, the session sync and the builder-finished signal). Answer yes: without them a builder is not held to its own folder.');
+    } catch (error) {
+      notes.push(`Could not write the Codex hooks (${error.message}). Builders will run without the UnifyApps Headless guard on Codex.`);
+    }
     // Codex lists plugin skills under `$`, not `/` (codex-cli 0.169.0 has no user-defined slash commands).
-    return { start: 'Start a new Codex session (`codex`) and type $ua:setup.', notes: [] };
+    return { start: 'Start a new Codex session (`codex`) and type $ua:setup.', notes };
   },
 
   uninstall({ pluginRoot }) {
@@ -52,5 +63,6 @@ export default {
     try { run(bin, ['plugin', 'remove', own.id]); } catch { /* not installed */ }
     try { run(bin, ['plugin', 'marketplace', 'remove', own.marketplace]); } catch { /* not registered */ }
     removeCodexAgents();
+    try { removeCodexHooks(); } catch { /* a config we cannot rewrite is left as it is */ }
   },
 };
