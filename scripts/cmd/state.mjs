@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { UA_HOME, readConfig, readRegistry, solutionsForTenant, sessionsForSolution, tenantMcp, paths, workspaceAssociations } from '../workspace/local.mjs';
-import { claudeApp, readHandoff } from '../workspace/handoff.mjs';
+import { UA_HOME, readConfig, readRegistry, solutionsForTenant, sessionsForSolution, tenantMcp, paths, folderAssociations } from '../folder/local.mjs';
+import { claudeApp, readHandoff } from '../folder/handoff.mjs';
 import { normalizeTenant, UaError } from '../lib/contracts.mjs';
 import { extractLinks } from '../lib/entity-target.mjs';
 
@@ -19,7 +19,7 @@ export async function run(command, args, flags, ctx = {}) {
   const add = (host, why) => { if (host && !seen.has(host)) { seen.add(host); options.push({ host, why }); } };
   add(config.lastTenant, 'last used');
   const registry = readRegistry();
-  const rootAssociations = !tenant ? workspaceAssociations(ctx.cwd).filter(item => item.scope === 'root') : [];
+  const rootAssociations = !tenant ? folderAssociations(ctx.cwd).filter(item => item.scope === 'root') : [];
   const folderAssociation = rootAssociations.find(item => item.tenant) ?? null;
   const folderSolution = folderAssociation ? {
     tenant: folderAssociation.tenant,

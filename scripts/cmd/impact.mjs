@@ -5,7 +5,7 @@
 import { UaError } from '../lib/contracts.mjs';
 import { CHANGE_KINDS, CERTAINTY, impactOf } from '../lib/impact.mjs';
 import { ENTITY_KINDS } from '../lib/wiring.mjs';
-import { readWiring } from '../workspace/solution-map.mjs';
+import { readWiring } from '../folder/solution-map.mjs';
 import { cachedApps, entityIdFor, resolveApp, resolvePage } from './cache.mjs';
 
 const ENTITY_TYPE_BY_KIND = Object.freeze({

@@ -9,8 +9,8 @@
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { canonicalCwd, readRegistry, sessionForFolder } from './workspace/local.mjs';
-import { failureStatus, readSyncStatus, writeSyncStatus } from './workspace/solution-sync.mjs';
+import { canonicalCwd, readRegistry, sessionForFolder } from './folder/local.mjs';
+import { failureStatus, readSyncStatus, writeSyncStatus } from './folder/solution-sync.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const faked = () => process.env.UA_FAKE === '1';

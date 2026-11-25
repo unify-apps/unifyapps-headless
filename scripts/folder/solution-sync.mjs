@@ -6,7 +6,7 @@ import { validateSnapshot, reconcileRecords } from './local.mjs';
 import { refreshLinkedEntities } from './entity-cache.mjs';
 import { syncSolutionSkills } from './skill-sync.mjs';
 import { callSolutionTool } from '../platform/solution-mcp.mjs';
-import { SYNC_FILE } from './workspace-layout.mjs';
+import { SYNC_FILE } from './folder-layout.mjs';
 
 // The refusals that end the read: a sign-in that ran out, and a person the
 // tenant refuses UnifyApps Headless's tools to (the direct read would slip past that

@@ -20,7 +20,7 @@
 // commands, skills and permission rules are applied over them. So the person's
 // own entries win on every name both define: a server they named is left
 // alone here, and the rest of their config lands on top of what this adds.
-import { opencodeRegistration } from '../scripts/workspace/agent-targets.mjs';
+import { opencodeRegistration } from '../scripts/folder/agent-targets.mjs';
 import { PLUGIN_ROOT, questionAnswers, runClaudeHook, toolNames } from './plugin.mjs';
 import { checkForUpdate, updateNotice } from '../scripts/lib/update-check.mjs';
 

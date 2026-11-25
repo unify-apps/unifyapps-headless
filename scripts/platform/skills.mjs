@@ -193,7 +193,7 @@ export async function readSkillFiles(download, skill) {
 }
 
 /**
- * Write one skill folder (`workspace/skill-folder.mjs` read it) to the tenant,
+ * Write one skill folder (`folder/skill-folder.mjs` read it) to the tenant,
  * and prove it by reading it back the way a fetch would.
  *
  * Three writes, because no one tool takes a whole skill: `save_skill` the

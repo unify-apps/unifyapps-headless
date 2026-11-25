@@ -12,7 +12,7 @@ import { readConfig, readRegistry, solutionKey } from './session-registry.mjs';
 export { normalizeTenant, renderAll, renderSpec, renderPlan, renderMemory, renderDocs, renderPrds };
 export { UA_HOME, canonicalCwd, validatedSessionId } from '../lib/session-paths.mjs';
 export { paths, solutionKey, readConfig, writeConfig, readRegistry, registerSession, registerSignIn, signInForFolder, homeForCwd, tenantForFolder, sessionForFolder, solutionsForTenant, sessionsForSolution } from './session-registry.mjs';
-export { ensureWorkspaceSelection, workspaceAssociations } from './workspace-layout.mjs';
+export { ensureFolderSelection, folderAssociations } from './folder-layout.mjs';
 const clientFile = path.join(UA_HOME, 'session', 'client.json');
 const idPattern = /^[A-Za-z0-9_-]+$/u;
 

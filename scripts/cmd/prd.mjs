@@ -9,8 +9,8 @@ import { UaError, slug } from '../lib/contracts.mjs';
 import { canon, chainStatus, checkPrd, classifyChange, diffLines, parsePrd, parseTicketsPart, prdIndex, prdSha, renderPrd, renderPrdBody, renderTicketsBlock, ticketsSha } from '../lib/prd.mjs';
 import { LOCAL_STORE_FILE } from '../platform/entity-store.mjs';
 import { readJsonFile } from '../lib/session-paths.mjs';
-import { readRecord, readRecords, cacheRecords, renderPrds } from '../workspace/local.mjs';
-import { readSyncStatus, refreshCurrent, refreshCurrentIfStale } from '../workspace/solution-sync.mjs';
+import { readRecord, readRecords, cacheRecords, renderPrds } from '../folder/local.mjs';
+import { readSyncStatus, refreshCurrent, refreshCurrentIfStale } from '../folder/solution-sync.mjs';
 
 const required = (value, label) => {
   if (typeof value !== 'string' || !value.trim()) throw new UaError('USAGE', `${label} is required.`);

@@ -11,6 +11,15 @@ name: publish
 #           but not pushed to main, and GitHub never marks it Latest, so only
 #           someone who names the tag gets it.
 #
+# Only a repository admin can publish. The run pushes with the release
+# environment's deploy key, the one key the main and v* tag rulesets let
+# through, and that environment gives its secret only to runs on main.
+#
+# Two jobs, so the key never shares a runner with code someone else published.
+# `verify` prepares the release and runs the tests and the pinned Claude Code
+# CLI without the key. `publish` takes the key, prepares the same commit again,
+# and runs nothing but this repository's own release script, git and gh.
+#
 # force_update makes this version the minimum: older copies stop calling the
 # tenant until they update (release.json, scripts/lib/update-check.mjs).
 
@@ -32,15 +41,24 @@ on:
         required: false
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  # Bump on purpose, never float: this CLI is the one npm package a release runs.
+  CLAUDE_CODE_VERSION: 2.1.323
 
 concurrency:
   group: publish
   cancel-in-progress: false
 
 jobs:
-  publish:
+  verify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+      tag: ${{ steps.prepare.outputs.tag }}
     steps:
       - name: only from main
         if: github.ref != 'refs/heads/main'
@@ -48,10 +66,26 @@ jobs:
           echo "::error::Run publish on main, not ${GITHUB_REF}."
           exit 1
 
+      - name: only an admin
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.triggering_actor }}
+        run: |
+          permission=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$ACTOR/permission" --jq .permission)
+          if [ "$permission" != admin ]; then
+            echo "::error::Only a repository admin can publish; $ACTOR has $permission."
+            exit 1
+          fi
+
       - uses: actions/checkout@v5
         with:
           ref: main
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: the commit this release is built from
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v5
         with:
@@ -91,8 +125,92 @@ jobs:
 
       - name: validate the plugin
         run: |
-          npm install -g @anthropic-ai/claude-code
+          npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
           claude plugin validate .
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      # Checked again: re-running only this job runs it as whoever re-ran it.
+      - name: only from main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Run publish on main, not ${GITHUB_REF}."
+          exit 1
+
+      - name: only an admin
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.triggering_actor }}
+        run: |
+          permission=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$ACTOR/permission" --jq .permission)
+          if [ "$permission" != admin ]; then
+            echo "::error::Only a repository admin can publish; $ACTOR has $permission."
+            exit 1
+          fi
+
+      # The commit verify tested, not main as it is now: a merge in between
+      # would otherwise ship untested. If main moved, the final push fails.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.verify.outputs.sha }}
+          fetch-depth: 0
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      # A normal release keeps the minimum the last one set, so it never lifts a
+      # forced update. No release yet means no minimum.
+      - name: previous minimum
+        id: previous
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          min=0.0.0
+          if gh release download --repo "$GITHUB_REPOSITORY" --pattern release.json --dir "$RUNNER_TEMP/previous" 2>/dev/null; then
+            min=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')).minRequiredVersion || '0.0.0')" "$RUNNER_TEMP/previous/release.json")
+          fi
+          echo "min=$min" >> "$GITHUB_OUTPUT"
+
+      - name: prepare
+        id: prepare
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          FORCE: ${{ inputs.force_update }}
+          MESSAGE: ${{ inputs.message }}
+          PREVIOUS_MIN: ${{ steps.previous.outputs.min }}
+        run: |
+          args=(prepare --channel "$CHANNEL" --previous-min "$PREVIOUS_MIN")
+          [ "$FORCE" = "true" ] && args+=(--force)
+          [ -n "$MESSAGE" ] && args+=(--message "$MESSAGE")
+          out=$(node scripts/release/publish.mjs "${args[@]}")
+          echo "$out"
+          echo "tag=$(node -e "console.log(JSON.parse(process.argv[1]).tag)" "$out")" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$(node -e "console.log(JSON.parse(process.argv[1]).prerelease)" "$out")" >> "$GITHUB_OUTPUT"
+
+      # The tag is pushed before main, so a main that moved since verify is
+      # caught here, before anything is pushed, not after the tag is out.
+      - name: same release verify tested
+        env:
+          TESTED: ${{ needs.verify.outputs.tag }}
+          TAG: ${{ steps.prepare.outputs.tag }}
+          SHA: ${{ needs.verify.outputs.sha }}
+        run: |
+          if [ "$TAG" != "$TESTED" ]; then
+            echo "::error::verify tested $TESTED, but this job prepared $TAG."
+            exit 1
+          fi
+          main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$main" != "$SHA" ]; then
+            echo "::error::main moved to $main after verify tested $SHA. Run publish again."
+            exit 1
+          fi
 
       - name: commit and tag
         env:

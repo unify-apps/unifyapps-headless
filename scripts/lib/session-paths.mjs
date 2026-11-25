@@ -40,7 +40,7 @@ export function validatedSessionId(id) {
   return value;
 }
 
-export function approveWorkspace(cwd) {
+export function approveFolder(cwd) {
   const approved = canonicalCwd(cwd);
   try {
     if (!fs.statSync(approved).isDirectory()) throw new Error('Workspace must be a directory.');

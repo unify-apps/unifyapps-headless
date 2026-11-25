@@ -3,7 +3,7 @@
 // are walked by app-page-quality's walkPage, the same walk its page audit uses.
 import { walkPage } from '../../app-page-quality/scripts/walk.mjs';
 import { pagePaths } from '../../../scripts/lib/cache-views.mjs';
-import { readCachedAppContext, readCachedPageContext } from '../../../scripts/workspace/entity-cache.mjs';
+import { readCachedAppContext, readCachedPageContext } from '../../../scripts/folder/entity-cache.mjs';
 
 export const isPlainObject = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 

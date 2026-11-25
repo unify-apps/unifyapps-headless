@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { UaError, toLinkedEntity } from '../lib/contracts.mjs';
+import { workspaceAllows, workspaceReadPath } from '../lib/workspace-gate.mjs';
+import { resolveWorkspace, workspaceOf, workspaceOfEntity } from '../platform/workspaces.mjs';
 import { assertHome, assertLocalPath, atomicFile, readJsonFile } from '../lib/session-paths.mjs';
 import { cacheRecords, readRecord, readRecords } from './local.mjs';
 import {
@@ -270,6 +272,53 @@ async function upsertLinkedAsset(ctx, linked, known = null) {
 // read of the rows, then a row made for each missing one. Linking 600 existing
 // objects is then one command, not 600 searches. The solution record itself is
 // not written: its `linkedEntities` field is discontinued.
+/** The entity read that answers one ref's workspace, or null for a kind no read can say. */
+function workspacePathFor(ref) {
+  if (ref?.kind === 'app' || ref?.kind === 'code-app') return workspaceReadPath('app', ref.id);
+  if (ref?.kind === 'page') return ref.appId ? workspaceReadPath('app', ref.appId) : null;
+  if (ref?.kind === 'object') return workspaceReadPath('object', ref.id);
+  if (ref?.kind === 'automation') return workspaceReadPath('automation', ref.id);
+  return null;
+}
+
+/**
+ * Refuse to link an entity that lives in another workspace.
+ *
+ * A link says the entity belongs to this solution, and a solution cannot own
+ * what it may not change: every write on it is refused by the bridge's own gate.
+ * Reading and caching such an entity is still fine — that is how an app in
+ * another workspace is looked at — so only the link is stopped. An item that
+ * belongs to no workspace is refused too: a solution in a workspace holds that
+ * workspace and nothing else. A solution in no workspace links anything.
+ *
+ * A read that cannot say where an entity lives passes: a refusal built on a
+ * failed read would block work that is allowed.
+ */
+export async function assertLinkable(ctx, refs) {
+  const tenant = ctx?.state?.tenant;
+  if (!tenant) return;
+  const workspaceId = ctx.state.workspaceId ?? null;
+  // A solution in no workspace links anything: Global is the view without a
+  // workspace, and its screens list every workspace's items.
+  if (!workspaceId || Number(workspaceId) === 0) return;
+  const here = workspaceOf(ctx.state);
+  const seen = new Set();
+  for (const ref of refs) {
+    const pathname = workspacePathFor(ref);
+    if (!pathname || seen.has(pathname)) continue;
+    seen.add(pathname);
+    // eslint-disable-next-line no-await-in-loop -- one read per distinct entity, and the first one elsewhere refuses the command
+    const found = await workspaceOfEntity(tenant, pathname);
+    if (!found || workspaceAllows(workspaceId, found.id)) continue;
+    // Only on the refusal is the workspace's name worth a call: the person has to
+    // recognise it to know which folder opens that work.
+    const named = await resolveWorkspace(tenant, found.id).catch(() => found);
+    throw new UaError('WORKSPACE_MISMATCH', undefined, {
+      asset: `The ${ref.kind} \`${ref.id}\``, assetWorkspace: named.name, solutionWorkspace: here.name,
+    });
+  }
+}
+
 export async function linkEntityRefs(ctx, refs) {
   const linked = [...new Map(refs.map(toLinkedEntity).filter(Boolean).map(item => [`${item.type}:${item.id}`, item])).values()];
   if (!linked.length) return [];
@@ -291,6 +340,7 @@ export async function checkpointEntityRefs(ctx, refs, { source = 'read', link = 
   };
   await Promise.all(Array.from({ length: Math.min(atOnce, refs.length) }, worker));
   const read = results.filter(result => !result.error);
+  if (link) await assertLinkable(ctx, read.map(result => result.ref));
   const linked = link ? await linkEntityRefs(ctx, read.map(result => result.ref)) : [];
   return { snapshots: read.flatMap(result => result.snapshots), linked, failed: results.filter(result => result.error) };
 }
@@ -321,6 +371,7 @@ export async function checkpointEntityRef(ctx, ref, { source = 'read', link = tr
       readEntity: (type, id) => readCachedEntity(ctx.home, type, id),
     });
     const snapshots = targets.map(target => appMemberSnapshot({ ctx, appId: String(appId), target }));
+    if (link) await assertLinkable(ctx, [ref]);
     const linked = link ? (await linkEntityRefs(ctx, [ref]))[0] ?? null : null;
     return { snapshots, linked, interfaces: { refreshed, stale: [] } };
   }
@@ -331,6 +382,7 @@ export async function checkpointEntityRef(ctx, ref, { source = 'read', link = tr
     clearDirtyEntityFiles(ctx.home, target.entityType, dirtyAtStart);
     return snapshot;
   }));
+  if (link) await assertLinkable(ctx, [ref]);
   const linked = link ? (await linkEntityRefs(ctx, [ref]))[0] ?? null : null;
   return { snapshots, linked };
 }

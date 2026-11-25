@@ -68,7 +68,7 @@ const UA_SERVERS = new Set(['object', 'automation-code', 'application-builder', 
  * no prefix, and so does every other agent a person may have installed. Reading
  * a bare name as one of ours would jail agents that are not ours. OpenCode
  * limits its subagents per action instead (`opencodeAgentEntry` in
- * `workspace/agent-targets.mjs`), so nothing there depends on this.
+ * `folder/agent-targets.mjs`), so nothing there depends on this.
  */
 export function canonicalAgent(agentType) {
   const name = String(agentType ?? '').trim();

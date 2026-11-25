@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { UaError } from '../lib/contracts.mjs';
 import { atomicFile, readJsonFile } from '../lib/session-paths.mjs';
 import { sessionHome } from './local.mjs';
-import { WIRING_FILE } from './workspace-layout.mjs';
+import { WIRING_FILE } from './folder-layout.mjs';
 
 export const PREVIEW_NAME = /^preview-[0-9a-f]{16}\.html$/u;
 

@@ -1,9 +1,9 @@
 /** The folder table the solution guide shows: what each root entry holds and when to look. */
-import { SOLUTION_CHART_FILE, SOLUTION_MAP_FILE, WIRING_FILE, SOLUTION_MAP_FOLDER } from './workspace-layout.mjs';
+import { SOLUTION_CHART_FILE, SOLUTION_MAP_FILE, WIRING_FILE, SOLUTION_MAP_FOLDER } from './folder-layout.mjs';
 
-// Every root entry workspace-layout.mjs writes needs a row.
+// Every root entry folder-layout.mjs writes needs a row.
 // A row with `internal: true` is not rendered: Claude reads it only through the CLI, named in one line.
-// A function, not a const: workspace-layout imports render.mjs, which reaches this file, so the
+// A function, not a const: folder-layout imports render.mjs, which reaches this file, so the
 // path constants are not ready while this module loads.
 export function folderGuide() {
   return [

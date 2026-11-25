@@ -5,7 +5,7 @@ import path from 'node:path';
 import { UaError, normalizeTenant, SOLUTION_ID } from '../lib/contracts.mjs';
 import { parseEntityInput } from '../lib/entity-target.mjs';
 import { UA_HOME } from '../lib/session-paths.mjs';
-import { workspaceAssociations } from './workspace-layout.mjs';
+import { folderAssociations } from './folder-layout.mjs';
 
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -17,8 +17,8 @@ export function handoffFolder(value) {
 }
 
 export function folderHoldsSolution(folder) {
-  try { return workspaceAssociations(folder).length > 0; }
-  catch (error) { if (error?.code === 'WORKSPACE_CONTENT_CONFLICT') return true; throw error; }
+  try { return folderAssociations(folder).length > 0; }
+  catch (error) { if (error?.code === 'FOLDER_CONTENT_CONFLICT') return true; throw error; }
 }
 
 // The Claude desktop app has no terminal, so the handoff message is worded for it.

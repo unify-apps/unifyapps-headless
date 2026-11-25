@@ -97,7 +97,7 @@ async function sessionStart(event) {
   const hooks = await import('./hooks.mjs');
   const outputs = [];
   try {
-    const { recordClaudeProcess } = await import('./workspace/claude-process.mjs');
+    const { recordClaudeProcess } = await import('./folder/claude-process.mjs');
     recordClaudeProcess(event.session_id);
   } catch { /* the bridge falls back to the folder's newest session */ }
   try { outputs.push(hooks.handleHook(event)); } catch { /* the checkpoint is best effort */ }
@@ -105,8 +105,8 @@ async function sessionStart(event) {
   try { lines = await hooks.sessionSyncLines(event); }
   catch { lines = ['UnifyApps Headless could not start the session sync.']; }
   try {
-    const { homeForCwd, canonicalCwd } = await import('./workspace/local.mjs');
-    const { loopsHealthLine } = await import('./workspace/loops-health.mjs');
+    const { homeForCwd, canonicalCwd } = await import('./folder/local.mjs');
+    const { loopsHealthLine } = await import('./folder/loops-health.mjs');
     const binding = homeForCwd(canonicalCwd(event.cwd), event.session_id);
     const line = binding ? loopsHealthLine(binding.home) : null;
     if (line) lines.push(line);
@@ -127,7 +127,7 @@ async function sessionStart(event) {
 async function subagentStop(event) {
   const name = String(event.agent_type ?? '').trim() || 'a builder';
   try {
-    const { homeForCwd, canonicalCwd } = await import('./workspace/local.mjs');
+    const { homeForCwd, canonicalCwd } = await import('./folder/local.mjs');
     const binding = homeForCwd(canonicalCwd(event.cwd), event.session_id);
     if (binding?.sessionHome) {
       const line = JSON.stringify({

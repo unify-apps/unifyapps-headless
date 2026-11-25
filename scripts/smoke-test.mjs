@@ -259,7 +259,7 @@ try {
 // name, its description and the rule that holds it to its own tools. A builder
 // that lost any of those would still load and would then work outside its job.
 try {
-  const targets = await import(new URL('./workspace/agent-targets.mjs', import.meta.url));
+  const targets = await import(new URL('./folder/agent-targets.mjs', import.meta.url));
   const dir = path.join(root, 'agents');
   const problems = [];
   let count = 0;
@@ -453,7 +453,7 @@ try {
 {
   const home = fs.mkdtempSync(path.join((await import('node:os')).tmpdir(), 'ua-smoke-'));
   const child = `
-    const yes = await import(${JSON.stringify(new URL('./workspace/delete-yes.mjs', import.meta.url).href)});
+    const yes = await import(${JSON.stringify(new URL('./folder/delete-yes.mjs', import.meta.url).href)});
     const plugin = (await import(${JSON.stringify(opencodeEntry)})).default;
     const v1 = await plugin.server({ directory: process.cwd() });
     let v2 = null;
@@ -631,7 +631,7 @@ try {
 // because the guard matching nothing is how it would silently stop jailing.
 try {
   const { claudeEvents, canonicalAgent, codexOutput, patchTargets } = await import(new URL('./codex/host-events.mjs', import.meta.url));
-  const { codexHooks, codexHooksToml, configWithHooks, writeCodexHooks } = await import(new URL('./workspace/codex-hooks.mjs', import.meta.url));
+  const { codexHooks, codexHooksToml, configWithHooks, writeCodexHooks } = await import(new URL('./folder/codex-hooks.mjs', import.meta.url));
   const { handle } = await import(new URL('./codex-hooks.mjs', import.meta.url));
   const problems = [];
 
@@ -712,6 +712,236 @@ try {
   record('Codex runs the guard, the session sync and the builder-finished signal through its own registration', problems.length === 0, problems.slice(0, 8).join('\n        '));
 } catch (error) {
   record('Codex runs the guard, the session sync and the builder-finished signal through its own registration', false, error.message);
+}
+
+// One folder works in one tenant workspace. Three things decide that, and each
+// is checked here: what a create carries so the new item lands in the folder's
+// workspace, which write or link is refused because the item it names lives in
+// another workspace, and the repair that puts back a workspace a tenant route
+// dropped (a write with no `x-ua-project-id` header moves the item to Global,
+// and a header of `0` matches nothing — both measured on a tenant).
+{
+  const name = 'a solution works in one workspace: creates carry it, outside writes and links are refused';
+  const problems = [];
+  const same = (actual, expected, what) => {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) problems.push(`${what}: got ${JSON.stringify(actual)}`);
+  };
+  try {
+    const contracts = await import(new URL('./lib/contracts.mjs', import.meta.url));
+    const gate = await import(new URL('./lib/workspace-gate.mjs', import.meta.url));
+    const links = await import(new URL('./lib/entity-links.mjs', import.meta.url));
+    const workspaces = await import(new URL('./platform/workspaces.mjs', import.meta.url));
+    const { createService } = await import(new URL('./platform/service.mjs', import.meta.url));
+    const host = 'example.uat.unifyapps.com';
+
+    // The header: a workspace sends its id, Global sends nothing. Never "0".
+    same(contracts.workspaceHeaderValue('194'), '194', 'a workspace id is sent as text');
+    same(contracts.workspaceHeaderValue(0), undefined, 'a workspace of 0 is sent as nothing');
+    same(contracts.workspaceHeaderValue('abc'), undefined, 'a workspace that is not a number is sent as nothing');
+    same(contracts.workspaceHeaders('194'), { [contracts.WORKSPACE_HEADER]: '194' }, 'the header a workspace carries');
+    same(contracts.workspaceHeaders(contracts.GLOBAL_WORKSPACE_ID), {}, 'Global carries no header');
+
+    // A create takes the folder's workspace, under the argument its own tool takes.
+    same(gate.withWorkspace('create_app', { name: 'Orders' }, '194'), { name: 'Orders', projectId: 194 }, 'create_app takes the workspace');
+    same(gate.withWorkspace('apply_object_batch', { steps: [] }, '194'), { steps: [], project: '194' }, 'the object batch takes the workspace as text');
+    same(gate.withWorkspace('save_knowledge_sets', { knowledgeSets: [{ name: 'Docs' }, { knowledgeSetId: 'k1', name: 'Old' }] }, '194'),
+      { knowledgeSets: [{ name: 'Docs', projectId: '194' }, { knowledgeSetId: 'k1', name: 'Old' }] }, 'only a new knowledge set takes the workspace');
+    // Deliberately left out: the tool refuses a workspace on a variable that
+    // exists, and one save carries new and existing variables together.
+    same(gate.withWorkspace('save_env_variables', { variables: [{ name: 'KEY' }] }, '194'), { variables: [{ name: 'KEY' }] }, 'env variables are left alone');
+    same(gate.withWorkspace('create_app', { name: 'Orders', projectId: 7 }, '194'), { name: 'Orders', projectId: 7 }, 'a workspace the caller named is kept');
+    same(gate.withWorkspace('create_app', { name: 'Orders' }, '0'), { name: 'Orders' }, 'Global adds nothing');
+    same(gate.withWorkspace('create_agent', { name: 'Helper' }, '194'), { name: 'Helper' }, 'a tool with no workspace argument is untouched');
+
+    // A write names the item whose workspace decides it, and where to read it.
+    same(gate.writeTarget('apply_page_edits', { interfaceId: 'app-1', edits: [] }),
+      { kind: 'app', id: 'app-1', path: '/api/entity/e_interface/app-1' }, 'a page edit names its app');
+    same(gate.writeTarget('deploy_workflow', { workflowId: 'wf1' }),
+      { kind: 'automation', id: 'wf1', path: '/api/workflow-definition/wf1' }, 'a deploy names its automation');
+    same(gate.writeTarget('create_app', { name: 'Orders' }), null, 'a create names no existing item');
+    same(gate.writeTarget('apply_page_edits', {}), null, 'a write with no id names nothing');
+    same(gate.workspaceReadPath('ai-agent', 'a1'), null, 'no read answers an AI agent\'s workspace yet');
+    if (!gate.UNCHECKED_KINDS.includes('ai agent')) problems.push('the ungated kinds no longer name the AI agent');
+    // An object batch is checked for every object it edits, never only the first.
+    same(gate.writeTargets('apply_object_batch', { steps: [
+      { tool: 'create_object', args: { name: 'New' } },
+      { tool: 'apply_object_edits', args: { objectId: 'obj_a' } },
+      { tool: 'update_object_settings', args: { objectId: 'obj_b' } },
+      { tool: 'apply_object_edits', args: { objectId: 'obj_a' } },
+    ] }).map((target) => target.id), ['obj_a', 'obj_b'], 'every object a batch edits is checked');
+
+    // The rule itself, from both sides.
+    for (const [solution, item, expected] of [['194', '194', true], ['194', '199', false], ['194', '0', false], ['194', undefined, false],
+      [null, undefined, true], [null, '199', true], ['0', '199', true]]) {
+      if (gate.workspaceAllows(solution, item) !== expected) problems.push(`a solution in ${solution} on an item in ${item} should be ${expected}`);
+    }
+
+    // A create that cannot name a workspace is refused up front.
+    for (const tool of ['create_agent', 'create_context_graph', 'create_test_suite']) {
+      if (!gate.landsOutsideWorkspace(tool)) problems.push(`${tool} should be refused in a workspace solution`);
+    }
+    for (const tool of ['create_app', 'create_pages', 'save_api']) {
+      if (gate.landsOutsideWorkspace(tool)) problems.push(`${tool} places its item, so it must not be refused`);
+    }
+    // A read must never be gated as a write: it would refuse looking at another
+    // workspace, which is always allowed.
+    const reads = new Set(Object.values(contracts.TENANT_ONLY_READ_TOOLS).flatMap((set) => [...set]));
+    const gated = [...Object.keys(gate.WORKSPACE_CREATE_ARGS), ...Object.keys(gate.WORKSPACE_CREATE_ITEMS),
+      ...Object.keys(gate.WORKSPACE_WRITE_TARGETS), ...gate.WORKSPACE_UNPLACEABLE_CREATES];
+    for (const tool of gated) {
+      if (reads.has(tool)) problems.push(`${tool} is a read, so the workspace gate must not name it`);
+      if (!/^[a-z][a-z0-9_]*$/u.test(tool)) problems.push(`${tool} is not a tool name`);
+    }
+
+    // The refusal names the item, both workspaces and the one way out.
+    const refusal = contracts.errorMessage('WORKSPACE_MISMATCH', { asset: 'The app `app-1`', assetWorkspace: 'Delivery', solutionWorkspace: 'Global' });
+    for (const word of ['app-1', 'Delivery', 'Global', 'Open a solution in Delivery']) {
+      if (!refusal.includes(word)) problems.push(`the refusal does not name ${word}`);
+    }
+
+    // A link opens in the solution's workspace; Global keeps `/p/0`.
+    same(links.entityUrl(host, { kind: 'app', id: 'app-1' }, { workspaceId: '194' }), `https://${host}/p/194/interfaces/app-1/builder`, 'a link carries the workspace');
+    same(links.entityUrl(host, { kind: 'app', id: 'app-1' }), `https://${host}/p/0/interfaces/app-1/builder`, 'a link with no workspace is Global');
+    same(links.previewUrl(host, { kind: 'app', id: 'app-1' }, { workspaceId: '194' }), `https://${host}/p/194/interfaces/app-1/preview`, 'a preview carries the workspace');
+    same(links.entityUrl(host, { kind: 'changeset', id: 'c1' }, { workspaceId: '194' }), `https://${host}/settings/change-sets/outbound/c1/details`, 'the changeset screens sit outside every workspace');
+
+    // A solution with no workspace reads as Global, not as unknown.
+    same(workspaces.workspaceOf({}), { id: '0', name: 'Global', global: true }, 'no workspace reads as Global');
+    same(workspaces.workspaceOf({ workspaceId: '194', workspaceName: 'Delivery' }), { id: '194', name: 'Delivery', global: false }, 'a workspace reads by name');
+    same(workspaces.workspaceOf({ workspaceId: '194' }), { id: '194', name: 'Workspace 194', global: false }, 'a workspace with no name reads by id');
+
+    // The repair: `save_solution_record` sends no workspace header, so the write
+    // lands and the record falls out of its workspace. The service reads the
+    // answer back and puts it right through the entity API, which does send it.
+    const record = { id: 'e_1', entityType: 'e_solution', version: 1, properties: { name: 'Portal', memory: '' }, projectId: 194 };
+    const calls = [];
+    const api = async (pathname, body, method, options = {}) => {
+      calls.push({ pathname, workspaceId: options.workspaceId });
+      if (pathname === '/api/entity/update') { record.version += 1; record.projectId = Number(options.workspaceId ?? 0) || undefined; }
+      return { status: 200, body: { ...record } };
+    };
+    const callTool = async ({ name: tool }) => {
+      if (tool !== 'save_solution_record') throw new Error(`unexpected tool ${tool}`);
+      record.projectId = undefined;
+      record.version += 1;
+      return { record: { ...record } };
+    };
+    const saved = await createService({ host, api, callTool, workspaceId: '194' }).update(record, { memory: 'a line' });
+    if (String(saved.projectId) !== '194') problems.push(`the solution did not go back to its workspace: ${JSON.stringify(saved.projectId)}`);
+    if (!calls.some((call) => call.pathname === '/api/entity/update' && call.workspaceId === '194')) {
+      problems.push('the repair did not write through the entity API with the workspace header');
+    }
+
+    // A link to an entity in another workspace is refused; one this folder may
+    // change, one no read can place, and a folder in no workspace all pass.
+    const reads2 = [];
+    const workspaceOfPath = { '/api/entity/e_interface/app-elsewhere': 199, '/api/entity-type?entityType=obj_here': 194 };
+    const fakeFetch = async (tenant, pathname) => {
+      reads2.push(pathname);
+      const projectId = workspaceOfPath[pathname];
+      return { ok: true, status: 200, json: async () => (projectId ? { projectId } : {}) };
+    };
+    const { assertLinkable } = await import(new URL('./folder/entity-cache.mjs', import.meta.url));
+    workspaces.__setTenantFetchForTest(fakeFetch);
+    try {
+      const here = { state: { tenant: host, workspaceId: '194', workspaceName: 'Delivery' } };
+      await assertLinkable(here, [{ kind: 'object', id: 'obj_here' }]);
+      await assertLinkable(here, [{ kind: 'ai-agent', id: 'agent-1' }]);
+      await assertLinkable({ state: { tenant: host } }, [{ kind: 'app', id: 'app-elsewhere' }]);
+      let refused = null;
+      try { await assertLinkable(here, [{ kind: 'app', id: 'app-elsewhere' }]); }
+      catch (error) { refused = error; }
+      if (refused?.code !== 'WORKSPACE_MISMATCH') problems.push(`a link into another workspace was not refused: ${refused?.code ?? 'it passed'}`);
+      else if (!refused.message.includes('app-elsewhere')) problems.push('the link refusal does not name the app');
+    } finally { workspaces.__setTenantFetchForTest(null); }
+    // No kind outside apps, objects and automations is read at all.
+    if (reads2.some((pathname) => pathname.includes('agent-1'))) problems.push('an AI agent was read for a workspace it cannot answer');
+  } catch (error) {
+    problems.push(`${error.message}`);
+  }
+  record(name, problems.length === 0, problems.slice(0, 12).join('\n        '));
+}
+
+// `workspace list` runs before any solution exists, which is when setup asks it.
+{
+  const name = 'workspace list runs before a solution exists, and workspace show names the folder\'s workspace';
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ua-workspace-'));
+  const env = { ...process.env, UA_HOME: home, UA_FAKE: '1', CLAUDE_CODE_SESSION_ID: '00000000-0000-4000-8000-000000000001' };
+  const run = (args) => spawnSync(process.execPath, [path.join(root, 'scripts/ua.mjs'), ...args, '--json'],
+    { cwd: home, encoding: 'utf8', env, timeout: 60_000 });
+  const problems = [];
+  const listed = run(['workspace', 'list']);
+  // With no tenant to work from it asks for one, which is proof it passed the
+  // session gates that answer NOT_STARTED for a command needing a solution.
+  if (!/Name the tenant with --tenant/u.test(`${listed.stdout}${listed.stderr}`)) {
+    problems.push(`workspace list did not reach the command: ${(listed.stdout || listed.stderr || '').slice(0, 200)}`);
+  }
+  // `workspace show` reads the open solution, so with none it is turned away by
+  // the session gate itself, the way every other solution command is.
+  const shown = run(['workspace', 'show']);
+  if (!/NOT_STARTED|NO_SOLUTION/u.test(`${shown.stdout}${shown.stderr}`)) {
+    problems.push(`workspace show with no solution: ${(shown.stdout || shown.stderr || '').slice(0, 200)}`);
+  }
+  fs.rmSync(home, { recursive: true, force: true });
+  record(name, problems.length === 0, problems.join('\n        '));
+}
+
+// The launcher runs `node "$@"`, so its allow rule must name a plugin script,
+// and `apply` must take out the broad rule older releases wrote. Which commands
+// Claude Code lets these rules through was checked with `claude -p`
+// (lib/permission-rules.mjs); this keeps the rules themselves from drifting.
+{
+  const name = 'the run-node.sh allow rule names a plugin script, and apply retires the broad one';
+  const problems = [];
+  try {
+    const rules = await import(pathToFileURL(path.join(root, 'scripts/lib/permission-rules.mjs')).href);
+    const dir = '/c/plugins/cache/unifyapps-headless/ua';
+    const launcher = rules.allowRules(dir).filter((rule) => rule.includes('run-node.sh'));
+    if (!launcher.length) problems.push('no run-node.sh rule');
+    for (const rule of launcher) if (!rule.includes(`${dir}/*.mjs`)) problems.push(`accepts any arguments: ${rule}`);
+    const broad = [`Bash(bash "${dir}/*/scripts/run-node.sh" *)`, `Bash(bash ${dir}/0.0.9/scripts/run-node.sh:*)`];
+    const mine = 'Bash(git status *)';
+    const before = { permissions: { allow: [mine, ...broad] } };
+    if (rules.missingRules(before, { versionsDir: dir, version: '0.0.9' }).retired.length !== 2) problems.push('check does not flag the broad rules');
+    const { settings, removed } = rules.mergeRules(before, { allow: rules.allowRules(dir), ask: [], retire: rules.retiredRules(before, dir) });
+    if (removed.length !== 2 || settings.permissions.allow.some((rule) => broad.includes(rule))) problems.push('apply left a broad rule in');
+    if (settings.permissions.allow[0] !== mine) problems.push('apply moved or removed the person\'s own rule');
+    const after = rules.missingRules(settings, { versionsDir: dir, version: '0.0.9' });
+    if (after.allow.length || after.retired.length) problems.push(`not clean after apply: ${JSON.stringify(after)}`);
+  } catch (error) { problems.push(error.message); }
+  record(name, problems.length === 0, problems.join('\n        '));
+}
+
+// A builder's Read and Grep stay out of the person's saved sign-in, whatever
+// path spells it. Run in its own process: the guard reads UA_HOME on load.
+{
+  const name = 'a builder cannot read or search the saved sign-in';
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ua-guard-'));
+  const work = path.join(home, 'work');
+  for (const dir of ['session/cookies', 'session/chrome-profile', 'loops', 'work']) fs.mkdirSync(path.join(home, dir), { recursive: true });
+  fs.symlinkSync(path.join(home, 'session/cookies'), path.join(work, 'link'));
+  const cases = [
+    [true, 'Read', { file_path: path.join(home, 'session/cookies/t.example.com') }],
+    [true, 'Read', { file_path: path.join(home, 'session/chrome-profile/Default/Cookies') }],
+    [true, 'Read', { file_path: path.join(work, 'link/t.example.com') }],
+    [true, 'Read', { file_path: '../session/cookies/t.example.com' }],
+    [true, 'Read', { file_path: path.join(os.homedir(), '.ssh/id_ed25519') }],
+    [true, 'Grep', { pattern: '_at', path: home }],
+    [true, 'Grep', { pattern: '_at', path: path.join(work, 'link') }],
+    [false, 'Read', { file_path: path.join(work, 'notes.md') }],
+    [false, 'Read', { file_path: path.join(home, 'loops/run.json') }],
+    [false, 'Grep', { pattern: 'cookies', path: work }],
+  ];
+  const script = `const { denyReason } = await import(${JSON.stringify(pathToFileURL(path.join(root, 'scripts/tool-guard.mjs')).href)});
+    const cases = ${JSON.stringify(cases)};
+    const wrong = cases.filter(([deny, tool, input]) => Boolean(denyReason({ agent_type: 'ua:fde-agent', tool_name: tool, cwd: ${JSON.stringify(work)}, tool_input: input })) !== deny);
+    if (denyReason({ tool_name: 'Read', cwd: ${JSON.stringify(work)}, tool_input: cases[0][2] })) wrong.push('the main session was refused');
+    console.log(JSON.stringify(wrong));`;
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8', env: { ...process.env, UA_HOME: home }, timeout: 30_000 });
+  let wrong;
+  try { wrong = JSON.parse(run.stdout); } catch { wrong = [run.stderr.split('\n').slice(0, 3).join(' ')]; }
+  fs.rmSync(home, { recursive: true, force: true });
+  record(name, wrong.length === 0, wrong.map((item) => JSON.stringify(item)).join('\n        '));
 }
 
 const failed = results.filter((result) => !result.ok);

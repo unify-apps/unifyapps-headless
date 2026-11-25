@@ -23,6 +23,15 @@ The workflow (`.github/workflows/publish.yml`) runs `scripts/release/publish.mjs
 
 It then runs the tests and `claude plugin validate`, commits, tags `vX.Y.Z`, pushes the tag, creates the GitHub Release with `release.json` and `install.sh` attached, and, for a stable release, moves `main` to that commit. A beta's commit stays off `main`.
 
+## Who can change `main` and the tags
+
+Two rulesets guard what agents install from:
+
+- **main**: changes arrive only by a pull request with one approval and the five checks green (smoke suite, plugin manifest, secret scan, dependency audit, software bill of materials). No force-push, no deletion. Admins may merge a pull request without the approval; nobody pushes to `main` directly.
+- **release tags** (`v*`): nobody creates, moves or deletes one by hand.
+
+Only the publish workflow's deploy key gets past both. Its private key is the `RELEASE_DEPLOY_KEY` secret of the `release` environment, which hands it only to runs on `main`, and the workflow stops unless the person who started it is a repository admin.
+
 Write what changed under `## Unreleased` at the top of `CHANGELOG.md` as you merge; the next stable release takes it as its notes.
 
 ## How each agent finds the release

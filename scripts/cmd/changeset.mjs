@@ -1,6 +1,6 @@
 import { UaError } from '../lib/contracts.mjs';
 import { ANSWERS, PASSWORD_CHOICES, withAnswer } from '../lib/changeset-yes.mjs';
-import { writeState } from '../workspace/local.mjs';
+import { writeState } from '../folder/local.mjs';
 
 // `changeset confirm` records the person's answer to the changeset question on
 // the session state, right after the AskUserQuestion and never without it. The

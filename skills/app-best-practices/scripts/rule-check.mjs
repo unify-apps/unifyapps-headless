@@ -14,8 +14,8 @@ import { fileURLToPath } from 'node:url';
 import { CHECKS } from './checks.mjs';
 import { appModel, readApp } from './config-read.mjs';
 import { mobileAudit } from './mobile-audit.mjs';
-import { homeForCwd } from '../../../scripts/workspace/session-registry.mjs';
-import { approveWorkspace } from '../../../scripts/lib/session-paths.mjs';
+import { homeForCwd } from '../../../scripts/folder/session-registry.mjs';
+import { approveFolder } from '../../../scripts/lib/session-paths.mjs';
 
 const RULES_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'rules.json');
 const BLOCKING = new Set(['P0', 'P1']);
@@ -123,7 +123,7 @@ function loadApp(args) {
     return appModel(fixture.interface, fixture.pages ?? []);
   }
   if (!args.appId) throw new Error('--app-id <interfaceId> or --fixture <file> is required');
-  const home = args.home ? approveWorkspace(args.home) : homeForCwd(process.cwd(), args.session ?? process.env.CLAUDE_CODE_SESSION_ID)?.home;
+  const home = args.home ? approveFolder(args.home) : homeForCwd(process.cwd(), args.session ?? process.env.CLAUDE_CODE_SESSION_ID)?.home;
   if (!home) throw new Error('No UnifyApps Headless solution folder here; run from one, or pass --home.');
   return readApp(home, args.appId, { pageIds: args.pages });
 }

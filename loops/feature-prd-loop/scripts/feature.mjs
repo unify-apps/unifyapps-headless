@@ -14,10 +14,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { appNavigation, formView, objectView, workflowContract } from '../../../scripts/lib/cache-views.mjs';
-import { approveWorkspace } from '../../../scripts/lib/session-paths.mjs';
+import { approveFolder } from '../../../scripts/lib/session-paths.mjs';
 import { EDGE_VIA, ENTITY_KINDS } from '../../../scripts/lib/wiring.mjs';
-import { readCachedAppContext, readCachedEntityContext } from '../../../scripts/workspace/entity-cache.mjs';
-import { readWiring } from '../../../scripts/workspace/solution-map.mjs';
+import { readCachedAppContext, readCachedEntityContext } from '../../../scripts/folder/entity-cache.mjs';
+import { readWiring } from '../../../scripts/folder/solution-map.mjs';
 
 // ---- layers -------------------------------------------------------------------------
 
@@ -567,7 +567,7 @@ export function main(argv) {
   } else if (command === 'ripple') {
     // The cache reader only trusts the folder the process started in, so a --home
     // elsewhere is approved once, by name, before anything is read.
-    const home = typeof flags.home === 'string' ? approveWorkspace(flags.home) : process.cwd();
+    const home = typeof flags.home === 'string' ? approveFolder(flags.home) : process.cwd();
     const wiring = readWiring(home);
     if (!wiring.entities.length) throw new Error(`no cached entity was found under ${home}; run \`ua entity read\` on the app first, or pass --home <solution folder>`);
     const result = ripple(wiring, readJson(flags.targets, '--targets'), readExtras(home, wiring), {
